@@ -32,28 +32,32 @@ function App() {
           className={`nav-item ${activeTab === "home" ? "active" : ""}`}
           onClick={() => setActiveTab("home")}
         >
-          🏠
+          <span className="nav-icon">🏠</span>
+          <span className="nav-label">Home</span>
         </div>
 
         <div
           className={`nav-item ${activeTab === "bookings" ? "active" : ""}`}
           onClick={() => setActiveTab("bookings")}
         >
-          📅
+          <span className="nav-icon">📋</span>
+          <span className="nav-label">Vebinars</span>
         </div>
 
         <div
           className={`nav-item ${activeTab === "support" ? "active" : ""}`}
           onClick={() => setActiveTab("support")}
         >
-          💬
+          <span className="nav-icon">💼</span>
+          <span className="nav-label">Support</span>
         </div>
 
         <div
           className={`nav-item ${activeTab === "profile" ? "active" : ""}`}
           onClick={() => setActiveTab("profile")}
         >
-          👤
+          <span className="nav-icon">👤</span>
+          <span className="nav-label">Profile</span>
         </div>
 
         <div className={`nav-indicator ${activeTab}`} />
