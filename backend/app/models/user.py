@@ -6,5 +6,7 @@ class User(Base):
 
     id = Column(Integer, primary_key=True)
     telegram_id = Column(Integer, unique=True, index=True)
-    username = Column(String)
-    first_name = Column(String)
+    username = Column(String, nullable=True)
+    first_name = Column(String, nullable=True)
+    last_name = Column(String, nullable=True)
+    photo_url = Column(String, nullable=True)

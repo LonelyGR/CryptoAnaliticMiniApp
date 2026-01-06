@@ -736,6 +736,39 @@ body {
   transform: scale(0.95);
 }
 
+/* Avatar in copy-trading-header */
+.copy-trading-header .avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: radial-gradient(circle, #3e3f4e 0%, #1c1d2a 100%);
+  margin-bottom: 0;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid rgba(255, 255, 255, 0.1);
+  flex-shrink: 0;
+}
+
+.copy-trading-header .avatar-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.copy-trading-header .avatar-placeholder {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.8);
+  background: radial-gradient(circle, #3e3f4e 0%, #1c1d2a 100%);
+}
+
 /* === PROMO BANNER === */
 .promo-banner {
   margin: 16px;
@@ -747,11 +780,37 @@ body {
   border: 1px solid rgba(255, 255, 255, 0.1);
   position: relative;
   overflow: hidden;
+  touch-action: pan-y;
+  user-select: none;
+  -webkit-user-select: none;
+  cursor: grab;
+}
+
+.promo-banner:active {
+  cursor: grabbing;
 }
 
 .promo-content {
   position: relative;
   z-index: 1;
+  transition: opacity 0.3s ease, transform 0.3s ease;
+  animation: fadeInSlide 0.4s ease-out;
+}
+
+.promo-content.transitioning {
+  opacity: 0;
+  transform: translateX(20px);
+}
+
+@keyframes fadeInSlide {
+  from {
+    opacity: 0;
+    transform: translateX(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
 }
 
 .promo-header {
@@ -759,10 +818,12 @@ body {
 }
 
 .promo-title {
-  font-size: 16px;
+  font-size: 17px;
   font-weight: 700;
   color: #FFFFFF;
   margin: 0 0 4px 0;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  letter-spacing: 0.2px;
 }
 
 .promo-subtitle {
@@ -774,13 +835,25 @@ body {
 .promo-description {
   font-size: 14px;
   color: #FFFFFF;
-  margin: 12px 0;
-  line-height: 1.5;
+  margin: 14px 0;
+  line-height: 1.6;
+  font-weight: 400;
 }
 
 .highlight-green {
   color: #00FF9D;
-  font-weight: 600;
+  font-weight: 700;
+  text-shadow: 0 0 12px rgba(0, 255, 157, 0.5);
+  animation: textGlow 2s ease-in-out infinite alternate;
+}
+
+@keyframes textGlow {
+  from {
+    text-shadow: 0 0 12px rgba(0, 255, 157, 0.5);
+  }
+  to {
+    text-shadow: 0 0 20px rgba(0, 255, 157, 0.8);
+  }
 }
 
 .promo-divider {
@@ -789,13 +862,50 @@ body {
   margin: 16px 0;
 }
 
+.deposit-tiers-wrapper {
+  max-height: 0;
+  overflow: hidden;
+  opacity: 0;
+  transition: 
+    max-height 0.5s cubic-bezier(0.4, 0, 0.2, 1),
+    opacity 0.4s ease-out,
+    margin 0.4s ease-out;
+  margin-top: 0;
+  margin-bottom: 0;
+}
+
+.deposit-tiers-wrapper.expanded {
+  max-height: 350px;
+  opacity: 1;
+  margin-top: 0;
+  margin-bottom: 0;
+}
+
 .deposit-tiers {
   display: flex;
   justify-content: space-between;
   align-items: flex-end;
-  gap: 8px;
-  margin: 20px 0;
+  gap: 6px;
+  margin: 16px 0;
   padding: 0 4px;
+  animation: slideUpFade 0.5s ease-out;
+  transition: opacity 0.3s ease-out, transform 0.3s ease-out;
+}
+
+.deposit-tiers-wrapper:not(.expanded) .deposit-tiers {
+  opacity: 0;
+  transform: translateY(-10px);
+}
+
+@keyframes slideUpFade {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .tier-item {
@@ -803,7 +913,20 @@ body {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
+  animation: fadeInUp 0.6s ease-out both;
+  min-width: 0;
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .tier-bar-container {
@@ -811,53 +934,204 @@ body {
   display: flex;
   justify-content: center;
   align-items: flex-end;
-  min-height: 160px;
+  min-height: 130px;
+  position: relative;
 }
 
 .tier-bar {
   width: 100%;
-  max-width: 50px;
-  background: linear-gradient(180deg, #00FF9D 0%, #00CC7A 100%);
+  max-width: 42px;
+  background: linear-gradient(180deg, #00FF9D 0%, #00CC7A 50%, #00AA66 100%);
   border-radius: 8px 8px 0 0;
   display: flex;
   align-items: flex-start;
   justify-content: center;
-  padding-top: 8px;
+  padding: 4px 2px 0 2px;
   position: relative;
-  box-shadow: 0 0 16px rgba(0, 255, 157, 0.4);
-  animation: glow 2s ease-in-out infinite alternate;
+  box-shadow: 
+    0 0 16px rgba(0, 255, 157, 0.4),
+    inset 0 1px 3px rgba(255, 255, 255, 0.2);
+  animation: 
+    barGrow 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) both,
+    glow 2s ease-in-out infinite alternate 0.8s;
+  border: 1px solid rgba(0, 255, 157, 0.3);
+  overflow: visible;
+  box-sizing: border-box;
+}
+
+.tier-bar::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 30%;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.3) 0%, transparent 100%);
+  border-radius: 8px 8px 0 0;
+}
+
+.tier-bar-gradient {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(180deg, 
+    rgba(255, 255, 255, 0.1) 0%,
+    transparent 30%,
+    rgba(0, 0, 0, 0.1) 100%
+  );
+  pointer-events: none;
+}
+
+@keyframes barGrow {
+  from {
+    height: 0 !important;
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
 
 @keyframes glow {
   from {
-    box-shadow: 0 0 16px rgba(0, 255, 157, 0.4);
+    box-shadow: 
+      0 0 20px rgba(0, 255, 157, 0.5),
+      inset 0 2px 4px rgba(255, 255, 255, 0.2);
   }
   to {
-    box-shadow: 0 0 24px rgba(0, 255, 157, 0.6);
+    box-shadow: 
+      0 0 30px rgba(0, 255, 157, 0.7),
+      inset 0 2px 4px rgba(255, 255, 255, 0.3);
   }
 }
 
 .tier-bonus {
-  font-size: 11px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  position: relative;
+  z-index: 2;
+  animation: bounceIn 0.6s ease-out 0.3s both;
+  width: 100%;
+  min-width: 0;
+  text-align: center;
+}
+
+.tier-bonus-number {
+  font-size: 9px;
   font-weight: 700;
   color: #000000;
+  line-height: 1;
+  text-shadow: 0 1px 2px rgba(255, 255, 255, 0.3);
   white-space: nowrap;
 }
 
+.tier-bonus-currency {
+  font-size: 7px;
+  font-weight: 600;
+  color: #000000;
+  line-height: 1;
+  text-shadow: 0 1px 2px rgba(255, 255, 255, 0.3);
+  opacity: 0.85;
+  margin-top: 1px;
+  white-space: nowrap;
+}
+
+@keyframes bounceIn {
+  0% {
+    opacity: 0;
+    transform: scale(0.3);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.1);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
 .tier-label {
-  font-size: 10px;
-  color: rgba(255, 255, 255, 0.8);
+  font-size: 9px;
+  color: rgba(255, 255, 255, 0.9);
   text-align: center;
   line-height: 1.2;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  animation: fadeIn 0.5s ease-out 0.4s both;
+  width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.tier-deposit-amount {
+  font-weight: 700;
+  font-size: 10px;
+  color: #00FF9D;
+  white-space: nowrap;
+}
+
+.tier-deposit-label {
+  font-size: 8px;
+  opacity: 0.7;
+  white-space: nowrap;
 }
 
 .promo-time {
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 600;
   color: #FFD700;
   text-align: center;
-  margin: 16px 0;
-  letter-spacing: 0.5px;
+  margin: 12px 0 8px 0;
+  letter-spacing: 0.3px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 8px 10px;
+  background: rgba(255, 215, 0, 0.1);
+  border-radius: 8px;
+  border: 1px solid rgba(255, 215, 0, 0.2);
+  animation: fadeIn 0.5s ease-out 0.6s both;
+  transition: opacity 0.3s ease-out, transform 0.3s ease-out;
+}
+
+.deposit-tiers-wrapper:not(.expanded) .promo-time {
+  opacity: 0;
+  transform: translateY(-10px);
+}
+
+.time-icon {
+  font-size: 14px;
+  animation: pulse 2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.1);
+  }
+}
+
+.time-text {
+  font-weight: 700;
+  text-shadow: 0 0 8px rgba(255, 215, 0, 0.5);
 }
 
 .promo-cta {
@@ -868,16 +1142,42 @@ body {
   border: none;
   border-radius: 12px;
   font-size: 16px;
-  font-weight: 600;
+  font-weight: 700;
   cursor: pointer;
-  transition: all 0.2s ease;
-  box-shadow: 0 4px 16px rgba(0, 255, 157, 0.3);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 
+    0 4px 16px rgba(0, 255, 157, 0.3),
+    0 0 0 0 rgba(0, 255, 157, 0.4);
   margin-top: 12px;
+  position: relative;
+  overflow: hidden;
+  letter-spacing: 0.3px;
+}
+
+.promo-cta::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+  transition: left 0.5s;
+}
+
+.promo-cta:hover::before {
+  left: 100%;
 }
 
 .promo-cta:active {
-  opacity: 0.9;
-  transform: scale(0.98);
+  transform: scale(0.97);
+  box-shadow: 
+    0 2px 8px rgba(0, 255, 157, 0.3),
+    0 0 0 4px rgba(0, 255, 157, 0.2);
+}
+
+.promo-cta:active::before {
+  left: 100%;
 }
 
 .promo-indicators {
@@ -894,8 +1194,13 @@ body {
   border: none;
   background: rgba(255, 255, 255, 0.3);
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: all 0.3s ease;
   padding: 0;
+  touch-action: manipulation;
+}
+
+.promo-dot:active {
+  transform: scale(1.2);
 }
 
 .promo-dot.active {
@@ -1140,6 +1445,231 @@ body {
 .view-more-btn:active {
   background: rgba(255, 255, 255, 0.15);
   transform: scale(0.98);
+}
+
+/* === CRYPTO RATES SECTION === */
+.crypto-rates-section {
+  margin: 24px 16px;
+}
+
+.crypto-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+/* === CRYPTO CARD === */
+.crypto-card {
+  background: #1E293B;
+  border-radius: 16px;
+  padding: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  transition: all 0.2s ease;
+}
+
+.crypto-card:active {
+  transform: scale(0.98);
+  opacity: 0.9;
+}
+
+.crypto-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.crypto-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: 1;
+  min-width: 0;
+}
+
+.crypto-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.crypto-icon img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.crypto-icon-fallback {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.crypto-name-section {
+  flex: 1;
+  min-width: 0;
+}
+
+.crypto-name {
+  font-size: 16px;
+  font-weight: 700;
+  color: #FFFFFF;
+  margin: 0 0 4px 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.crypto-symbol {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.6);
+  text-transform: uppercase;
+}
+
+.crypto-change {
+  font-size: 14px;
+  font-weight: 600;
+  padding: 4px 8px;
+  border-radius: 6px;
+  white-space: nowrap;
+}
+
+.crypto-change.positive {
+  color: #22c55e;
+  background: rgba(34, 197, 94, 0.15);
+}
+
+.crypto-change.negative {
+  color: #ef4444;
+  background: rgba(239, 68, 68, 0.15);
+}
+
+.crypto-price-section {
+  margin-bottom: 12px;
+}
+
+.crypto-price {
+  font-size: 24px;
+  font-weight: 700;
+  color: #FFFFFF;
+  margin-bottom: 4px;
+}
+
+.crypto-market-cap {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.crypto-chart {
+  height: 60px;
+  width: 100%;
+  margin-top: 8px;
+  position: relative;
+}
+
+.sparkline-svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.chart-placeholder {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 12px;
+}
+
+.sparkline-line {
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.sparkline-area {
+  opacity: 0.6;
+}
+
+.loading-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 20px;
+  text-align: center;
+}
+
+.loading-spinner {
+  width: 40px;
+  height: 40px;
+  border: 3px solid rgba(255, 255, 255, 0.1);
+  border-top-color: #00FF9D;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+  margin-bottom: 16px;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.loading-container p {
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 14px;
+  margin: 0;
+}
+
+.error-banner {
+  background: rgba(239, 68, 68, 0.15);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  border-radius: 12px;
+  padding: 12px 16px;
+  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.error-banner span {
+  color: #ef4444;
+  font-size: 14px;
+  flex: 1;
+}
+
+.error-banner button {
+  background: rgba(239, 68, 68, 0.2);
+  color: #ef4444;
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  border-radius: 8px;
+  padding: 6px 12px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.error-banner button:active {
+  background: rgba(239, 68, 68, 0.3);
+  transform: scale(0.95);
 }
 
 /* === MODAL === */

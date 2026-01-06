@@ -1,200 +1,117 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import CopyTradingHeader from '../components/CopyTradingHeader';
 import PromoBanner from '../components/PromoBanner';
-import TraderCard from '../components/TraderCard';
-import FollowModal from '../components/FollowModal';
+import CryptoCard from '../components/CryptoCard';
 import ScreenWrapper from '../components/ScreenWrapper';
 
-// Mock data for top performers
-const mockTraders = [
-    {
-        id: 1,
-        name: 'Kollectiv',
-        rank: 'Cadet No.1',
-        avatarIcon: '⚫',
-        avatarBg: '#000000',
-        masterPnl: 60506.43,
-        followerPnl: 271899.85,
-        buttonText: 'Copy',
-        isFollowing: false
-    },
-    {
-        id: 2,
-        name: 'CryptoSensei VIP',
-        rank: 'Bronze No.1',
-        avatarIcon: '⛩️',
-        avatarBg: '#8B4513',
-        masterPnl: 186.19,
-        followerPnl: 33300.55,
-        buttonText: 'Follow Now',
-        isFollowing: false
-    },
-    {
-        id: 3,
-        name: 'Super Hero',
-        rank: 'Silver',
-        avatarIcon: '🦸',
-        avatarBg: '#1E40AF',
-        masterPnl: 1035.66,
-        followerPnl: 164981.35,
-        buttonText: 'Copy',
-        isFollowing: false
-    },
-    {
-        id: 4,
-        name: 'ITEKrypto',
-        rank: 'Gold',
-        avatarIcon: '🐂',
-        avatarBg: '#F59E0B',
-        masterPnl: 12809.54,
-        followerPnl: 644559.81,
-        buttonText: 'Copy',
-        isFollowing: false
-    },
-    {
-        id: 5,
-        name: 'CryptoMaster',
-        rank: 'Platinum',
-        avatarIcon: '💎',
-        avatarBg: '#6366F1',
-        masterPnl: 4523.21,
-        followerPnl: 98765.43,
-        buttonText: 'Follow Now',
-        isFollowing: false
-    },
-    {
-        id: 6,
-        name: 'TradeKing',
-        rank: 'Diamond',
-        avatarIcon: '👑',
-        avatarBg: '#EC4899',
-        masterPnl: 8765.12,
-        followerPnl: 234567.89,
-        buttonText: 'Copy',
-        isFollowing: false
-    }
-];
+// Popular cryptocurrencies to fetch
+const CRYPTO_IDS = ['bitcoin', 'ethereum', 'binancecoin', 'solana', 'cardano', 'ripple'];
 
-export default function Home({ user }) {
-    const [traders, setTraders] = useState(mockTraders);
-    const [loading, setLoading] = useState(false);
+export default function Home({ user, apiConnected }) {
+    const [cryptos, setCryptos] = useState([]);
+    const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
-    const [selectedTrader, setSelectedTrader] = useState(null);
-    const [showModal, setShowModal] = useState(false);
 
-    useEffect(() => {
-        // Simulate loading
-        setLoading(true);
-        setTimeout(() => {
-            setLoading(false);
-        }, 1000);
+    const getMockCryptoData = useCallback(() => {
+        // Generate mock sparkline data for fallback
+        const generateMockSparkline = (basePrice, change) => {
+            const points = 24;
+            const data = [];
+            for (let i = 0; i < points; i++) {
+                const variation = (Math.random() - 0.5) * (change / 100) * 0.3;
+                const price = basePrice * (1 + variation * (i / points));
+                data.push(price);
+            }
+            return data;
+        };
+
+        return [
+            { id: 'bitcoin', name: 'Bitcoin', symbol: 'btc', current_price: 43250.50, price_change_percentage_24h: 2.45, market_cap: 850000000000, image: 'https://assets.coingecko.com/coins/images/1/large/bitcoin.png', sparkline_in_7d: { price: generateMockSparkline(43250.50, 2.45) } },
+            { id: 'ethereum', name: 'Ethereum', symbol: 'eth', current_price: 2650.30, price_change_percentage_24h: -1.23, market_cap: 320000000000, image: 'https://assets.coingecko.com/coins/images/279/large/ethereum.png', sparkline_in_7d: { price: generateMockSparkline(2650.30, -1.23) } },
+            { id: 'binancecoin', name: 'BNB', symbol: 'bnb', current_price: 315.80, price_change_percentage_24h: 0.85, market_cap: 47000000000, image: 'https://assets.coingecko.com/coins/images/825/large/bnb-icon2_2x.png', sparkline_in_7d: { price: generateMockSparkline(315.80, 0.85) } },
+            { id: 'solana', name: 'Solana', symbol: 'sol', current_price: 98.45, price_change_percentage_24h: 3.12, market_cap: 45000000000, image: 'https://assets.coingecko.com/coins/images/4128/large/solana.png', sparkline_in_7d: { price: generateMockSparkline(98.45, 3.12) } },
+            { id: 'cardano', name: 'Cardano', symbol: 'ada', current_price: 0.52, price_change_percentage_24h: -0.45, market_cap: 18000000000, image: 'https://assets.coingecko.com/coins/images/975/large/cardano.png', sparkline_in_7d: { price: generateMockSparkline(0.52, -0.45) } },
+            { id: 'ripple', name: 'XRP', symbol: 'xrp', current_price: 0.62, price_change_percentage_24h: 1.25, market_cap: 34000000000, image: 'https://assets.coingecko.com/coins/images/44/large/xrp-symbol-white-128.png', sparkline_in_7d: { price: generateMockSparkline(0.62, 1.25) } }
+        ];
     }, []);
 
+    const fetchCryptoData = useCallback(async () => {
+        try {
+            setLoading(true);
+            setError(null);
+            
+            const ids = CRYPTO_IDS.join(',');
+            // Request with sparkline=true to get price history data
+            const response = await fetch(
+                `https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&ids=${ids}&order=market_cap_desc&per_page=10&page=1&sparkline=true&price_change_percentage=24h`
+            );
+            
+            if (!response.ok) {
+                throw new Error('Failed to fetch crypto data');
+            }
+            
+            const data = await response.json();
+            setCryptos(data);
+        } catch (err) {
+            console.error('Error fetching crypto data:', err);
+            setError('Не удалось загрузить данные о криптовалютах');
+            // Fallback to mock data if API fails
+            setCryptos(getMockCryptoData());
+        } finally {
+            setLoading(false);
+        }
+    }, [getMockCryptoData]);
+
+    useEffect(() => {
+        fetchCryptoData();
+        // Refresh data every 15 seconds for live updates
+        const interval = setInterval(fetchCryptoData, 15000);
+        return () => clearInterval(interval);
+    }, [fetchCryptoData]);
+
     const handleDepositClick = () => {
-        // Handle deposit action
-        if (window.Telegram?.WebApp) {
-            window.Telegram.WebApp.showAlert('Redirecting to deposit...');
-        } else {
-            alert('Redirecting to deposit...');
-        }
-    };
-
-    const handleCopyClick = (trader) => {
-        setSelectedTrader(trader);
-        setShowModal(true);
-    };
-
-    const handleFollowClick = (trader) => {
-        if (trader.isFollowing) {
-            // Unfollow
-            setTraders(prev => prev.map(t => 
-                t.id === trader.id ? { ...t, isFollowing: false } : t
-            ));
-        } else {
-            handleCopyClick(trader);
-        }
-    };
-
-    const handleConfirmFollow = async (amount) => {
-        // Simulate API call
-        await new Promise(resolve => setTimeout(resolve, 500));
-        
-        setTraders(prev => prev.map(t => 
-            t.id === selectedTrader.id ? { ...t, isFollowing: true } : t
-        ));
-        
-        if (window.Telegram?.WebApp) {
-            window.Telegram.WebApp.showAlert(`Following ${selectedTrader.name} with ${amount} USDT`);
-        }
-    };
-
-    const handleTraderCardClick = (trader) => {
-        // Navigate to trader detail page (placeholder)
-        if (window.Telegram?.WebApp) {
-            window.Telegram.WebApp.showAlert(`Viewing ${trader.name} details...`);
-        }
+        // Handle deposit action - можно добавить навигацию или другую логику
+        // Пока оставляем пустым, так как кнопка в PromoBanner обрабатывает свою логику
     };
 
     return (
         <ScreenWrapper>
-            <CopyTradingHeader onDepositClick={handleDepositClick} />
+            <CopyTradingHeader user={user} username={user?.first_name} onDepositClick={handleDepositClick} />
             
             <div className="copy-trading-home">
                 <PromoBanner onDepositClick={handleDepositClick} />
 
-                {error && (
-                    <div className="error-banner">
-                        <span>{error}</span>
-                        <button onClick={() => setError(null)}>Retry</button>
-                    </div>
-                )}
-
                 {loading ? (
                     <div className="loading-container">
                         <div className="loading-spinner"></div>
-                        <p>Loading Top Traders...</p>
+                        <p>Загрузка курсов криптовалют...</p>
                     </div>
                 ) : (
-                    <section className="top-performers-section">
+                    <section className="crypto-rates-section">
                         <div className="section-header">
-                            <h2 className="section-title">This Week's Top Performers</h2>
-                            <p className="section-subtitle">Top-Ranked Master Traders</p>
+                            <h2 className="section-title">Курсы криптовалют</h2>
+                            <p className="section-subtitle">Актуальные цены и графики</p>
                         </div>
 
-                        <div className="traders-list">
-                            {traders.map((trader, index) => (
-                                <div 
-                                    key={trader.id}
-                                    onClick={() => handleTraderCardClick(trader)}
-                                    style={{ cursor: 'pointer' }}
-                                >
-                                    <TraderCard
-                                        trader={trader}
-                                        rank={index + 1}
-                                        onCopyClick={() => handleCopyClick(trader)}
-                                        onFollowClick={() => handleFollowClick(trader)}
-                                    />
-                                </div>
+                        {error && (
+                            <div className="error-banner">
+                                <span>{error}</span>
+                                <button onClick={fetchCryptoData}>Повторить</button>
+                            </div>
+                        )}
+
+                        <div className="crypto-list">
+                            {cryptos.map((crypto) => (
+                                <CryptoCard key={crypto.id} crypto={crypto} />
                             ))}
                         </div>
 
-                        <button className="view-more-btn">
-                            View More Traders
+                        <button className="view-more-btn" onClick={fetchCryptoData}>
+                            Обновить данные
                         </button>
                     </section>
                 )}
             </div>
-
-            {showModal && selectedTrader && (
-                <FollowModal
-                    trader={selectedTrader}
-                    onClose={() => {
-                        setShowModal(false);
-                        setSelectedTrader(null);
-                    }}
-                    onConfirm={handleConfirmFollow}
-                />
-            )}
         </ScreenWrapper>
     );
 }

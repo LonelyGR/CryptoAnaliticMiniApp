@@ -10,7 +10,7 @@ dp = Dispatcher()
 @dp.message(CommandStart())
 async def send_welcome(message: types.Message):
     await message.answer(
-        "Привет! {username}, добро пожаловать в нашего бота!".format(username=message.from_user.full_name)
+        "Привет! {username}, \n Следи за рынком, и получай возможность записатьcя на вебинар или получить консультацию от проффисионалов!".format(username=message.from_user.full_name)
     )
 
 async def main():
