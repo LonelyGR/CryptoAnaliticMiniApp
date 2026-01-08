@@ -1,5 +1,7 @@
 @echo off
-echo Starting Crypto Analytics Backend Server...
+echo ========================================
+echo Исправление структуры базы данных
+echo ========================================
 echo.
 
 REM Проверка виртуального окружения
@@ -18,10 +20,11 @@ if errorlevel 1 (
     exit /b 1
 )
 
-echo Виртуальное окружение активировано.
-echo Запуск сервера...
+echo Запуск миграции базы данных...
 echo.
 
-python run.py
+python migrate_db.py
+
+echo.
 pause
 

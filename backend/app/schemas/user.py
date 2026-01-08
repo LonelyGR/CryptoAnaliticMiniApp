@@ -13,6 +13,8 @@ class UserCreate(UserBase):
 
 class UserResponse(UserBase):
     id: int
+    is_admin: Optional[bool] = False  # Статус администратора
+    role: Optional[str] = None  # Должность (если админ)
 
     class Config:
         from_attributes = True

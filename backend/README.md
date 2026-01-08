@@ -4,6 +4,26 @@ FastAPI backend для мини-приложения Crypto Analytics.
 
 ## Установка
 
+### Автоматическая установка (рекомендуется)
+
+**Windows:**
+```bash
+setup.bat
+```
+
+**Linux/Mac:**
+```bash
+chmod +x setup.sh
+./setup.sh
+```
+
+Скрипт автоматически:
+- Создаст виртуальное окружение
+- Активирует его
+- Установит все зависимости
+
+### Ручная установка
+
 1. Создайте виртуальное окружение:
 ```bash
 python -m venv venv
@@ -20,6 +40,26 @@ pip install -r requirements.txt
 
 ## Запуск сервера
 
+### Через скрипт (рекомендуется)
+
+**Windows:**
+```bash
+start.bat
+```
+
+**Linux/Mac:**
+```bash
+chmod +x start.sh
+./start.sh
+```
+
+### Вручную
+
+1. Активируйте виртуальное окружение:
+- Windows: `venv\Scripts\activate`
+- Linux/Mac: `source venv/bin/activate`
+
+2. Запустите сервер:
 ```bash
 python run.py
 ```
@@ -55,6 +95,27 @@ uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 ## База данных
 
 Используется SQLite база данных `db.sqlite3`. Таблицы создаются автоматически при первом запуске.
+
+### Обновление структуры базы данных
+
+Если вы обновили модели и видите ошибки о недостающих колонках, запустите миграцию:
+
+**Windows:**
+```bash
+fix_database.bat
+```
+
+**Linux/Mac:**
+```bash
+./fix_database.sh
+```
+
+Или вручную:
+```bash
+python migrate_db.py
+```
+
+Подробнее см. [README_MIGRATION.md](README_MIGRATION.md)
 
 ## Тестирование API
 

@@ -1,9 +1,43 @@
 # Быстрый старт для тестирования
 
-## 1. Запустите сервер
+## 0. Настройка окружения (первый раз)
 
+Если виртуальное окружение еще не создано:
+
+**Windows:**
 ```bash
 cd backend
+setup.bat
+```
+
+**Linux/Mac:**
+```bash
+cd backend
+chmod +x setup.sh
+./setup.sh
+```
+
+## 1. Запустите сервер
+
+**Windows:**
+```bash
+cd backend
+start.bat
+```
+
+**Linux/Mac:**
+```bash
+cd backend
+chmod +x start.sh
+./start.sh
+```
+
+Или вручную:
+```bash
+cd backend
+venv\Scripts\activate  # Windows
+# или
+source venv/bin/activate  # Linux/Mac
 python run.py
 ```
 
