@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.routers import users, bookings, webinars, admins, posts, payments, webinar_materials, remindersмс
+from app.routers import users, bookings, webinars, admins, posts, payments, webinar_materials, reminders
 
 from app.database import engine, Base
 from app.models import User, Booking, Webinar, Admin, Post, Payment, WebinarMaterial
