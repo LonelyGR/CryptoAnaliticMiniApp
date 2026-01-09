@@ -4,7 +4,7 @@ from typing import List
 
 from app.database import SessionLocal
 from app.models.admin import Admin
-from app.schemas.admin import AdminCreate, AdminResponse
+from app.schemas.admin import AdminCreate, AdminResponse, AdminUpdate
 
 router = APIRouter(prefix="/admins", tags=["admins"])
 
@@ -73,6 +73,18 @@ def create_admin(admin: AdminCreate, db: Session = Depends(get_db)):
     db.refresh(db_admin)
     return db_admin
 
+
+@router.put("/{admin_id}", response_model=AdminResponse)
+def update_admin(admin_id: int, admin: AdminUpdate, db: Session = Depends(get_db)):
+    """Обновить админа (изменить роль)"""
+    db_admin = db.query(Admin).filter(Admin.id == admin_id).first()
+    if not db_admin:
+        raise HTTPException(status_code=404, detail="Admin not found")
+    
+    db_admin.role = admin.role
+    db.commit()
+    db.refresh(db_admin)
+    return db_admin
 
 @router.delete("/{admin_id}")
 def delete_admin(admin_id: int, db: Session = Depends(get_db)):

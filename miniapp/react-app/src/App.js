@@ -1,9 +1,11 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import "./App.css";
 import Home from "./screens/Home";
 import Bookings from "./screens/Bookings";
 import Support from "./screens/Support";
 import Profile from "./screens/Profile";
+import AdminWebinars from "./screens/AdminWebinars";
+import AdminTickets from "./screens/AdminTickets";
 import { getUserByTelegramId, createOrUpdateUser, checkApiHealth } from "./services/api";
 
 function App() {
@@ -11,6 +13,8 @@ function App() {
   const [user, setUser] = useState(null);
   const [dbUser, setDbUser] = useState(null);
   const [apiConnected, setApiConnected] = useState(false);
+  const [indicatorPosition, setIndicatorPosition] = useState('0px');
+  const navRef = useRef(null);
 
   useEffect(() => {
     // Получаем данные пользователя из Telegram WebApp
@@ -20,6 +24,9 @@ function App() {
       tg.ready();
       telegramUser = tg.initDataUnsafe?.user || null;
       setUser(telegramUser);
+      console.log('Telegram WebApp user:', telegramUser);
+    } else {
+      console.warn('Telegram WebApp не доступен. Приложение запущено вне Telegram.');
     }
 
     // Проверяем подключение к API и загружаем/создаем пользователя в БД
@@ -27,35 +34,50 @@ function App() {
       const isApiAvailable = await checkApiHealth();
       setApiConnected(isApiAvailable);
 
-      if (isApiAvailable && telegramUser?.id) {
+      if (!isApiAvailable) {
+        console.error('API недоступен');
+        return;
+      }
+
+      if (telegramUser?.id) {
         try {
+          console.log('Загрузка пользователя с telegram_id:', telegramUser.id);
+          
           // Пытаемся получить пользователя из БД
           let userFromDb = await getUserByTelegramId(telegramUser.id);
           
           // Если пользователя нет, создаем его
           if (!userFromDb) {
+            console.log('Пользователь не найден в БД, создаем нового...');
             userFromDb = await createOrUpdateUser(telegramUser.id, {
-              username: telegramUser.username,
-              first_name: telegramUser.first_name,
-              last_name: telegramUser.last_name,
-              photo_url: telegramUser.photo_url,
+              username: telegramUser.username || null,
+              first_name: telegramUser.first_name || null,
+              last_name: telegramUser.last_name || null,
+              photo_url: telegramUser.photo_url || null,
             });
           } else {
             // Обновляем данные пользователя если они изменились
+            console.log('Пользователь найден в БД, обновляем данные...');
             userFromDb = await createOrUpdateUser(telegramUser.id, {
-              username: telegramUser.username,
-              first_name: telegramUser.first_name,
-              last_name: telegramUser.last_name,
-              photo_url: telegramUser.photo_url,
+              username: telegramUser.username || null,
+              first_name: telegramUser.first_name || null,
+              last_name: telegramUser.last_name || null,
+              photo_url: telegramUser.photo_url || null,
             });
           }
 
           if (userFromDb) {
+            console.log('Пользователь загружен из БД:', userFromDb);
             setDbUser(userFromDb);
+          } else {
+            console.error('Не удалось создать/обновить пользователя в БД');
           }
         } catch (error) {
           console.error('Failed to load user from database:', error);
+          console.error('Error details:', error.message, error.stack);
         }
+      } else {
+        console.warn('Telegram user ID не найден. Пользователь не может быть создан в БД.');
       }
     };
 
@@ -64,6 +86,38 @@ function App() {
 
   // Используем данные из БД если доступны, иначе данные из Telegram
   const displayUser = dbUser || user;
+
+  // Обновляем позицию индикатора при изменении активной вкладки
+  useEffect(() => {
+    const updateIndicatorPosition = () => {
+      if (!navRef.current) return;
+      
+      const navItems = navRef.current.querySelectorAll('.nav-item[data-tab]');
+      if (navItems.length === 0) return;
+      
+      let activeIndex = -1;
+      navItems.forEach((item, index) => {
+        if (item.getAttribute('data-tab') === activeTab) {
+          activeIndex = index;
+        }
+      });
+      
+      if (activeIndex === -1) return;
+      
+      const navWidth = navRef.current.offsetWidth;
+      const itemWidth = navWidth / navItems.length;
+      const indicatorWidth = 56;
+      const position = (activeIndex * itemWidth) + (itemWidth / 2) - (indicatorWidth / 2);
+      
+      setIndicatorPosition(`${position}px`);
+    };
+
+    // Обновляем позицию после рендера
+    setTimeout(updateIndicatorPosition, 0);
+    window.addEventListener('resize', updateIndicatorPosition);
+    
+    return () => window.removeEventListener('resize', updateIndicatorPosition);
+  }, [activeTab, displayUser?.is_admin]);
 
   return (
     <div className="app">
@@ -79,16 +133,19 @@ function App() {
         </div>
       )}
       <div className="content">
-        {activeTab === "home" && <Home user={displayUser} apiConnected={apiConnected} />}
+        {activeTab === "home" && <Home user={displayUser} apiConnected={apiConnected} dbUser={displayUser} />}
         {activeTab === "bookings" && <Bookings user={displayUser} apiConnected={apiConnected} />}
         {activeTab === "support" && <Support user={displayUser} apiConnected={apiConnected} />}
         {activeTab === "profile" && <Profile user={displayUser} apiConnected={apiConnected} />}
+        {activeTab === "admin-webinars" && displayUser?.is_admin && <AdminWebinars user={displayUser} apiConnected={apiConnected} />}
+        {activeTab === "admin-tickets" && displayUser?.is_admin && <AdminTickets user={displayUser} apiConnected={apiConnected} />}
       </div>
 
-      <div className="bottom-nav">
+      <div className="bottom-nav" ref={navRef}>
         <div
           className={`nav-item ${activeTab === "home" ? "active" : ""}`}
           onClick={() => setActiveTab("home")}
+          data-tab="home"
         >
           <span className="nav-icon">🏠</span>
           <span className="nav-label">Home</span>
@@ -97,28 +154,58 @@ function App() {
         <div
           className={`nav-item ${activeTab === "bookings" ? "active" : ""}`}
           onClick={() => setActiveTab("bookings")}
+          data-tab="bookings"
         >
           <span className="nav-icon">📋</span>
           <span className="nav-label">Vebinars</span>
         </div>
 
-        <div
-          className={`nav-item ${activeTab === "support" ? "active" : ""}`}
-          onClick={() => setActiveTab("support")}
-        >
-          <span className="nav-icon">💼</span>
-          <span className="nav-label">Support</span>
-        </div>
+        {displayUser?.is_admin && (
+          <div
+            className={`nav-item ${activeTab === "admin-webinars" ? "active" : ""}`}
+            onClick={() => setActiveTab("admin-webinars")}
+            data-tab="admin-webinars"
+          >
+            <span className="nav-icon">➕</span>
+            <span className="nav-label">Создать</span>
+          </div>
+        )}
+
+        {displayUser?.is_admin && (
+          <div
+            className={`nav-item ${activeTab === "admin-tickets" ? "active" : ""}`}
+            onClick={() => setActiveTab("admin-tickets")}
+            data-tab="admin-tickets"
+          >
+            <span className="nav-icon">🎫</span>
+            <span className="nav-label">Тикеты</span>
+          </div>
+        )}
+
+        {!displayUser?.is_admin && (
+          <div
+            className={`nav-item ${activeTab === "support" ? "active" : ""}`}
+            onClick={() => setActiveTab("support")}
+            data-tab="support"
+          >
+            <span className="nav-icon">💼</span>
+            <span className="nav-label">Support</span>
+          </div>
+        )}
 
         <div
           className={`nav-item ${activeTab === "profile" ? "active" : ""}`}
           onClick={() => setActiveTab("profile")}
+          data-tab="profile"
         >
           <span className="nav-icon">👤</span>
           <span className="nav-label">Profile</span>
         </div>
 
-        <div className={`nav-indicator ${activeTab}`} />
+        <div 
+          className="nav-indicator" 
+          style={{ left: indicatorPosition }}
+        />
       </div>
     </div>
   );

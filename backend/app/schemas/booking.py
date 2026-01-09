@@ -19,7 +19,25 @@ class BookingResponse(BookingBase):
     time: Optional[str] = None
     topic: Optional[str] = None
     message: Optional[str] = None
+    admin_response: Optional[str] = None
+    admin_id: Optional[int] = None
+    payment_status: Optional[str] = "unpaid"
+    amount: Optional[float] = None
+    payment_id: Optional[str] = None
+    payment_date: Optional[str] = None
+    attended: Optional[int] = 0
 
     class Config:
         from_attributes = True
+
+class BookingResponseAdmin(BookingResponse):
+    """Расширенный ответ для админов с информацией о пользователе"""
+    user_telegram_id: Optional[int] = None
+    user_first_name: Optional[str] = None
+    user_username: Optional[str] = None
+
+class BookingResponseUpdate(BaseModel):
+    """Схема для обновления ответа администратора"""
+    admin_response: str
+    admin_id: Optional[int] = None  # Опциональный, так как используется admin_telegram_id
 

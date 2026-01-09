@@ -100,6 +100,7 @@ def delete_webinar(
     """Удалить вебинар (только для администраторов)
     
     Требуется параметр: admin_telegram_id с Telegram ID администратора
+    При удалении вебинара также удаляются все связанные бронирования
     """
     # Проверяем права администратора
     admin = check_admin_access(admin_telegram_id, db)
@@ -109,7 +110,17 @@ def delete_webinar(
     if not db_webinar:
         raise HTTPException(status_code=404, detail="Webinar not found")
     
+    # Импортируем Booking для удаления связанных записей
+    from app.models.booking import Booking
+    
+    # Удаляем все бронирования, связанные с этим вебинаром
+    bookings_count = db.query(Booking).filter(Booking.webinar_id == webinar_id).delete()
+    
+    # Удаляем вебинар
     db.delete(db_webinar)
     db.commit()
-    return {"message": "Webinar deleted successfully"}
+    return {
+        "message": "Webinar deleted successfully",
+        "deleted_bookings": bookings_count
+    }
 

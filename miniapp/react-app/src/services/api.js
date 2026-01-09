@@ -46,26 +46,35 @@ export async function getUserByTelegramId(telegramId) {
  */
 export async function createOrUpdateUser(telegramId, userData) {
   try {
+    const requestBody = {
+      username: userData.username || null,
+      first_name: userData.first_name || null,
+      last_name: userData.last_name || null,
+      photo_url: userData.photo_url || null,
+    };
+    
+    console.log(`Creating/updating user with telegram_id: ${telegramId}`, requestBody);
+    
     const response = await fetch(`${API_BASE_URL}/users/telegram/${telegramId}`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({
-        username: userData.username,
-        first_name: userData.first_name,
-        last_name: userData.last_name,
-        photo_url: userData.photo_url,
-      }),
+      body: JSON.stringify(requestBody),
     });
 
     if (!response.ok) {
+      const errorText = await response.text();
+      console.error(`HTTP error! status: ${response.status}, body: ${errorText}`);
       throw new Error(`HTTP error! status: ${response.status}`);
     }
 
-    return await response.json();
+    const result = await response.json();
+    console.log('User created/updated successfully:', result);
+    return result;
   } catch (error) {
     console.error('Failed to create/update user:', error);
+    console.error('Error details:', error.message, error.stack);
     return null;
   }
 }
@@ -99,6 +108,8 @@ export async function getUserBookings(telegramId) {
  */
 export async function createBooking(bookingData) {
   try {
+    console.log('Creating booking:', bookingData);
+    
     const response = await fetch(`${API_BASE_URL}/bookings/`, {
       method: 'POST',
       headers: {
@@ -108,12 +119,475 @@ export async function createBooking(bookingData) {
     });
 
     if (!response.ok) {
+      const errorText = await response.text();
+      console.error(`HTTP error! status: ${response.status}, body: ${errorText}`);
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    const result = await response.json();
+    console.log('Booking created successfully:', result);
+    return result;
+  } catch (error) {
+    console.error('Failed to create booking:', error);
+    console.error('Error details:', error.message, error.stack);
+    throw error;
+  }
+}
+
+/**
+ * Получить все консультации (только для админов)
+ */
+export async function getConsultations(adminTelegramId) {
+  try {
+    return await apiRequest(`/bookings/consultations?admin_telegram_id=${adminTelegramId}`);
+  } catch (error) {
+    console.error('Failed to get consultations:', error);
+    return [];
+  }
+}
+
+/**
+ * Получить все обращения в поддержку (только для админов)
+ */
+export async function getSupportTickets(adminTelegramId) {
+  try {
+    return await apiRequest(`/bookings/support-tickets?admin_telegram_id=${adminTelegramId}`);
+  } catch (error) {
+    console.error('Failed to get support tickets:', error);
+    return [];
+  }
+}
+
+/**
+ * Удалить тикет (только для админов)
+ */
+export async function deleteTicket(ticketId, adminTelegramId) {
+  try {
+    const response = await fetch(`${API_BASE_URL}/bookings/${ticketId}?admin_telegram_id=${adminTelegramId}`, {
+      method: 'DELETE',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+
+    if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`);
     }
 
     return await response.json();
   } catch (error) {
-    console.error('Failed to create booking:', error);
+    console.error('Failed to delete ticket:', error);
+    throw error;
+  }
+}
+
+/**
+ * Ответить на консультацию (только для админов)
+ */
+export async function respondToConsultation(bookingId, adminTelegramId, response) {
+  try {
+    const response_data = await fetch(`${API_BASE_URL}/bookings/${bookingId}/respond?admin_telegram_id=${adminTelegramId}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        admin_response: response,
+        admin_id: 0, // Игнорируется на бэкенде, используется admin_telegram_id
+      }),
+    });
+
+    if (!response_data.ok) {
+      const errorText = await response_data.text();
+      console.error(`HTTP error! status: ${response_data.status}, body: ${errorText}`);
+      throw new Error(`HTTP error! status: ${response_data.status}`);
+    }
+
+    return await response_data.json();
+  } catch (error) {
+    console.error('Failed to respond to consultation:', error);
+    throw error;
+  }
+}
+
+/**
+ * Создать вебинар (только для админов)
+ */
+export async function createWebinar(adminTelegramId, webinarData) {
+  try {
+    const response = await fetch(`${API_BASE_URL}/webinars/?admin_telegram_id=${adminTelegramId}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(webinarData),
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error('Failed to create webinar:', error);
+    throw error;
+  }
+}
+
+/**
+ * Обновить вебинар (только для админов)
+ */
+export async function updateWebinar(webinarId, adminTelegramId, webinarData) {
+  try {
+    const response = await fetch(`${API_BASE_URL}/webinars/${webinarId}?admin_telegram_id=${adminTelegramId}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(webinarData),
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error('Failed to update webinar:', error);
+    throw error;
+  }
+}
+
+/**
+ * Удалить вебинар (только для админов)
+ */
+export async function deleteWebinar(webinarId, adminTelegramId) {
+  try {
+    const response = await fetch(`${API_BASE_URL}/webinars/${webinarId}?admin_telegram_id=${adminTelegramId}`, {
+      method: 'DELETE',
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error('Failed to delete webinar:', error);
+    throw error;
+  }
+}
+
+/**
+ * Получить список всех админов
+ */
+export async function getAdmins() {
+  try {
+    return await apiRequest('/admins/');
+  } catch (error) {
+    console.error('Failed to get admins:', error);
+    return [];
+  }
+}
+
+/**
+ * Создать админа (только для разработчика)
+ */
+export async function createAdmin(adminData) {
+  try {
+    const response = await fetch(`${API_BASE_URL}/admins/`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(adminData),
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error('Failed to create admin:', error);
+    throw error;
+  }
+}
+
+/**
+ * Обновить админа (изменить роль)
+ */
+export async function updateAdmin(adminId, adminData) {
+  try {
+    const response = await fetch(`${API_BASE_URL}/admins/${adminId}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        role: adminData.role
+      }),
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error('Failed to update admin:', error);
+    throw error;
+  }
+}
+
+/**
+ * Удалить админа
+ */
+export async function deleteAdmin(adminId) {
+  try {
+    const response = await fetch(`${API_BASE_URL}/admins/${adminId}`, {
+      method: 'DELETE',
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error('Failed to delete admin:', error);
+    throw error;
+  }
+}
+
+/**
+ * Получить все посты
+ */
+export async function getPosts() {
+  try {
+    return await apiRequest('/posts/');
+  } catch (error) {
+    console.error('Failed to get posts:', error);
+    return [];
+  }
+}
+
+/**
+ * Создать пост (только для админов и разработчиков)
+ */
+export async function createPost(adminTelegramId, postData) {
+  try {
+    const response = await fetch(`${API_BASE_URL}/posts/?admin_telegram_id=${adminTelegramId}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(postData),
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error('Failed to create post:', error);
+    throw error;
+  }
+}
+
+/**
+ * Обновить пост (только для админов и разработчиков)
+ */
+export async function updatePost(postId, adminTelegramId, postData) {
+  try {
+    const response = await fetch(`${API_BASE_URL}/posts/${postId}?admin_telegram_id=${adminTelegramId}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(postData),
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error('Failed to update post:', error);
+    throw error;
+  }
+}
+
+/**
+ * Удалить пост (только для админов и разработчиков)
+ */
+export async function deletePost(postId, adminTelegramId) {
+  try {
+    const response = await fetch(`${API_BASE_URL}/posts/${postId}?admin_telegram_id=${adminTelegramId}`, {
+      method: 'DELETE',
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error('Failed to delete post:', error);
+    throw error;
+  }
+}
+
+/**
+ * Создать платеж
+ */
+export async function createPayment(paymentData) {
+  try {
+    const response = await fetch(`${API_BASE_URL}/payments/`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(paymentData),
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error('Failed to create payment:', error);
+    throw error;
+  }
+}
+
+/**
+ * Получить платежи по booking_id
+ */
+export async function getPaymentsByBooking(bookingId) {
+  try {
+    return await apiRequest(`/payments/booking/${bookingId}`);
+  } catch (error) {
+    console.error('Failed to get payments:', error);
+    return [];
+  }
+}
+
+/**
+ * Получить платежи пользователя
+ */
+export async function getUserPayments(userId) {
+  try {
+    return await apiRequest(`/payments/user/${userId}`);
+  } catch (error) {
+    console.error('Failed to get user payments:', error);
+    return [];
+  }
+}
+
+/**
+ * Обновить статус платежа (только для админов)
+ */
+export async function updatePayment(paymentId, adminTelegramId, paymentData) {
+  try {
+    const response = await fetch(`${API_BASE_URL}/payments/${paymentId}?admin_telegram_id=${adminTelegramId}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(paymentData),
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error('Failed to update payment:', error);
+    throw error;
+  }
+}
+
+/**
+ * Получить материалы вебинара
+ */
+export async function getWebinarMaterials(webinarId) {
+  try {
+    return await apiRequest(`/webinar-materials/webinar/${webinarId}`);
+  } catch (error) {
+    console.error('Failed to get webinar materials:', error);
+    return [];
+  }
+}
+
+/**
+ * Создать материал вебинара (только для админов)
+ */
+export async function createWebinarMaterial(adminTelegramId, materialData) {
+  try {
+    const response = await fetch(`${API_BASE_URL}/webinar-materials/?admin_telegram_id=${adminTelegramId}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(materialData),
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error('Failed to create webinar material:', error);
+    throw error;
+  }
+}
+
+/**
+ * Обновить материал вебинара (только для админов)
+ */
+export async function updateWebinarMaterial(materialId, adminTelegramId, materialData) {
+  try {
+    const response = await fetch(`${API_BASE_URL}/webinar-materials/${materialId}?admin_telegram_id=${adminTelegramId}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(materialData),
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error('Failed to update webinar material:', error);
+    throw error;
+  }
+}
+
+/**
+ * Удалить материал вебинара (только для админов)
+ */
+export async function deleteWebinarMaterial(materialId, adminTelegramId) {
+  try {
+    const response = await fetch(`${API_BASE_URL}/webinar-materials/${materialId}?admin_telegram_id=${adminTelegramId}`, {
+      method: 'DELETE',
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error('Failed to delete webinar material:', error);
     throw error;
   }
 }

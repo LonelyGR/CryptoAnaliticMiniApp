@@ -8,6 +8,10 @@ class AdminBase(BaseModel):
 class AdminCreate(AdminBase):
     pass
 
+class AdminUpdate(BaseModel):
+    """Схема для обновления админа (только роль)"""
+    role: str
+
 class AdminResponse(AdminBase):
     id: int
 

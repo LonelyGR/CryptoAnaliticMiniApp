@@ -1,16 +1,38 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import CopyTradingHeader from '../components/CopyTradingHeader';
 import PromoBanner from '../components/PromoBanner';
 import CryptoCard from '../components/CryptoCard';
 import ScreenWrapper from '../components/ScreenWrapper';
+import { getPosts, createPost, updatePost, deletePost } from '../services/api';
 
-// Popular cryptocurrencies to fetch
-const CRYPTO_IDS = ['bitcoin', 'ethereum', 'binancecoin', 'solana', 'cardano', 'ripple'];
+// Popular cryptocurrencies to fetch from Binance
+const BINANCE_SYMBOLS = [
+    { symbol: 'BTCUSDT', name: 'Bitcoin', id: 'bitcoin', image: 'https://assets.coingecko.com/coins/images/1/large/bitcoin.png' },
+    { symbol: 'ETHUSDT', name: 'Ethereum', id: 'ethereum', image: 'https://assets.coingecko.com/coins/images/279/large/ethereum.png' },
+    { symbol: 'BNBUSDT', name: 'BNB', id: 'binancecoin', image: 'https://assets.coingecko.com/coins/images/825/large/bnb-icon2_2x.png' },
+    { symbol: 'SOLUSDT', name: 'Solana', id: 'solana', image: 'https://assets.coingecko.com/coins/images/4128/large/solana.png' },
+    { symbol: 'ADAUSDT', name: 'Cardano', id: 'cardano', image: 'https://assets.coingecko.com/coins/images/975/large/cardano.png' },
+    { symbol: 'XRPUSDT', name: 'XRP', id: 'ripple', image: 'https://assets.coingecko.com/coins/images/44/large/xrp-symbol-white-128.png' }
+];
 
-export default function Home({ user, apiConnected }) {
+export default function Home({ user, apiConnected, dbUser }) {
     const [cryptos, setCryptos] = useState([]);
+    const [currentCryptoIndex, setCurrentCryptoIndex] = useState(0);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
+    const [posts, setPosts] = useState([]);
+    const [showPostForm, setShowPostForm] = useState(false);
+    const [editingPost, setEditingPost] = useState(null);
+    const [postFormData, setPostFormData] = useState({ title: '', content: '' });
+    const touchStartX = useRef(null);
+    const touchEndX = useRef(null);
+
+    // Проверка прав администратора
+    const isAdmin = dbUser?.is_admin && (dbUser?.role?.toLowerCase() === 'админ' || 
+                                          dbUser?.role?.toLowerCase() === 'администратор' || 
+                                          dbUser?.role?.toLowerCase() === 'разработчик' || 
+                                          dbUser?.role?.toLowerCase() === 'developer' || 
+                                          dbUser?.role?.toLowerCase() === 'admin');
 
     const getMockCryptoData = useCallback(() => {
         // Generate mock sparkline data for fallback
@@ -37,21 +59,51 @@ export default function Home({ user, apiConnected }) {
 
     const fetchCryptoData = useCallback(async () => {
         try {
-            setLoading(true);
             setError(null);
             
-            const ids = CRYPTO_IDS.join(',');
-            // Request with sparkline=true to get price history data
-            const response = await fetch(
-                `https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&ids=${ids}&order=market_cap_desc&per_page=10&page=1&sparkline=true&price_change_percentage=24h`
-            );
+            // Fetch 24hr ticker data for all symbols
+            const tickerPromises = BINANCE_SYMBOLS.map(async (crypto) => {
+                try {
+                    const tickerResponse = await fetch(
+                        `https://api.binance.com/api/v3/ticker/24hr?symbol=${crypto.symbol}`
+                    );
+                    if (!tickerResponse.ok) throw new Error('Ticker failed');
+                    const tickerData = await tickerResponse.json();
+                    
+                    // Fetch klines for sparkline (last 24 hours, 1 hour intervals = 24 points)
+                    const klinesResponse = await fetch(
+                        `https://api.binance.com/api/v3/klines?symbol=${crypto.symbol}&interval=1h&limit=24`
+                    );
+                    let sparklineData = [];
+                    if (klinesResponse.ok) {
+                        const klinesData = await klinesResponse.json();
+                        sparklineData = klinesData.map(k => parseFloat(k[4])); // Close price
+                    }
+                    
+                    return {
+                        id: crypto.id,
+                        name: crypto.name,
+                        symbol: crypto.symbol.replace('USDT', '').toLowerCase(),
+                        current_price: parseFloat(tickerData.lastPrice),
+                        price_change_percentage_24h: parseFloat(tickerData.priceChangePercent),
+                        market_cap: parseFloat(tickerData.quoteVolume) * parseFloat(tickerData.lastPrice), // Approximate
+                        image: crypto.image,
+                        sparkline_in_7d: { price: sparklineData }
+                    };
+                } catch (err) {
+                    console.error(`Error fetching ${crypto.symbol}:`, err);
+                    return null;
+                }
+            });
             
-            if (!response.ok) {
-                throw new Error('Failed to fetch crypto data');
+            const results = await Promise.all(tickerPromises);
+            const validResults = results.filter(r => r !== null);
+            
+            if (validResults.length > 0) {
+                setCryptos(validResults);
+            } else {
+                throw new Error('No data received');
             }
-            
-            const data = await response.json();
-            setCryptos(data);
         } catch (err) {
             console.error('Error fetching crypto data:', err);
             setError('Не удалось загрузить данные о криптовалютах');
@@ -62,16 +114,149 @@ export default function Home({ user, apiConnected }) {
         }
     }, [getMockCryptoData]);
 
+    // Загрузка постов
+    const loadPosts = useCallback(async () => {
+        if (!apiConnected) return;
+        try {
+            const data = await getPosts();
+            setPosts(data || []);
+        } catch (error) {
+            console.error('Failed to load posts:', error);
+            setPosts([]);
+        }
+    }, [apiConnected]);
+
     useEffect(() => {
         fetchCryptoData();
-        // Refresh data every 15 seconds for live updates
-        const interval = setInterval(fetchCryptoData, 15000);
-        return () => clearInterval(interval);
-    }, [fetchCryptoData]);
+        loadPosts();
+        
+        // Обновление данных криптовалют каждые 5 секунд (Binance API быстрее чем CoinGecko)
+        const cryptoInterval = setInterval(() => {
+            fetchCryptoData();
+        }, 5000);
+        
+        return () => clearInterval(cryptoInterval);
+    }, [fetchCryptoData, loadPosts]);
+
+    // Swipe handlers для слайдера криптовалют
+    const minSwipeDistance = 50;
+
+    const onTouchStart = (e) => {
+        touchEndX.current = null;
+        touchStartX.current = e.targetTouches[0].clientX;
+    };
+
+    const onTouchMove = (e) => {
+        touchEndX.current = e.targetTouches[0].clientX;
+    };
+
+    const onTouchEnd = () => {
+        if (!touchStartX.current || !touchEndX.current || cryptos.length === 0) return;
+        
+        const distance = touchStartX.current - touchEndX.current;
+        const isLeftSwipe = distance > minSwipeDistance;
+        const isRightSwipe = distance < -minSwipeDistance;
+
+        if (isLeftSwipe && currentCryptoIndex < cryptos.length - 1) {
+            setCurrentCryptoIndex(currentCryptoIndex + 1);
+        }
+        if (isRightSwipe && currentCryptoIndex > 0) {
+            setCurrentCryptoIndex(currentCryptoIndex - 1);
+        }
+        
+        touchStartX.current = null;
+        touchEndX.current = null;
+    };
 
     const handleDepositClick = () => {
-        // Handle deposit action - можно добавить навигацию или другую логику
-        // Пока оставляем пустым, так как кнопка в PromoBanner обрабатывает свою логику
+        // Handle deposit action
+    };
+
+    // Обработчики для постов
+    const handleCreatePost = async () => {
+        if (!apiConnected || !isAdmin) return;
+        
+        const telegramId = user?.telegram_id || user?.id;
+        if (!telegramId) {
+            alert('Пользователь не найден');
+            return;
+        }
+
+        try {
+            await createPost(telegramId, postFormData);
+            alert('Пост успешно создан!');
+            setPostFormData({ title: '', content: '' });
+            setShowPostForm(false);
+            loadPosts();
+        } catch (error) {
+            console.error('Failed to create post:', error);
+            alert('Не удалось создать пост');
+        }
+    };
+
+    const handleUpdatePost = async () => {
+        if (!apiConnected || !isAdmin || !editingPost) return;
+        
+        const telegramId = user?.telegram_id || user?.id;
+        if (!telegramId) {
+            alert('Пользователь не найден');
+            return;
+        }
+
+        try {
+            await updatePost(editingPost.id, telegramId, postFormData);
+            alert('Пост успешно обновлен!');
+            setPostFormData({ title: '', content: '' });
+            setEditingPost(null);
+            loadPosts();
+        } catch (error) {
+            console.error('Failed to update post:', error);
+            alert('Не удалось обновить пост');
+        }
+    };
+
+    const handleDeletePost = async (postId) => {
+        if (!apiConnected || !isAdmin) return;
+        if (!window.confirm('Вы уверены, что хотите удалить этот пост?')) return;
+        
+        const telegramId = user?.telegram_id || user?.id;
+        if (!telegramId) {
+            alert('Пользователь не найден');
+            return;
+        }
+
+        try {
+            await deletePost(postId, telegramId);
+            alert('Пост успешно удален!');
+            loadPosts();
+        } catch (error) {
+            console.error('Failed to delete post:', error);
+            alert('Не удалось удалить пост');
+        }
+    };
+
+    const handleEditPost = (post) => {
+        setEditingPost(post);
+        setPostFormData({ title: post.title, content: post.content });
+        setShowPostForm(true);
+    };
+
+    const handleCancelPost = () => {
+        setShowPostForm(false);
+        setEditingPost(null);
+        setPostFormData({ title: '', content: '' });
+    };
+
+    const formatDate = (dateString) => {
+        if (!dateString) return '';
+        const date = new Date(dateString);
+        return date.toLocaleDateString('ru-RU', { 
+            year: 'numeric', 
+            month: 'long', 
+            day: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
+        });
     };
 
     return (
@@ -96,21 +281,136 @@ export default function Home({ user, apiConnected }) {
                         {error && (
                             <div className="error-banner">
                                 <span>{error}</span>
-                                <button onClick={fetchCryptoData}>Повторить</button>
                             </div>
                         )}
 
-                        <div className="crypto-list">
-                            {cryptos.map((crypto) => (
-                                <CryptoCard key={crypto.id} crypto={crypto} />
-                            ))}
-                        </div>
-
-                        <button className="view-more-btn" onClick={fetchCryptoData}>
-                            Обновить данные
-                        </button>
+                        {cryptos.length > 0 && (
+                            <div 
+                                className="crypto-slider-container"
+                                onTouchStart={onTouchStart}
+                                onTouchMove={onTouchMove}
+                                onTouchEnd={onTouchEnd}
+                            >
+                                <div className="crypto-slider-wrapper">
+                                    <CryptoCard crypto={cryptos[currentCryptoIndex]} />
+                                </div>
+                                
+                                {cryptos.length > 1 && (
+                                    <div className="crypto-indicators">
+                                        {cryptos.map((_, index) => (
+                                            <button
+                                                key={index}
+                                                className={`crypto-dot ${index === currentCryptoIndex ? 'active' : ''}`}
+                                                onClick={() => setCurrentCryptoIndex(index)}
+                                            />
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+                        )}
                     </section>
                 )}
+
+                {/* Кнопка создания поста (только для админов) */}
+                {isAdmin && apiConnected && (
+                    <div className="posts-section">
+                        <button 
+                            className="btn-create-post"
+                            onClick={() => {
+                                setShowPostForm(true);
+                                setEditingPost(null);
+                                setPostFormData({ title: '', content: '' });
+                            }}
+                        >
+                            + Создать пост
+                        </button>
+                    </div>
+                )}
+
+                {/* Форма создания/редактирования поста */}
+                {showPostForm && isAdmin && (
+                    <div className="post-form-container">
+                        <h3>{editingPost ? 'Редактировать пост' : 'Создать пост'}</h3>
+                        <div className="form-group">
+                            <label>Заголовок</label>
+                            <input
+                                type="text"
+                                className="form-input"
+                                value={postFormData.title}
+                                onChange={(e) => setPostFormData({ ...postFormData, title: e.target.value })}
+                                placeholder="Введите заголовок"
+                            />
+                        </div>
+                        <div className="form-group">
+                            <label>Содержание</label>
+                            <textarea
+                                className="form-textarea"
+                                value={postFormData.content}
+                                onChange={(e) => setPostFormData({ ...postFormData, content: e.target.value })}
+                                placeholder="Введите содержание поста"
+                                rows={5}
+                            />
+                        </div>
+                        <div className="post-form-actions">
+                            <button 
+                                className="btn-primary"
+                                onClick={editingPost ? handleUpdatePost : handleCreatePost}
+                            >
+                                {editingPost ? 'Сохранить' : 'Создать'}
+                            </button>
+                            <button 
+                                className="btn-secondary-admin"
+                                onClick={handleCancelPost}
+                            >
+                                Отмена
+                            </button>
+                        </div>
+                    </div>
+                )}
+
+                {/* Список постов */}
+                <section className="posts-list-section">
+                    <h2 className="section-title">Новости</h2>
+                    {!apiConnected ? (
+                        <div className="error-banner">
+                            Сервер недоступен. Новости не могут быть загружены.
+                        </div>
+                    ) : posts.length === 0 ? (
+                        <div className="empty-state">
+                            <p>Нет новостей</p>
+                        </div>
+                    ) : (
+                        <div className="posts-list">
+                            {posts.map(post => (
+                                <div key={post.id} className="post-card">
+                                    <div className="post-header">
+                                        <h3 className="post-title">{post.title}</h3>
+                                        {isAdmin && (
+                                            <div className="post-actions">
+                                                <button 
+                                                    className="btn-edit-post"
+                                                    onClick={() => handleEditPost(post)}
+                                                >
+                                                    ✏️
+                                                </button>
+                                                <button 
+                                                    className="btn-delete-post"
+                                                    onClick={() => handleDeletePost(post.id)}
+                                                >
+                                                    🗑️
+                                                </button>
+                                            </div>
+                                        )}
+                                    </div>
+                                    <p className="post-content">{post.content}</p>
+                                    <div className="post-date">
+                                        {formatDate(post.created_at)}
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                </section>
             </div>
         </ScreenWrapper>
     );

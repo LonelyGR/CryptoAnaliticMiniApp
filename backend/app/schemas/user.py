@@ -11,6 +11,13 @@ class UserBase(BaseModel):
 class UserCreate(UserBase):
     pass
 
+class UserUpdate(BaseModel):
+    """Схема для обновления пользователя (без telegram_id, так как он в URL)"""
+    username: Optional[str] = None
+    first_name: Optional[str] = None
+    last_name: Optional[str] = None
+    photo_url: Optional[str] = None
+
 class UserResponse(UserBase):
     id: int
     is_admin: Optional[bool] = False  # Статус администратора

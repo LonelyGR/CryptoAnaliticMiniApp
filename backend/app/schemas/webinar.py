@@ -9,6 +9,11 @@ class WebinarBase(BaseModel):
     speaker: Optional[str] = None
     status: str = "upcoming"
     description: Optional[str] = None
+    price_usd: Optional[float] = 0.0
+    price_eur: Optional[float] = 0.0
+    meeting_link: Optional[str] = None
+    meeting_platform: Optional[str] = None
+    recording_link: Optional[str] = None
 
 class WebinarCreate(WebinarBase):
     pass

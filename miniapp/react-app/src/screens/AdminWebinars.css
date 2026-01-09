@@ -1,0 +1,310 @@
+.admin-webinars-container {
+    margin-top: 24px;
+}
+
+.admin-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 24px;
+    flex-wrap: wrap;
+    gap: 15px;
+}
+
+.btn-create {
+    background: linear-gradient(135deg, #6366f1, #8b5cf6);
+    color: white;
+    border: none;
+    border-radius: 12px;
+    padding: 14px 24px;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    box-shadow: 0 4px 16px rgba(99, 102, 241, 0.3);
+}
+
+.btn-create:active {
+    transform: scale(0.98);
+}
+
+.webinar-form {
+    background: linear-gradient(
+        135deg,
+        rgba(255, 255, 255, 0.1),
+        rgba(255, 255, 255, 0.05)
+    );
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border-radius: 20px;
+    padding: 24px;
+    margin-bottom: 24px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+}
+
+.webinar-form h2 {
+    margin-top: 0;
+    margin-bottom: 24px;
+    color: white;
+    font-size: 22px;
+    font-weight: 600;
+    text-align: center;
+}
+
+.form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+}
+
+@media (max-width: 768px) {
+    .form-row {
+        grid-template-columns: 1fr;
+    }
+}
+
+.webinar-form .form-group {
+    margin-bottom: 20px;
+}
+
+.webinar-form .form-group:last-of-type {
+    margin-bottom: 0;
+}
+
+.webinar-form .form-group label {
+    display: block;
+    margin-bottom: 10px;
+    font-weight: 500;
+    opacity: 0.9;
+    font-size: 14px;
+    color: rgba(255, 255, 255, 0.9);
+}
+
+.webinar-form .form-group input,
+.webinar-form .form-group select,
+.webinar-form .form-group textarea {
+    width: 100%;
+    padding: 14px 16px;
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 12px;
+    color: white;
+    font-size: 15px;
+    font-family: 'Montserrat', sans-serif;
+    transition: all 0.2s ease;
+    box-sizing: border-box;
+    min-height: 48px;
+}
+
+.webinar-form .form-group textarea {
+    min-height: 120px;
+    resize: vertical;
+    line-height: 1.5;
+}
+
+.webinar-form .form-group input::placeholder,
+.webinar-form .form-group textarea::placeholder {
+    color: rgba(255, 255, 255, 0.4);
+}
+
+.webinar-form .form-group input:focus,
+.webinar-form .form-group select:focus,
+.webinar-form .form-group textarea:focus {
+    outline: none;
+    border-color: rgba(99, 102, 241, 0.5);
+    background: rgba(255, 255, 255, 0.12);
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+}
+
+.webinar-form .form-group select option {
+    background: #1c1d2a;
+    color: white;
+}
+
+.form-actions {
+    display: flex;
+    gap: 12px;
+    margin-top: 28px;
+    padding-top: 20px;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.webinar-form .btn-primary {
+    background: linear-gradient(135deg, #6366f1, #8b5cf6);
+    color: white;
+    border: none;
+    border-radius: 12px;
+    padding: 14px 24px;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    box-shadow: 0 4px 16px rgba(99, 102, 241, 0.3);
+    flex: 1;
+}
+
+.webinar-form .btn-primary:active {
+    transform: scale(0.98);
+}
+
+.webinar-form .btn-secondary {
+    background: rgba(255, 255, 255, 0.1);
+    color: white;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 12px;
+    padding: 14px 24px;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    flex: 1;
+}
+
+.webinar-form .btn-secondary:active {
+    transform: scale(0.98);
+    background: rgba(255, 255, 255, 0.15);
+}
+
+.webinars-list {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.webinar-card-admin {
+    background: linear-gradient(
+        135deg,
+        rgba(255, 255, 255, 0.12),
+        rgba(255, 255, 255, 0.06)
+    );
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border-radius: 20px;
+    padding: 20px;
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.webinar-card-admin:active {
+    transform: scale(0.98);
+}
+
+.webinar-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+    flex-wrap: wrap;
+    gap: 12px;
+}
+
+.webinar-card-header h3 {
+    margin: 0;
+    color: white;
+    font-size: 18px;
+    font-weight: 600;
+    flex: 1;
+}
+
+.status-badge {
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+}
+
+.status-upcoming {
+    background: rgba(25, 118, 210, 0.2);
+    color: #64b5f6;
+    border: 1px solid rgba(25, 118, 210, 0.3);
+}
+
+.status-completed {
+    background: rgba(56, 142, 60, 0.2);
+    color: #81c784;
+    border: 1px solid rgba(56, 142, 60, 0.3);
+}
+
+.status-cancelled {
+    background: rgba(211, 47, 47, 0.2);
+    color: #e57373;
+    border: 1px solid rgba(211, 47, 47, 0.3);
+}
+
+.webinar-card-info {
+    margin-bottom: 16px;
+}
+
+.webinar-card-info p {
+    margin: 8px 0;
+    color: rgba(255, 255, 255, 0.8);
+    line-height: 1.6;
+    font-size: 14px;
+}
+
+.webinar-card-info strong {
+    color: white;
+    opacity: 0.9;
+}
+
+.webinar-card-actions {
+    display: flex;
+    gap: 10px;
+    margin-top: 16px;
+    padding-top: 16px;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.btn-edit {
+    background: linear-gradient(135deg, #6366f1, #8b5cf6);
+    color: white;
+    border: none;
+    border-radius: 10px;
+    padding: 10px 20px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    box-shadow: 0 2px 8px rgba(99, 102, 241, 0.3);
+    flex: 1;
+}
+
+.btn-edit:active {
+    transform: scale(0.95);
+}
+
+.btn-delete {
+    background: rgba(244, 67, 54, 0.2);
+    color: #f44336;
+    border: 1px solid rgba(244, 67, 54, 0.3);
+    border-radius: 10px;
+    padding: 10px 20px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    flex: 1;
+}
+
+.btn-delete:active {
+    transform: scale(0.95);
+    background: rgba(244, 67, 54, 0.3);
+}
+
+@media (max-width: 768px) {
+    .form-row {
+        grid-template-columns: 1fr;
+    }
+    
+    .admin-header {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    
+    .btn-create {
+        width: 100%;
+    }
+}
+

@@ -166,21 +166,9 @@ body {
   will-change: left;
 }
 
-/* Позиции индикатора - используем calc для центрирования */
-.nav-indicator.home {
-  left: calc(12.5% - 28px);
-}
-
-.nav-indicator.bookings {
-  left: calc(37.5% - 28px);
-}
-
-.nav-indicator.support {
-  left: calc(62.5% - 28px);
-}
-
-.nav-indicator.profile {
-  left: calc(87.5% - 28px);
+/* Позиции индикатора - теперь динамические через inline style */
+.nav-indicator {
+  /* Позиция устанавливается через inline style в App.js */
 }
 
 /* === HOME SCREEN === */
@@ -393,6 +381,135 @@ body {
 
 .btn-book:active {
   transform: scale(0.95);
+}
+
+.webinar-price {
+  font-size: 18px;
+  font-weight: 600;
+  color: #00FF9D;
+  margin: 12px 0;
+  padding: 8px 12px;
+  background: rgba(0, 255, 157, 0.1);
+  border-radius: 8px;
+  display: inline-block;
+}
+
+.webinar-platform {
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.7);
+  margin: 8px 0;
+}
+
+.webinar-meeting-link {
+  margin: 16px 0;
+}
+
+.btn-meeting-link {
+  display: inline-block;
+  background: linear-gradient(135deg, #22c55e, #16a34a);
+  color: white;
+  border: none;
+  border-radius: 12px;
+  padding: 12px 24px;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  text-decoration: none;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  box-shadow: 0 4px 12px rgba(34, 197, 94, 0.3);
+}
+
+.btn-meeting-link:active {
+  transform: scale(0.95);
+}
+
+.webinar-payment-pending {
+  font-size: 14px;
+  color: #fbbf24;
+  margin: 12px 0;
+  padding: 8px 12px;
+  background: rgba(251, 191, 36, 0.1);
+  border-radius: 8px;
+  display: inline-block;
+}
+
+.webinar-materials {
+  margin: 16px 0;
+  padding: 12px;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 12px;
+}
+
+.webinar-materials h4 {
+  font-size: 16px;
+  font-weight: 600;
+  margin: 0 0 12px 0;
+  color: #FFFFFF;
+}
+
+.material-link {
+  display: block;
+  color: rgba(255, 255, 255, 0.8);
+  text-decoration: none;
+  padding: 8px 12px;
+  margin: 4px 0;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 8px;
+  transition: background 0.2s ease;
+}
+
+.material-link:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.webinar-recording {
+  margin: 16px 0;
+}
+
+.btn-recording-link {
+  display: inline-block;
+  background: linear-gradient(135deg, #8b5cf6, #6366f1);
+  color: white;
+  border: none;
+  border-radius: 12px;
+  padding: 12px 24px;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  text-decoration: none;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  box-shadow: 0 4px 12px rgba(139, 92, 246, 0.3);
+}
+
+.btn-recording-link:active {
+  transform: scale(0.95);
+}
+
+.btn-pay {
+  background: linear-gradient(135deg, #f59e0b, #d97706);
+  color: white;
+  border: none;
+  border-radius: 12px;
+  padding: 10px 24px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  box-shadow: 0 4px 12px rgba(245, 158, 11, 0.3);
+}
+
+.btn-pay:active {
+  transform: scale(0.95);
+}
+
+.booking-status-paid,
+.booking-status-confirmed {
+  font-size: 14px;
+  font-weight: 600;
+  color: #22c55e;
+  padding: 10px 20px;
+  background: rgba(34, 197, 94, 0.15);
+  border-radius: 12px;
 }
 
 /* === SUPPORT SCREEN === */
@@ -637,6 +754,145 @@ body {
   margin: 0;
   font-size: 15px;
   opacity: 0.8;
+}
+
+/* === ADMIN MANAGEMENT STYLES === */
+
+.admin-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.btn-secondary-admin {
+  background: rgba(255, 255, 255, 0.1);
+  color: white;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 12px;
+  padding: 14px 24px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  flex: 1;
+}
+
+.btn-secondary-admin:active {
+  transform: scale(0.98);
+  background: rgba(255, 255, 255, 0.15);
+}
+
+.admins-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 20px;
+}
+
+.admin-item {
+  background: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.08),
+    rgba(255, 255, 255, 0.04)
+  );
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border-radius: 16px;
+  padding: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.admin-item:active {
+  transform: scale(0.98);
+}
+
+.admin-item-info {
+  flex: 1;
+  min-width: 200px;
+}
+
+.admin-telegram-id {
+  margin: 0 0 8px 0;
+  font-size: 15px;
+  font-weight: 600;
+  opacity: 0.9;
+}
+
+.admin-role {
+  margin: 0;
+  font-size: 14px;
+  opacity: 0.7;
+}
+
+.admin-role-select {
+  width: 100%;
+  max-width: 200px;
+  margin-top: 8px;
+}
+
+.admin-item-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.btn-edit-admin,
+.btn-save-admin {
+  background: linear-gradient(135deg, #6366f1, #8b5cf6);
+  color: white;
+  border: none;
+  border-radius: 10px;
+  padding: 10px 16px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  box-shadow: 0 2px 8px rgba(99, 102, 241, 0.3);
+}
+
+.btn-edit-admin:active,
+.btn-save-admin:active {
+  transform: scale(0.95);
+}
+
+.btn-delete-admin {
+  background: rgba(244, 67, 54, 0.2);
+  color: #f44336;
+  border: 1px solid rgba(244, 67, 54, 0.3);
+  border-radius: 10px;
+  padding: 10px 16px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-delete-admin:active {
+  transform: scale(0.95);
+  background: rgba(244, 67, 54, 0.3);
+}
+
+.btn-cancel-admin {
+  background: rgba(255, 255, 255, 0.1);
+  color: white;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 10px;
+  padding: 10px 16px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-cancel-admin:active {
+  transform: scale(0.95);
+  background: rgba(255, 255, 255, 0.15);
 }
 
 .empty-hint {
@@ -1575,10 +1831,11 @@ body {
 }
 
 .crypto-chart {
-  height: 60px;
+  height: 80px;
   width: 100%;
-  margin-top: 8px;
+  margin-top: 12px;
   position: relative;
+  overflow: hidden;
 }
 
 .sparkline-svg {
@@ -1969,3 +2226,192 @@ body {
   border: 1px solid rgba(0, 255, 157, 0.3);
 }
 
+/* === CRYPTO SLIDER === */
+.crypto-slider-container {
+  position: relative;
+  margin: 16px 0;
+  touch-action: pan-y;
+}
+
+.crypto-slider-wrapper {
+  position: relative;
+  width: 100%;
+}
+
+.crypto-indicators {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 16px;
+  padding: 8px 0;
+}
+
+.crypto-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.3);
+  border: none;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  padding: 0;
+}
+
+.crypto-dot.active {
+  background: #00FF9D;
+  width: 24px;
+  border-radius: 4px;
+}
+
+.crypto-dot:active {
+  transform: scale(1.2);
+}
+
+/* === POSTS SECTION === */
+.posts-section {
+  margin: 24px 16px;
+}
+
+.btn-create-post {
+  background: linear-gradient(135deg, #6366f1, #8b5cf6);
+  color: white;
+  border: none;
+  border-radius: 12px;
+  padding: 14px 24px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  box-shadow: 0 4px 16px rgba(99, 102, 241, 0.3);
+  width: 100%;
+}
+
+.btn-create-post:active {
+  transform: scale(0.98);
+}
+
+.post-form-container {
+  background: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.1),
+    rgba(255, 255, 255, 0.05)
+  );
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border-radius: 20px;
+  padding: 20px;
+  margin: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.post-form-container h3 {
+  font-size: 20px;
+  font-weight: 600;
+  margin-bottom: 20px;
+  color: #FFFFFF;
+}
+
+.post-form-actions {
+  display: flex;
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.post-form-actions .btn-primary,
+.post-form-actions .btn-secondary-admin {
+  flex: 1;
+}
+
+.posts-list-section {
+  margin: 24px 16px;
+}
+
+.posts-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-top: 16px;
+}
+
+.post-card {
+  background: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.12),
+    rgba(255, 255, 255, 0.06)
+  );
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-radius: 20px;
+  padding: 20px;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.post-card:active {
+  transform: scale(0.98);
+}
+
+.post-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 12px;
+  gap: 12px;
+}
+
+.post-title {
+  font-size: 20px;
+  font-weight: 600;
+  color: #FFFFFF;
+  margin: 0;
+  flex: 1;
+  line-height: 1.3;
+}
+
+.post-actions {
+  display: flex;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.btn-edit-post,
+.btn-delete-post {
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 8px;
+  padding: 8px 12px;
+  font-size: 16px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  min-width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.btn-edit-post:active,
+.btn-delete-post:active {
+  transform: scale(0.95);
+  background: rgba(255, 255, 255, 0.15);
+}
+
+.btn-delete-post {
+  background: rgba(239, 68, 68, 0.15);
+  border-color: rgba(239, 68, 68, 0.3);
+}
+
+.post-content {
+  font-size: 15px;
+  line-height: 1.6;
+  color: rgba(255, 255, 255, 0.9);
+  margin: 0 0 12px 0;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+}
+
+.post-date {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.5);
+  margin-top: 8px;
+}

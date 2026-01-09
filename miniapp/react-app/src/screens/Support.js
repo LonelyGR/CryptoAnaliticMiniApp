@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import ScreenWrapper from '../components/ScreenWrapper';
-import { createBooking, getUserByTelegramId } from '../services/api';
+import { createBooking, getUserByTelegramId, createOrUpdateUser } from '../services/api';
 
 export default function Support({ user, apiConnected }) {
     const [activeTab, setActiveTab] = useState('support');
@@ -17,17 +17,69 @@ export default function Support({ user, apiConnected }) {
     const handleSupportSubmit = async (e) => {
         e.preventDefault();
         if (!apiConnected) {
-            alert('Сервер недоступен. Попробуйте позже.');
+            alert('Сервер недоступен');
             return;
         }
-        // Здесь можно добавить отправку обращения в поддержку
-        alert('Функция отправки обращения в поддержку будет реализована позже');
+
+        if (!formData.subject || !formData.message) {
+            alert('Пожалуйста, заполните тему и сообщение');
+            return;
+        }
+
+        setSubmitting(true);
+        try {
+            const telegramId = user?.telegram_id || user?.id;
+            if (!telegramId) {
+                alert('Пользователь не найден');
+                return;
+            }
+            
+            let dbUser = await getUserByTelegramId(telegramId);
+            if (!dbUser) {
+                // Пытаемся создать пользователя
+                dbUser = await createOrUpdateUser(telegramId, {
+                    username: user?.username || null,
+                    first_name: user?.first_name || null,
+                    last_name: user?.last_name || null,
+                    photo_url: user?.photo_url || null,
+                });
+            }
+            
+            if (!dbUser) {
+                alert('Не удалось создать пользователя в базе данных');
+                return;
+            }
+
+            await createBooking({
+                user_id: dbUser.id,
+                type: 'support',
+                date: new Date().toISOString().split('T')[0],
+                topic: formData.subject,
+                message: formData.message,
+                status: 'active'
+            });
+
+            alert('Ваше обращение отправлено! Мы свяжемся с вами в ближайшее время.');
+            setFormData({
+                subject: '',
+                message: '',
+                topic: formData.topic,
+                date: formData.date,
+                time: formData.time,
+                consultationMessage: formData.consultationMessage
+            });
+        } catch (error) {
+            console.error('Failed to create support ticket:', error);
+            alert('Не удалось отправить обращение. Попробуйте позже.');
+        } finally {
+            setSubmitting(false);
+        }
     };
 
     const handleConsultationSubmit = async (e) => {
         e.preventDefault();
-        if (!apiConnected || !user?.id) {
-            alert('Сервер недоступен или пользователь не найден');
+        if (!apiConnected) {
+            alert('Сервер недоступен');
             return;
         }
 
@@ -38,9 +90,25 @@ export default function Support({ user, apiConnected }) {
 
         setSubmitting(true);
         try {
-            const dbUser = await getUserByTelegramId(user.id);
+            const telegramId = user?.telegram_id || user?.id;
+            if (!telegramId) {
+                alert('Пользователь не найден');
+                return;
+            }
+            
+            let dbUser = await getUserByTelegramId(telegramId);
             if (!dbUser) {
-                alert('Пользователь не найден в базе данных');
+                // Пытаемся создать пользователя
+                dbUser = await createOrUpdateUser(telegramId, {
+                    username: user?.username || null,
+                    first_name: user?.first_name || null,
+                    last_name: user?.last_name || null,
+                    photo_url: user?.photo_url || null,
+                });
+            }
+            
+            if (!dbUser) {
+                alert('Не удалось создать пользователя в базе данных');
                 return;
             }
 

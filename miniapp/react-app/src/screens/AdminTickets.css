@@ -1,0 +1,344 @@
+.admin-tickets-container {
+    margin-top: 24px;
+}
+
+.admin-header {
+    margin-bottom: 24px;
+}
+
+.tabs-container {
+    display: flex;
+    gap: 8px;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 12px;
+    padding: 4px;
+    margin-bottom: 16px;
+}
+
+.tab-btn {
+    flex: 1;
+    padding: 10px 16px;
+    border: none;
+    background: transparent;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    color: rgba(255, 255, 255, 0.6);
+}
+
+.tab-btn:hover {
+    color: white;
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.tab-btn.active {
+    background: rgba(255, 255, 255, 0.15);
+    color: white;
+    font-weight: 600;
+}
+
+.filter-buttons {
+    display: flex;
+    gap: 8px;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 12px;
+    padding: 4px;
+}
+
+.filter-buttons {
+    display: flex;
+    gap: 8px;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 12px;
+    padding: 4px;
+}
+
+.filter-btn {
+    padding: 10px 16px;
+    border: none;
+    background: transparent;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    color: rgba(255, 255, 255, 0.6);
+}
+
+.filter-btn:hover {
+    color: white;
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.filter-btn.active {
+    background: rgba(255, 255, 255, 0.15);
+    color: white;
+}
+
+.tickets-list {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.ticket-card {
+    background: linear-gradient(
+        135deg,
+        rgba(255, 255, 255, 0.12),
+        rgba(255, 255, 255, 0.06)
+    );
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border-radius: 20px;
+    padding: 20px;
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-left: 4px solid rgba(99, 102, 241, 0.5);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.ticket-card:active {
+    transform: scale(0.98);
+}
+
+.ticket-card.answered {
+    border-left-color: rgba(74, 222, 128, 0.5);
+    opacity: 0.85;
+}
+
+.ticket-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 16px;
+    flex-wrap: wrap;
+    gap: 12px;
+}
+
+.ticket-user-info h3 {
+    margin: 0 0 6px 0;
+    color: white;
+    font-size: 18px;
+    font-weight: 600;
+}
+
+.ticket-id {
+    margin: 0;
+    color: rgba(255, 255, 255, 0.6);
+    font-size: 12px;
+}
+
+.ticket-status {
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+}
+
+.status-active {
+    background: rgba(255, 243, 205, 0.2);
+    color: #ffd54f;
+    border: 1px solid rgba(255, 243, 205, 0.3);
+}
+
+.status-answered {
+    background: rgba(76, 175, 80, 0.2);
+    color: #81c784;
+    border: 1px solid rgba(76, 175, 80, 0.3);
+}
+
+.ticket-content {
+    margin-bottom: 16px;
+}
+
+.ticket-info {
+    margin-bottom: 16px;
+}
+
+.ticket-info p {
+    margin: 8px 0;
+    color: rgba(255, 255, 255, 0.8);
+    line-height: 1.6;
+    font-size: 14px;
+}
+
+.ticket-info strong {
+    color: white;
+    opacity: 0.9;
+}
+
+.ticket-message,
+.ticket-response {
+    background: rgba(255, 255, 255, 0.08);
+    padding: 16px;
+    border-radius: 12px;
+    margin-top: 16px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.ticket-message strong,
+.ticket-response strong {
+    display: block;
+    margin-bottom: 8px;
+    color: white;
+    opacity: 0.9;
+    font-size: 14px;
+    font-weight: 600;
+}
+
+.ticket-message p,
+.ticket-response p {
+    margin: 0;
+    color: rgba(255, 255, 255, 0.85);
+    line-height: 1.6;
+    white-space: pre-wrap;
+    font-size: 14px;
+}
+
+.ticket-response {
+    background: rgba(76, 175, 80, 0.1);
+    border-color: rgba(76, 175, 80, 0.2);
+}
+
+.ticket-actions {
+    margin-top: 16px;
+    padding-top: 16px;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.btn-respond {
+    background: linear-gradient(135deg, #6366f1, #8b5cf6);
+    color: white;
+    border: none;
+    border-radius: 12px;
+    padding: 12px 24px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+    width: 100%;
+}
+
+.btn-respond:active {
+    transform: scale(0.95);
+}
+
+.response-form {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.response-form textarea {
+    width: 100%;
+    padding: 12px 16px;
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 12px;
+    color: white;
+    font-size: 14px;
+    font-family: 'Montserrat', sans-serif;
+    resize: vertical;
+    min-height: 100px;
+    box-sizing: border-box;
+    transition: all 0.2s ease;
+}
+
+.response-form textarea::placeholder {
+    color: rgba(255, 255, 255, 0.4);
+}
+
+.response-form textarea:focus {
+    outline: none;
+    border-color: rgba(99, 102, 241, 0.5);
+    background: rgba(255, 255, 255, 0.12);
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+}
+
+.response-actions {
+    display: flex;
+    gap: 10px;
+}
+
+.btn-send {
+    background: linear-gradient(135deg, #6366f1, #8b5cf6);
+    color: white;
+    border: none;
+    border-radius: 12px;
+    padding: 12px 24px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+    flex: 1;
+}
+
+.btn-send:active:not(:disabled) {
+    transform: scale(0.95);
+}
+
+.btn-send:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.btn-cancel {
+    background: rgba(255, 255, 255, 0.1);
+    color: white;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 12px;
+    padding: 12px 24px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    flex: 1;
+}
+
+.btn-cancel:active {
+    transform: scale(0.95);
+    background: rgba(255, 255, 255, 0.15);
+}
+
+.btn-delete-ticket {
+    background: rgba(244, 67, 54, 0.2);
+    color: #f44336;
+    border: 1px solid rgba(244, 67, 54, 0.3);
+    border-radius: 10px;
+    padding: 10px 16px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    white-space: nowrap;
+}
+
+.btn-delete-ticket:active {
+    transform: scale(0.95);
+    background: rgba(244, 67, 54, 0.3);
+}
+
+@media (max-width: 768px) {
+    .admin-header {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    
+    .filter-buttons {
+        width: 100%;
+        justify-content: stretch;
+    }
+    
+    .filter-btn {
+        flex: 1;
+    }
+    
+    .ticket-header {
+        flex-direction: column;
+    }
+}
+
