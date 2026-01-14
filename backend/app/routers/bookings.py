@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
-from typing import List, Optional
+from typing import List
 
 from app.database import SessionLocal
 from app.models.booking import Booking
@@ -114,12 +114,51 @@ def get_user_bookings(user_id: int, db: Session = Depends(get_db)):
 
 @router.get("/telegram/{telegram_id}", response_model=List[BookingResponse])
 def get_user_bookings_by_telegram(telegram_id: int, db: Session = Depends(get_db)):
-    """Получить записи пользователя по telegram_id"""
+    """Получить записи пользователя по telegram_id с информацией об ответах"""
     user = db.query(User).filter(User.telegram_id == telegram_id).first()
     if not user:
         return []
     bookings = db.query(Booking).filter(Booking.user_id == user.id).all()
-    return bookings
+    
+    # Добавляем информацию об админе, который ответил
+    result = []
+    for booking in bookings:
+        admin_name = None
+        admin_role = None
+        
+        # Если есть ответ админа, получаем информацию об админе
+        if booking.admin_id:
+            admin_user = db.query(User).filter(User.id == booking.admin_id).first()
+            if admin_user:
+                admin_info = db.query(Admin).filter(Admin.telegram_id == admin_user.telegram_id).first()
+                admin_name = admin_user.first_name or admin_user.username or "Администратор"
+                admin_role = admin_info.role if admin_info else None
+        
+        # Создаем словарь с данными, включая вычисляемые поля
+        booking_dict = {
+            "id": booking.id,
+            "user_id": booking.user_id,
+            "webinar_id": booking.webinar_id,
+            "type": booking.type,
+            "date": booking.date,
+            "time": booking.time,
+            "status": booking.status,
+            "topic": booking.topic,
+            "message": booking.message,
+            "admin_response": booking.admin_response,
+            "admin_id": booking.admin_id,
+            "admin_name": admin_name,
+            "admin_role": admin_role,
+            "payment_status": getattr(booking, 'payment_status', "unpaid"),
+            "amount": getattr(booking, 'amount', None),
+            "payment_id": getattr(booking, 'payment_id', None),
+            "payment_date": booking.payment_date.isoformat() if hasattr(booking, 'payment_date') and booking.payment_date else None,
+            "attended": getattr(booking, 'attended', 0),
+        }
+        
+        result.append(booking_dict)
+    
+    return result
 
 
 @router.post("/", response_model=BookingResponse)

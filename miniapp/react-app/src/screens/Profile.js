@@ -10,7 +10,7 @@ function formatDate(dateString) {
 }
 
 export default function Profile({ user, apiConnected }) {
-    const [bookings, setBookings] = useState([]);
+    const [bookings, setBookings] = useState({ webinars: [], tickets: [] });
     const [webinars, setWebinars] = useState([]);
     const [loading, setLoading] = useState(true);
     const [showAddAdminForm, setShowAddAdminForm] = useState(false);
@@ -38,23 +38,25 @@ export default function Profile({ user, apiConnected }) {
                         getWebinars()
                     ]);
                     
-                    // Фильтруем записи - показываем только те, где вебинар существует
-                    const validBookings = (userBookings || []).filter(booking => {
-                        if (booking.webinar_id) {
-                            return allWebinars.some(w => w.id === booking.webinar_id);
-                        }
-                        return true; // Консультации всегда показываем
-                    });
+                    // Разделяем записи на вебинары и тикеты/консультации
+                    const webinarBookings = (userBookings || []).filter(booking => 
+                        booking.type === 'webinar' && booking.webinar_id && 
+                        allWebinars.some(w => w.id === booking.webinar_id)
+                    );
                     
-                    setBookings(validBookings);
+                    const tickets = (userBookings || []).filter(booking => 
+                        booking.type === 'consultation' || booking.type === 'support'
+                    );
+                    
+                    setBookings({ webinars: webinarBookings, tickets: tickets });
                     setWebinars(allWebinars || []);
                 } catch (error) {
                     console.error('Failed to load user data:', error);
-                    setBookings([]);
+                    setBookings({ webinars: [], tickets: [] });
                     setWebinars([]);
                 }
             } else {
-                setBookings([]);
+                setBookings({ webinars: [], tickets: [] });
                 setWebinars([]);
             }
             setLoading(false);
@@ -346,29 +348,112 @@ export default function Profile({ user, apiConnected }) {
                             <div className="loading-spinner"></div>
                             <p>Загрузка записей...</p>
                         </div>
-                    ) : bookings.length > 0 ? (
+                    ) : bookings.webinars.length > 0 ? (
                         <div className="bookings-list">
-                            {bookings.map(booking => (
-                                <div key={booking.id} className="user-booking-card">
-                                    <div className="booking-header">
-                                        <h3 className="booking-title">
-                                            {booking.webinar_id ? getWebinarTitle(booking.webinar_id) : (booking.topic || 'Консультация')}
-                                        </h3>
-                                        <span className={`booking-status ${booking.status === 'confirmed' || booking.status === 'active' ? 'confirmed' : ''}`}>
-                                            {booking.status === 'confirmed' || booking.status === 'active' ? '✓ Подтверждено' : booking.status}
-                                        </span>
+                            {bookings.webinars.map(booking => {
+                                const webinar = webinars.find(w => w.id === booking.webinar_id);
+                                const isPaid = booking.payment_status === 'paid';
+                                return (
+                                    <div key={booking.id} className="user-booking-card">
+                                        <div className="booking-header">
+                                            <h3 className="booking-title">
+                                                {getWebinarTitle(booking.webinar_id)}
+                                            </h3>
+                                            <span className={`booking-status ${booking.status === 'confirmed' || booking.status === 'paid' ? 'confirmed' : ''}`}>
+                                                {isPaid ? '✓ Оплачено' : booking.status === 'confirmed' ? '✓ Подтверждено' : booking.status}
+                                            </span>
+                                        </div>
+                                        <div className="booking-details">
+                                            <span className="booking-date">📅 {formatDate(booking.date)}</span>
+                                            {webinar?.time && <span className="booking-time">🕐 {webinar.time}</span>}
+                                        </div>
+                                        {webinar?.meeting_link && isPaid && (
+                                            <div className="booking-meeting-link">
+                                                <a 
+                                                    href={webinar.meeting_link} 
+                                                    target="_blank" 
+                                                    rel="noopener noreferrer"
+                                                    className="btn-meeting-link-small"
+                                                >
+                                                    🔗 Перейти на вебинар
+                                                </a>
+                                            </div>
+                                        )}
+                                        {webinar?.recording_link && (isPaid || (!webinar.price_usd && !webinar.price_eur)) && (
+                                            <div className="booking-recording-link">
+                                                <a 
+                                                    href={webinar.recording_link} 
+                                                    target="_blank" 
+                                                    rel="noopener noreferrer"
+                                                    className="btn-recording-link-small"
+                                                >
+                                                    🎥 Запись вебинара
+                                                </a>
+                                            </div>
+                                        )}
                                     </div>
-                                    <div className="booking-details">
-                                        <span className="booking-date">📅 {formatDate(booking.date)}</span>
-                                        {booking.time && <span className="booking-time">🕐 {booking.time}</span>}
-                                    </div>
-                                </div>
-                            ))}
+                                );
+                            })}
                         </div>
                     ) : (
                         <div className="empty-state">
                             <p>Вы еще не записаны ни на один вебинар</p>
                             {apiConnected && <p className="empty-hint">Перейдите во вкладку "Vebinars" чтобы выбрать вебинар</p>}
+                        </div>
+                    )}
+                </div>
+
+                <div className="profile-section">
+                    <h2 className="section-title">Мои тикеты и консультации</h2>
+                    {!apiConnected && (
+                        <div className="error-banner" style={{ margin: '20px 0', padding: '15px', backgroundColor: '#ff9800', color: 'white', borderRadius: '8px' }}>
+                            ⚠️ Сервер недоступен. Тикеты не могут быть загружены.
+                        </div>
+                    )}
+                    {loading ? (
+                        <div className="loading-container">
+                            <div className="loading-spinner"></div>
+                            <p>Загрузка тикетов...</p>
+                        </div>
+                    ) : bookings.tickets.length > 0 ? (
+                        <div className="bookings-list">
+                            {bookings.tickets.map(ticket => (
+                                <div key={ticket.id} className="user-booking-card ticket-card">
+                                    <div className="booking-header">
+                                        <h3 className="booking-title">
+                                            {ticket.type === 'consultation' ? '💬 Консультация' : '🎫 Обращение в поддержку'}
+                                            {ticket.topic && `: ${ticket.topic}`}
+                                        </h3>
+                                        <span className={`booking-status ${ticket.status === 'answered' ? 'answered' : ticket.status === 'confirmed' ? 'confirmed' : ''}`}>
+                                            {ticket.status === 'answered' ? '✓ Отвечено' : ticket.status === 'confirmed' ? '✓ Подтверждено' : ticket.status === 'pending' ? '⏳ Ожидает ответа' : ticket.status}
+                                        </span>
+                                    </div>
+                                    <div className="booking-details">
+                                        <span className="booking-date">📅 {formatDate(ticket.date)}</span>
+                                        {ticket.time && <span className="booking-time">🕐 {ticket.time}</span>}
+                                    </div>
+                                    {ticket.message && (
+                                        <div className="ticket-message">
+                                            <strong>Ваше сообщение:</strong>
+                                            <p>{ticket.message}</p>
+                                        </div>
+                                    )}
+                                    {ticket.admin_response && (
+                                        <div className="ticket-response">
+                                            <div className="ticket-response-header">
+                                                <strong>Ответ {ticket.admin_name ? `от ${ticket.admin_name}` : 'модератора'}</strong>
+                                                {ticket.admin_role && <span className="admin-role-badge">{ticket.admin_role}</span>}
+                                            </div>
+                                            <p>{ticket.admin_response}</p>
+                                        </div>
+                                    )}
+                                </div>
+                            ))}
+                        </div>
+                    ) : (
+                        <div className="empty-state">
+                            <p>У вас нет тикетов или консультаций</p>
+                            {apiConnected && <p className="empty-hint">Перейдите во вкладку "Support" чтобы создать обращение</p>}
                         </div>
                     )}
                 </div>

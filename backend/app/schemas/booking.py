@@ -21,6 +21,8 @@ class BookingResponse(BookingBase):
     message: Optional[str] = None
     admin_response: Optional[str] = None
     admin_id: Optional[int] = None
+    admin_name: Optional[str] = None  # Имя админа, который ответил
+    admin_role: Optional[str] = None  # Роль админа, который ответил
     payment_status: Optional[str] = "unpaid"
     amount: Optional[float] = None
     payment_id: Optional[str] = None
