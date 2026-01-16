@@ -1,4 +1,5 @@
 import React from 'react';
+import logo from '../assets/logo.jpg';
 
 export default function CopyTradingHeader({ username, user, onDepositClick }) {
     const avatarUrl = user?.photo_url;
@@ -15,12 +16,12 @@ export default function CopyTradingHeader({ username, user, onDepositClick }) {
     return (
         <header className="copy-trading-header">
             <div className="header-left">
-                <div className="logo-bitunix">🍃</div>
-                <span className="logo-separator">×</span>
-                <div className="logo-cryptosensei">⛩️</div>
+                <div className="logo-bitunix">
+                    <img src={logo} alt="Crypto Sensey logo" className="logo-img" />
+                </div>
             </div>
             <div className="header-center">
-                <h1 className="header-title">Crypto Sensey</h1>
+                <h1 className="header-title">CRYPTO SENSEI</h1>
             </div>
             <div className="avatar">
                 {avatarUrl ? (

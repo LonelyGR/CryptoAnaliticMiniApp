@@ -10,3 +10,5 @@ class User(Base):
     first_name = Column(String, nullable=True)
     last_name = Column(String, nullable=True)
     photo_url = Column(String, nullable=True)
+    referral_code = Column(String, unique=True, index=True, nullable=True)
+    referred_by_telegram_id = Column(Integer, nullable=True)

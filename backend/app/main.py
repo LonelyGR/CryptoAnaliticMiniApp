@@ -1,10 +1,10 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.routers import users, bookings, webinars, admins, posts, payments, webinar_materials, reminders
+from app.routers import users, bookings, webinars, admins, posts, payments, webinar_materials, reminders, referrals
 
 from app.database import engine, Base
-from app.models import User, Booking, Webinar, Admin, Post, Payment, WebinarMaterial
+from app.models import User, Booking, Webinar, Admin, Post, Payment, WebinarMaterial, ReferralInvite
 
 Base.metadata.create_all(bind=engine)
 
@@ -32,3 +32,4 @@ app.include_router(posts.router)
 app.include_router(payments.router)
 app.include_router(webinar_materials.router)
 app.include_router(reminders.router)
+app.include_router(referrals.router)

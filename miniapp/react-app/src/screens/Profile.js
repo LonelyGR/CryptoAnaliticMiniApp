@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import ScreenWrapper from '../components/ScreenWrapper';
 import Header from '../components/Header';
-import { getUserBookings, getWebinars, createAdmin, getAdmins, updateAdmin, deleteAdmin } from '../services/api';
+import { getUserBookings, getWebinars, createAdmin, getAdmins, updateAdmin, deleteAdmin, getReferralInfo } from '../services/api';
+import logo from '../assets/logo.jpg';
 
 function formatDate(dateString) {
     const date = new Date(dateString);
@@ -22,6 +23,8 @@ export default function Profile({ user, apiConnected }) {
     const [admins, setAdmins] = useState([]);
     const [loadingAdmins, setLoadingAdmins] = useState(false);
     const [editingAdmin, setEditingAdmin] = useState(null);
+    const [referralInfo, setReferralInfo] = useState(null);
+    const [loadingReferral, setLoadingReferral] = useState(false);
 
     // Проверка, является ли пользователь разработчиком
     const isDeveloper = user?.role === 'разработчик' || user?.role === 'developer';
@@ -63,6 +66,29 @@ export default function Profile({ user, apiConnected }) {
         };
 
         loadUserData();
+    }, [apiConnected, user?.telegram_id, user?.id]);
+
+    useEffect(() => {
+        const loadReferralInfo = async () => {
+            const telegramId = user?.telegram_id || user?.id;
+            if (!apiConnected || !telegramId) {
+                setReferralInfo(null);
+                return;
+            }
+
+            setLoadingReferral(true);
+            try {
+                const info = await getReferralInfo(telegramId);
+                setReferralInfo(info);
+            } catch (error) {
+                console.error('Failed to load referral info:', error);
+                setReferralInfo(null);
+            } finally {
+                setLoadingReferral(false);
+            }
+        };
+
+        loadReferralInfo();
     }, [apiConnected, user?.telegram_id, user?.id]);
 
     // Загружаем список админов для разработчика
@@ -158,11 +184,87 @@ export default function Profile({ user, apiConnected }) {
         }
     };
 
+    const referralLink = referralInfo?.referral_link || '';
+    const referralShareText = referralLink
+        ? `Привет! Присоединяйся к Crypto Sensey по моей ссылке: ${referralLink}`
+        : '';
+
+    const handleShareReferral = () => {
+        if (!referralLink) return;
+        const shareUrl = `https://t.me/share/url?url=${encodeURIComponent(referralLink)}&text=${encodeURIComponent(referralShareText)}`;
+        if (window.Telegram?.WebApp?.openTelegramLink) {
+            window.Telegram.WebApp.openTelegramLink(shareUrl);
+        } else {
+            window.open(shareUrl, '_blank', 'noopener,noreferrer');
+        }
+    };
+
     return (
         <ScreenWrapper>
             <Header username={user?.first_name} user={user} />
             
             <div className="profile-container">
+                <div className="profile-section">
+                    <h2 className="section-title">Реферальная ссылка</h2>
+                    <div className="referral-card">
+                        <div className="referral-hero">
+                            <div className="referral-logo">
+                                <img src={logo} alt="Crypto Sensey" />
+                            </div>
+                            <div className="referral-text">
+                                <h3>Поделись Crypto Sensey</h3>
+                                <p>Пригласи друзей и получай доступ к закрытым материалам и бонусам.</p>
+                            </div>
+                        </div>
+
+                        <div className="referral-link-row">
+                            <input
+                                className="referral-input"
+                                value={referralLink}
+                                readOnly
+                                placeholder={apiConnected ? 'Генерируем вашу ссылку…' : 'Сервер недоступен'}
+                            />
+                            <button
+                                className="referral-send-btn"
+                                onClick={handleShareReferral}
+                                disabled={!referralLink}
+                            >
+                                Отправить
+                            </button>
+                        </div>
+
+                        <div className="referral-hint">
+                            {referralLink
+                                ? 'Нажми “Отправить”, чтобы поделиться ссылкой в Telegram.'
+                                : 'Подключи сервер, чтобы получить реферальную ссылку.'}
+                        </div>
+
+                        <div className="referral-invites">
+                            <div className="referral-invites-title">
+                                Приглашенные {referralInfo?.invited_count ? `(${referralInfo.invited_count})` : ''}
+                            </div>
+                            {loadingReferral && <div className="referral-invite-empty">Загрузка…</div>}
+                            {!loadingReferral && referralInfo?.invited?.length > 0 && (
+                                <div className="referral-invite-list">
+                                    {referralInfo.invited.map((invite) => (
+                                        <div className="referral-invite-item" key={invite.id}>
+                                            <div className="referral-invite-name">
+                                                {invite.referred_first_name || invite.referred_username || 'Новый пользователь'}
+                                            </div>
+                                            <div className="referral-invite-meta">
+                                                {invite.referred_username ? `@${invite.referred_username}` : 'Без username'}
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                            {!loadingReferral && (!referralInfo || referralInfo?.invited?.length === 0) && (
+                                <div className="referral-invite-empty">Пока никто не перешел по вашей ссылке.</div>
+                            )}
+                        </div>
+                    </div>
+                </div>
+
                 <div className="profile-section">
                     <h2 className="section-title">Мои данные</h2>
                     <div className="profile-info-card">

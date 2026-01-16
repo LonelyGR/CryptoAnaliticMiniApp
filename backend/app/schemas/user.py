@@ -7,6 +7,8 @@ class UserBase(BaseModel):
     first_name: Optional[str] = None
     last_name: Optional[str] = None
     photo_url: Optional[str] = None
+    referral_code: Optional[str] = None
+    referred_by_telegram_id: Optional[int] = None
 
 class UserCreate(UserBase):
     pass
@@ -17,6 +19,8 @@ class UserUpdate(BaseModel):
     first_name: Optional[str] = None
     last_name: Optional[str] = None
     photo_url: Optional[str] = None
+    referral_code: Optional[str] = None
+    referred_by_telegram_id: Optional[int] = None
 
 class UserResponse(UserBase):
     id: int

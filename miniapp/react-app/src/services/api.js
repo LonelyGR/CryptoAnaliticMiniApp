@@ -104,6 +104,18 @@ export async function getUserBookings(telegramId) {
 }
 
 /**
+ * Получить реферальную информацию пользователя
+ */
+export async function getReferralInfo(telegramId) {
+  try {
+    return await apiRequest(`/referrals/${telegramId}`);
+  } catch (error) {
+    console.error('Failed to get referral info:', error);
+    return null;
+  }
+}
+
+/**
  * Создать запись на вебинар или консультацию
  */
 export async function createBooking(bookingData) {

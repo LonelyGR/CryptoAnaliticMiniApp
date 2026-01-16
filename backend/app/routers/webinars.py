@@ -6,6 +6,7 @@ from app.database import SessionLocal
 from app.models.webinar import Webinar
 from app.models.admin import Admin
 from app.schemas.webinar import WebinarCreate, WebinarResponse
+from app.utils.telegram import send_telegram_message
 
 router = APIRouter(prefix="/webinars", tags=["webinars"])
 
@@ -60,6 +61,16 @@ def create_webinar(
     db.add(db_webinar)
     db.commit()
     db.refresh(db_webinar)
+
+    message = (
+        "🎓 <b>Вебинар создан</b>\n\n"
+        f"📌 Тема: <b>{db_webinar.title}</b>\n"
+        f"🗓 Дата: <b>{db_webinar.date}</b>\n"
+        f"⏰ Время: <b>{db_webinar.time}</b>\n"
+        f"💳 Цена: <b>${db_webinar.price_usd:.2f}</b>"
+    )
+    send_telegram_message(admin_telegram_id, message)
+
     return db_webinar
 
 

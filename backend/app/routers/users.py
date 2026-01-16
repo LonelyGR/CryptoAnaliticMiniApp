@@ -33,6 +33,8 @@ def get_users(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
             "first_name": user.first_name,
             "last_name": user.last_name,
             "photo_url": user.photo_url,
+            "referral_code": user.referral_code,
+            "referred_by_telegram_id": user.referred_by_telegram_id,
             "is_admin": admin is not None,
             "role": admin.role if admin else None
         }
@@ -57,6 +59,8 @@ def get_user_by_telegram_id(telegram_id: int, db: Session = Depends(get_db)):
         "first_name": user.first_name,
         "last_name": user.last_name,
         "photo_url": user.photo_url,
+        "referral_code": user.referral_code,
+        "referred_by_telegram_id": user.referred_by_telegram_id,
         "is_admin": admin is not None,
         "role": admin.role if admin else None
     }
@@ -80,6 +84,8 @@ def get_user(user_id: int, db: Session = Depends(get_db)):
         "first_name": user.first_name,
         "last_name": user.last_name,
         "photo_url": user.photo_url,
+        "referral_code": user.referral_code,
+        "referred_by_telegram_id": user.referred_by_telegram_id,
         "is_admin": admin is not None,
         "role": admin.role if admin else None
     }
@@ -113,6 +119,8 @@ def create_user(user: UserCreate, db: Session = Depends(get_db)):
             "first_name": existing_user.first_name,
             "last_name": existing_user.last_name,
             "photo_url": existing_user.photo_url,
+            "referral_code": existing_user.referral_code,
+            "referred_by_telegram_id": existing_user.referred_by_telegram_id,
             "is_admin": admin is not None,
             "role": admin.role if admin else None
         }
@@ -133,6 +141,8 @@ def create_user(user: UserCreate, db: Session = Depends(get_db)):
             "first_name": db_user.first_name,
             "last_name": db_user.last_name,
             "photo_url": db_user.photo_url,
+            "referral_code": db_user.referral_code,
+            "referred_by_telegram_id": db_user.referred_by_telegram_id,
             "is_admin": admin is not None,
             "role": admin.role if admin else None
         }
@@ -162,6 +172,8 @@ def create_user(user: UserCreate, db: Session = Depends(get_db)):
                 "first_name": existing_user.first_name,
                 "last_name": existing_user.last_name,
                 "photo_url": existing_user.photo_url,
+                "referral_code": existing_user.referral_code,
+                "referred_by_telegram_id": existing_user.referred_by_telegram_id,
                 "is_admin": admin is not None,
                 "role": admin.role if admin else None
             }
@@ -248,6 +260,8 @@ def create_or_update_user_by_telegram(
         "first_name": existing_user.first_name,
         "last_name": existing_user.last_name,
         "photo_url": existing_user.photo_url,
+        "referral_code": existing_user.referral_code,
+        "referred_by_telegram_id": existing_user.referred_by_telegram_id,
         "is_admin": admin is not None,
         "role": admin.role if admin else None
     }
