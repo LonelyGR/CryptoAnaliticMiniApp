@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, Body
+from fastapi import APIRouter, Depends, HTTPException, Body, Query
 from sqlalchemy.orm import Session
 from typing import List, Optional
 
@@ -35,6 +35,7 @@ def get_users(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
             "photo_url": user.photo_url,
             "referral_code": user.referral_code,
             "referred_by_telegram_id": user.referred_by_telegram_id,
+            "is_blocked": user.is_blocked,
             "is_admin": admin is not None,
             "role": admin.role if admin else None
         }
@@ -61,6 +62,7 @@ def get_user_by_telegram_id(telegram_id: int, db: Session = Depends(get_db)):
         "photo_url": user.photo_url,
         "referral_code": user.referral_code,
         "referred_by_telegram_id": user.referred_by_telegram_id,
+        "is_blocked": user.is_blocked,
         "is_admin": admin is not None,
         "role": admin.role if admin else None
     }
@@ -86,6 +88,7 @@ def get_user(user_id: int, db: Session = Depends(get_db)):
         "photo_url": user.photo_url,
         "referral_code": user.referral_code,
         "referred_by_telegram_id": user.referred_by_telegram_id,
+        "is_blocked": user.is_blocked,
         "is_admin": admin is not None,
         "role": admin.role if admin else None
     }
@@ -121,6 +124,7 @@ def create_user(user: UserCreate, db: Session = Depends(get_db)):
             "photo_url": existing_user.photo_url,
             "referral_code": existing_user.referral_code,
             "referred_by_telegram_id": existing_user.referred_by_telegram_id,
+            "is_blocked": existing_user.is_blocked,
             "is_admin": admin is not None,
             "role": admin.role if admin else None
         }
@@ -143,6 +147,7 @@ def create_user(user: UserCreate, db: Session = Depends(get_db)):
             "photo_url": db_user.photo_url,
             "referral_code": db_user.referral_code,
             "referred_by_telegram_id": db_user.referred_by_telegram_id,
+            "is_blocked": db_user.is_blocked,
             "is_admin": admin is not None,
             "role": admin.role if admin else None
         }
@@ -174,6 +179,7 @@ def create_user(user: UserCreate, db: Session = Depends(get_db)):
                 "photo_url": existing_user.photo_url,
                 "referral_code": existing_user.referral_code,
                 "referred_by_telegram_id": existing_user.referred_by_telegram_id,
+                "is_blocked": existing_user.is_blocked,
                 "is_admin": admin is not None,
                 "role": admin.role if admin else None
             }
@@ -194,12 +200,14 @@ def create_or_update_user_by_telegram(
         first_name = user_data.first_name
         last_name = user_data.last_name
         photo_url = user_data.photo_url
+        is_blocked = user_data.is_blocked
     else:
         # Иначе используем значения по умолчанию
         username = None
         first_name = None
         last_name = None
         photo_url = None
+        is_blocked = None
     
     # Проверяем, существует ли пользователь
     existing_user = db.query(User).filter(User.telegram_id == telegram_id).first()
@@ -213,6 +221,8 @@ def create_or_update_user_by_telegram(
             existing_user.last_name = last_name
         if photo_url is not None:
             existing_user.photo_url = photo_url
+        if is_blocked is not None:
+            existing_user.is_blocked = is_blocked
         db.commit()
         db.refresh(existing_user)
     else:
@@ -243,6 +253,8 @@ def create_or_update_user_by_telegram(
                     existing_user.last_name = last_name
                 if photo_url is not None:
                     existing_user.photo_url = photo_url
+            if is_blocked is not None:
+                existing_user.is_blocked = is_blocked
                 db.commit()
                 db.refresh(existing_user)
             else:
@@ -262,8 +274,30 @@ def create_or_update_user_by_telegram(
         "photo_url": existing_user.photo_url,
         "referral_code": existing_user.referral_code,
         "referred_by_telegram_id": existing_user.referred_by_telegram_id,
+        "is_blocked": existing_user.is_blocked,
         "is_admin": admin is not None,
         "role": admin.role if admin else None
     }
     return user_dict
+
+
+@router.put("/{user_id}/block")
+def update_user_block_status(
+    user_id: int,
+    admin_telegram_id: int = Query(..., description="Telegram ID администратора"),
+    is_blocked: bool = Body(..., embed=True),
+    db: Session = Depends(get_db)
+):
+    admin = db.query(Admin).filter(Admin.telegram_id == admin_telegram_id).first()
+    if not admin or (admin.role or "").lower() not in ["разработчик", "developer", "владелец", "owner"]:
+        raise HTTPException(status_code=403, detail="Доступ запрещен. Требуются права разработчика")
+
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    user.is_blocked = bool(is_blocked)
+    db.commit()
+    db.refresh(user)
+    return {"id": user.id, "is_blocked": user.is_blocked}
 

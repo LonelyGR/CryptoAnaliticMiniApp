@@ -1,9 +1,12 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 from typing import List
+from sqlalchemy import text
 
 from app.database import SessionLocal
 from app.models.admin import Admin
+from app.database import Base
+from app.models import admin, booking, payment, post, referral_invite, user, webinar_material, webinar  # noqa: F401
 from app.schemas.admin import AdminCreate, AdminResponse, AdminUpdate
 
 router = APIRouter(prefix="/admins", tags=["admins"])
@@ -22,6 +25,14 @@ def check_admin(telegram_id: int, db: Session) -> Admin:
     admin = db.query(Admin).filter(Admin.telegram_id == telegram_id).first()
     if not admin:
         raise HTTPException(status_code=403, detail="Доступ запрещен. Требуются права администратора")
+    return admin
+
+
+def check_developer(telegram_id: int, db: Session) -> Admin:
+    admin = check_admin(telegram_id, db)
+    role = (admin.role or "").lower()
+    if role not in ["разработчик", "developer", "владелец", "owner"]:
+        raise HTTPException(status_code=403, detail="Доступ запрещен. Требуются права разработчика")
     return admin
 
 
@@ -95,3 +106,19 @@ def delete_admin(admin_id: int, db: Session = Depends(get_db)):
     db.delete(admin)
     db.commit()
     return {"message": "Admin deleted successfully"}
+
+
+@router.post("/clear-db")
+def clear_database(admin_telegram_id: int = Query(...), db: Session = Depends(get_db)):
+    """Полная очистка базы данных (только для разработчика)"""
+    check_developer(admin_telegram_id, db)
+
+    db.execute(text("PRAGMA foreign_keys=OFF"))
+    total_deleted = 0
+    for table in reversed(Base.metadata.sorted_tables):
+        result = db.execute(table.delete())
+        deleted = result.rowcount if result.rowcount is not None else 0
+        total_deleted += deleted
+    db.commit()
+    db.execute(text("PRAGMA foreign_keys=ON"))
+    return {"message": "Database cleared", "deleted_rows": total_deleted}

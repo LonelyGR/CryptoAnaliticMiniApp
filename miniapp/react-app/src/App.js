@@ -6,6 +6,7 @@ import Support from "./screens/Support";
 import Profile from "./screens/Profile";
 import AdminWebinars from "./screens/AdminWebinars";
 import AdminTickets from "./screens/AdminTickets";
+import UsersManagement from "./screens/UsersManagement";
 import { getUserByTelegramId, createOrUpdateUser, checkApiHealth } from "./services/api";
 
 function App() {
@@ -22,6 +23,12 @@ function App() {
     if (window.Telegram?.WebApp) {
       const tg = window.Telegram.WebApp;
       tg.ready();
+      setTimeout(() => {
+        tg.expand();
+      }, 100);
+      tg.onEvent('viewportChanged', () => {
+        tg.expand();
+      });
       telegramUser = tg.initDataUnsafe?.user || null;
       setUser(telegramUser);
       console.log('Telegram WebApp user:', telegramUser);
@@ -136,7 +143,20 @@ function App() {
         {activeTab === "home" && <Home user={displayUser} apiConnected={apiConnected} dbUser={displayUser} />}
         {activeTab === "bookings" && <Bookings user={displayUser} apiConnected={apiConnected} />}
         {activeTab === "support" && <Support user={displayUser} apiConnected={apiConnected} />}
-        {activeTab === "profile" && <Profile user={displayUser} apiConnected={apiConnected} />}
+        {activeTab === "profile" && (
+          <Profile
+            user={displayUser}
+            apiConnected={apiConnected}
+            onNavigate={(tab) => setActiveTab(tab)}
+          />
+        )}
+        {activeTab === "admin-users" && (
+          <UsersManagement
+            user={displayUser}
+            apiConnected={apiConnected}
+            onBack={() => setActiveTab("profile")}
+          />
+        )}
         {activeTab === "admin-webinars" && displayUser?.is_admin && <AdminWebinars user={displayUser} apiConnected={apiConnected} />}
         {activeTab === "admin-tickets" && displayUser?.is_admin && <AdminTickets user={displayUser} apiConnected={apiConnected} />}
       </div>

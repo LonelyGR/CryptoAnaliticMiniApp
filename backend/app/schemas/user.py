@@ -9,6 +9,7 @@ class UserBase(BaseModel):
     photo_url: Optional[str] = None
     referral_code: Optional[str] = None
     referred_by_telegram_id: Optional[int] = None
+    is_blocked: Optional[bool] = False
 
 class UserCreate(UserBase):
     pass
@@ -21,6 +22,7 @@ class UserUpdate(BaseModel):
     photo_url: Optional[str] = None
     referral_code: Optional[str] = None
     referred_by_telegram_id: Optional[int] = None
+    is_blocked: Optional[bool] = None
 
 class UserResponse(UserBase):
     id: int

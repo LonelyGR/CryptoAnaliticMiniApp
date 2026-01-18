@@ -20,6 +20,7 @@ export default function Home({ user, apiConnected, dbUser }) {
     const [currentCryptoIndex, setCurrentCryptoIndex] = useState(0);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
+    const [aboutModalOpen, setAboutModalOpen] = useState(false);
     const [posts, setPosts] = useState([]);
     const [showPostForm, setShowPostForm] = useState(false);
     const [editingPost, setEditingPost] = useState(null);
@@ -262,8 +263,92 @@ export default function Home({ user, apiConnected, dbUser }) {
     return (
         <ScreenWrapper>
             <CopyTradingHeader user={user} username={user?.first_name} onDepositClick={handleDepositClick} />
-            
+            <br />
             <div className="copy-trading-home">
+                <section className="neo-dashboard-section">
+                    <div className="neo-dashboard">
+                        <div className="neo-dashboard-header">
+                            <div className="neo-kicker">Платформа</div>
+                            <div className="neo-title-row">
+                                <h2 className="neo-title">Crypto Sensei</h2>
+                            </div>
+                            <p className="neo-subtitle">
+                                Умная панель управления активами с прозрачной аналитикой и защитой капитала.
+                            </p>
+                        </div>
+
+                        <div className="neo-grid">
+                            <button
+                                type="button"
+                                className="neo-card neo-card--hero"
+                                onClick={() => setAboutModalOpen(true)}
+                            >
+                                <div className="neo-card-title">Кто мы</div>
+                                <div className="neo-card-subtitle">Подробно о проекте</div>
+                                <div className="neo-card-cta">Открыть описание</div>
+                                <div className="neo-card-glow" />
+                            </button>
+                    </div>
+
+
+                        {aboutModalOpen && (
+                            <div
+                                className="neo-modal-overlay"
+                                role="dialog"
+                                aria-modal="true"
+                                aria-label="Описание проекта"
+                                onClick={() => setAboutModalOpen(false)}
+                            >
+                                <div className="neo-modal-card" onClick={(event) => event.stopPropagation()}>
+                                    <button
+                                        type="button"
+                                        className="neo-modal-back"
+                                        onClick={() => setAboutModalOpen(false)}
+                                        aria-label="Назад"
+                                    >
+                                        ←
+                                    </button>
+                                    <br />
+                                    <div className="neo-modal-body">
+                                        <h2 className="neo-modal-title">Кто мы</h2>
+                                        <p className="neo-modal-lead">
+                                            Мы создаем интеллектуальную экосистему для управления криптопортфелем и автоматизации
+                                            сделок в режиме реального времени.
+                                        </p>
+
+                                        <div className="neo-modal-section">
+                                            <h3>Что мы предлагаем</h3>
+                                            <ul>
+                                                <li>Гибкую стратегию распределения активов с динамической защитой капитала.</li>
+                                                <li>Синхронизацию DeFi-инструментов и торговых ботов в единой панели.</li>
+                                                <li>Прозрачную аналитику рисков и скоростную обработку сигналов.</li>
+                                            </ul>
+                                        </div>
+
+                                        <div className="neo-modal-section">
+                                            <h3>Почему это работает</h3>
+                                            <ul>
+                                                <li>Мы используем матричный подход к контролю волатильности.</li>
+                                                <li>Автоматизация снижает эмоциональные решения и усиливает дисциплину.</li>
+                                                <li>Глубокая фильтрация данных дает преимущество в быстрых циклах рынка.</li>
+                                            </ul>
+                                        </div>
+
+                                        <div className="neo-modal-section">
+                                            <h3>Почему выбирают нас</h3>
+                                            <ul>
+                                                <li>Команда с опытом построения трейдинговых систем и финтех-продуктов.</li>
+                                                <li>Детализированные отчеты и поддержка 24/7.</li>
+                                                <li>Фокус на безопасности, прозрачности и росте капитала клиента.</li>
+                                            </ul>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                </section>
+
                 <PromoBanner onDepositClick={handleDepositClick} />
 
                 {loading ? (

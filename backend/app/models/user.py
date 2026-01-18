@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String
+from sqlalchemy import Column, Integer, String, Boolean
 from app.database import Base
 
 class User(Base):
@@ -12,3 +12,4 @@ class User(Base):
     photo_url = Column(String, nullable=True)
     referral_code = Column(String, unique=True, index=True, nullable=True)
     referred_by_telegram_id = Column(Integer, nullable=True)
+    is_blocked = Column(Boolean, default=False, nullable=False)

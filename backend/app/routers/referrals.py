@@ -32,7 +32,10 @@ def generate_referral_code(db: Session) -> str:
 
 
 def build_referral_link(code: str) -> str:
-    bot_username = os.getenv("TELEGRAM_BOT_USERNAME", "CryptoSenseyBot").strip()
+    bot_username = (os.getenv("TELEGRAM_BOT_USERNAME") or "").strip()
+    bot_username = bot_username.lstrip("@")
+    if not bot_username:
+        return ""
     return f"https://t.me/{bot_username}?start=ref_{code}"
 
 

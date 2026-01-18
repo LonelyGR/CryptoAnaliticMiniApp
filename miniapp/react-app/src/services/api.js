@@ -303,6 +303,42 @@ export async function getAdmins() {
 }
 
 /**
+ * Получить список всех пользователей
+ */
+export async function getUsers() {
+  try {
+    return await apiRequest('/users/');
+  } catch (error) {
+    console.error('Failed to get users:', error);
+    return [];
+  }
+}
+
+/**
+ * Заблокировать/разблокировать пользователя (только для разработчика)
+ */
+export async function updateUserBlocked(userId, adminTelegramId, isBlocked) {
+  try {
+    const response = await fetch(`${API_BASE_URL}/users/${userId}/block?admin_telegram_id=${adminTelegramId}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ is_blocked: isBlocked }),
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error('Failed to update user block status:', error);
+    throw error;
+  }
+}
+
+/**
  * Создать админа (только для разработчика)
  */
 export async function createAdmin(adminData) {
@@ -368,6 +404,26 @@ export async function deleteAdmin(adminId) {
     return await response.json();
   } catch (error) {
     console.error('Failed to delete admin:', error);
+    throw error;
+  }
+}
+
+/**
+ * Полная очистка базы данных (только для разработчика)
+ */
+export async function clearDatabase(adminTelegramId) {
+  try {
+    const response = await fetch(`${API_BASE_URL}/admins/clear-db?admin_telegram_id=${adminTelegramId}`, {
+      method: 'POST',
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error('Failed to clear database:', error);
     throw error;
   }
 }

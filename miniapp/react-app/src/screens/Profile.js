@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import ScreenWrapper from '../components/ScreenWrapper';
 import Header from '../components/Header';
-import { getUserBookings, getWebinars, createAdmin, getAdmins, updateAdmin, deleteAdmin, getReferralInfo } from '../services/api';
+import { getUserBookings, getWebinars, createAdmin, getAdmins, updateAdmin, deleteAdmin, getReferralInfo, clearDatabase } from '../services/api';
 import logo from '../assets/logo.jpg';
 
 function formatDate(dateString) {
@@ -10,7 +10,7 @@ function formatDate(dateString) {
     return date.toLocaleDateString('ru-RU', options);
 }
 
-export default function Profile({ user, apiConnected }) {
+export default function Profile({ user, apiConnected, onNavigate }) {
     const [bookings, setBookings] = useState({ webinars: [], tickets: [] });
     const [webinars, setWebinars] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -27,7 +27,7 @@ export default function Profile({ user, apiConnected }) {
     const [loadingReferral, setLoadingReferral] = useState(false);
 
     // Проверка, является ли пользователь разработчиком
-    const isDeveloper = user?.role === 'разработчик' || user?.role === 'developer';
+    const isDeveloper = ['разработчик', 'developer', 'владелец', 'owner'].includes((user?.role || '').toLowerCase());
 
     useEffect(() => {
         const loadUserData = async () => {
@@ -184,9 +184,48 @@ export default function Profile({ user, apiConnected }) {
         }
     };
 
-    const referralLink = referralInfo?.referral_link || '';
+    const handleClearDatabase = async () => {
+        if (!apiConnected) {
+            alert('Сервер недоступен');
+            return;
+        }
+
+        if (!window.confirm('Это удалит все данные из базы, включая админов. Продолжить?')) {
+            return;
+        }
+
+        const adminTelegramId = user?.telegram_id || user?.id;
+        if (!adminTelegramId) {
+            alert('Не удалось определить Telegram ID');
+            return;
+        }
+
+        try {
+            await clearDatabase(adminTelegramId);
+            alert('База данных очищена');
+        } catch (error) {
+            console.error('Failed to clear database:', error);
+            alert('Не удалось очистить базу');
+        }
+    };
+
+    const botUsername = (process.env.REACT_APP_BOT_USERNAME || '').replace('@', '').trim();
+    const referralCode = referralInfo?.referral_code;
+    const referralLink = botUsername && referralCode
+        ? `https://t.me/${botUsername}?start=ref_${referralCode}`
+        : (referralInfo?.referral_link || '');
+    const referralHint = !apiConnected
+        ? 'Подключи сервер, чтобы получить реферальную ссылку.'
+        : (!botUsername
+            ? 'Укажи REACT_APP_BOT_USERNAME, чтобы сформировать ссылку.'
+            : (loadingReferral
+                ? 'Генерируем вашу ссылку…'
+                : (referralLink
+                    ? 'Нажми “Отправить” — бот пришлет сообщение, его можно переслать друзьям.'
+                    : 'Не удалось получить ссылку. Проверь подключение к серверу.')));
+
     const referralShareText = referralLink
-        ? `Привет! Присоединяйся к Crypto Sensey по моей ссылке: ${referralLink}`
+        ? `🚀 Crypto Sensei — трейдинг по логике маркет-мейкеров.\n\nБот зарабатывает на пампах и дампах, не завися от направления рынка.\nВебинары и персональные консультации включены.\n\nКликай по ссылке и начни зарабатывать!`
         : '';
 
     const handleShareReferral = () => {
@@ -195,7 +234,7 @@ export default function Profile({ user, apiConnected }) {
         if (window.Telegram?.WebApp?.openTelegramLink) {
             window.Telegram.WebApp.openTelegramLink(shareUrl);
         } else {
-            window.open(shareUrl, '_blank', 'noopener,noreferrer');
+            window.location.href = shareUrl;
         }
     };
 
@@ -222,7 +261,7 @@ export default function Profile({ user, apiConnected }) {
                                 className="referral-input"
                                 value={referralLink}
                                 readOnly
-                                placeholder={apiConnected ? 'Генерируем вашу ссылку…' : 'Сервер недоступен'}
+                                placeholder={referralHint}
                             />
                             <button
                                 className="referral-send-btn"
@@ -233,11 +272,7 @@ export default function Profile({ user, apiConnected }) {
                             </button>
                         </div>
 
-                        <div className="referral-hint">
-                            {referralLink
-                                ? 'Нажми “Отправить”, чтобы поделиться ссылкой в Telegram.'
-                                : 'Подключи сервер, чтобы получить реферальную ссылку.'}
-                        </div>
+                        <div className="referral-hint">{referralHint}</div>
 
                         <div className="referral-invites">
                             <div className="referral-invites-title">
@@ -339,7 +374,7 @@ export default function Profile({ user, apiConnected }) {
                                             onChange={(e) => setAdminFormData({...adminFormData, role: e.target.value})}
                                         >
                                             <option value="Администратор">Администратор</option>
-                                            <option value="разработчик">Разработчик</option>
+                                            <option value="владелец">Владелец</option>
                                             <option value="Модератор">Модератор</option>
                                         </select>
                                     </div>
@@ -386,11 +421,11 @@ export default function Profile({ user, apiConnected }) {
                                                 {editingAdmin?.id === admin.id ? (
                                                     <select
                                                         className="form-select admin-role-select"
-                                                        value={editingAdmin.role}
+                                                        value={editingAdmin.role === 'разработчик' || editingAdmin.role === 'developer' ? 'владелец' : editingAdmin.role}
                                                         onChange={(e) => setEditingAdmin({...editingAdmin, role: e.target.value})}
                                                     >
                                                         <option value="Администратор">Администратор</option>
-                                                        <option value="разработчик">Разработчик</option>
+                                                        <option value="владелец">Владелец</option>
                                                         <option value="Модератор">Модератор</option>
                                                     </select>
                                                 ) : (
@@ -433,6 +468,21 @@ export default function Profile({ user, apiConnected }) {
                                         </div>
                                     ))
                                 )}
+                            </div>
+
+                            <div className="developer-actions">
+                                <button
+                                    className="btn-secondary-admin"
+                                    onClick={() => onNavigate && onNavigate('admin-users')}
+                                >
+                                    Управление пользователями
+                                </button>
+                                <button
+                                    className="btn-delete-admin"
+                                    onClick={handleClearDatabase}
+                                >
+                                    Очистить базу
+                                </button>
                             </div>
                         </div>
                     </div>
