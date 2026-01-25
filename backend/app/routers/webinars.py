@@ -5,6 +5,7 @@ from typing import List, Optional
 from app.database import SessionLocal
 from app.models.webinar import Webinar
 from app.models.admin import Admin
+from app.models.user import User
 from app.schemas.webinar import WebinarCreate, WebinarResponse
 from app.utils.telegram import send_telegram_message
 
@@ -62,14 +63,29 @@ def create_webinar(
     db.commit()
     db.refresh(db_webinar)
 
-    message = (
+    admin_message = (
         "🎓 <b>Вебинар создан</b>\n\n"
         f"📌 Тема: <b>{db_webinar.title}</b>\n"
         f"🗓 Дата: <b>{db_webinar.date}</b>\n"
         f"⏰ Время: <b>{db_webinar.time}</b>\n"
         f"💳 Цена: <b>${db_webinar.price_usd:.2f}</b>"
     )
-    send_telegram_message(admin_telegram_id, message)
+    send_telegram_message(admin_telegram_id, admin_message)
+
+    # Уведомление всем пользователям (в бот): новый вебинар
+    users = db.query(User).filter(
+        User.telegram_id.isnot(None),
+        User.is_blocked == False  # noqa: E712
+    ).all()
+    user_message = (
+        "🎓 <b>Новый вебинар!</b>\n\n"
+        f"📌 Тема: <b>{db_webinar.title}</b>\n"
+        f"🗓 Дата: <b>{db_webinar.date}</b>\n"
+        f"⏰ Время: <b>{db_webinar.time}</b>\n\n"
+        "Откройте мини‑приложение и посмотрите детали."
+    )
+    for u in users:
+        send_telegram_message(u.telegram_id, user_message)
 
     return db_webinar
 

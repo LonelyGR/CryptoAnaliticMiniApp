@@ -126,6 +126,20 @@ function App() {
     return () => window.removeEventListener('resize', updateIndicatorPosition);
   }, [activeTab, displayUser?.is_admin]);
 
+  if (displayUser?.is_blocked) {
+    return (
+      <div className="app">
+        <div className="blocked-screen">
+          <div className="blocked-card">
+            <div className="blocked-icon">⛔</div>
+            <h1>Доступ закрыт</h1>
+            <p>К сожалению, ваш аккаунт заблокирован. Обратитесь в поддержку.</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="app">
       {!apiConnected && (

@@ -17,7 +17,7 @@ export default function AdminWebinars({ user, apiConnected }) {
         description: '',
         status: 'upcoming',
         price: 0,
-        price_currency: 'USD'
+        meeting_link: ''
     });
 
     const loadWebinars = useCallback(async () => {
@@ -43,15 +43,13 @@ export default function AdminWebinars({ user, apiConnected }) {
             return;
         }
 
-        // Преобразуем цену в нужный формат для API
+        // Цена хранится как USDT (TRC20), используем поле price_usd
         const submitData = {
             ...formData,
-            price_usd: formData.price_currency === 'USD' ? formData.price : 0,
-            price_eur: formData.price_currency === 'EUR' ? formData.price : 0
+            price_usd: formData.price,
+            price_eur: 0
         };
-        // Удаляем временные поля
         delete submitData.price;
-        delete submitData.price_currency;
 
         try {
             if (editingWebinar) {
@@ -72,7 +70,7 @@ export default function AdminWebinars({ user, apiConnected }) {
                 description: '',
                 status: 'upcoming',
                 price: 0,
-                price_currency: 'USD'
+                meeting_link: ''
             });
             loadWebinars();
         } catch (error) {
@@ -83,15 +81,12 @@ export default function AdminWebinars({ user, apiConnected }) {
 
     const handleEdit = (webinar) => {
         setEditingWebinar(webinar);
-        // Определяем валюту и цену для редактирования
+        // Определяем цену для редактирования
         let price = 0;
-        let currency = 'USD';
         if (webinar.price_usd && webinar.price_usd > 0) {
             price = webinar.price_usd;
-            currency = 'USD';
         } else if (webinar.price_eur && webinar.price_eur > 0) {
             price = webinar.price_eur;
-            currency = 'EUR';
         }
         
         setFormData({
@@ -103,7 +98,7 @@ export default function AdminWebinars({ user, apiConnected }) {
             description: webinar.description || '',
             status: webinar.status || 'upcoming',
             price: price,
-            price_currency: currency
+            meeting_link: webinar.meeting_link || ''
         });
         setShowCreateForm(true);
     };
@@ -151,7 +146,9 @@ export default function AdminWebinars({ user, apiConnected }) {
                                 duration: '',
                                 speaker: '',
                                 description: '',
-                                status: 'upcoming'
+                                status: 'upcoming',
+                                price: 0,
+                                meeting_link: ''
                             });
                         }}
                     >
@@ -247,33 +244,29 @@ export default function AdminWebinars({ user, apiConnected }) {
                             />
                         </div>
 
-                        <div className="form-row">
-                            <div className="form-group">
-                                <label>Цена *</label>
-                                <input
-                                    type="number"
-                                    className="form-input"
-                                    value={formData.price}
-                                    onChange={(e) => setFormData({...formData, price: parseFloat(e.target.value) || 0})}
-                                    min="0"
-                                    step="0.01"
-                                    placeholder="0.00"
-                                    required
-                                />
-                            </div>
+                        <div className="form-group">
+                            <label>Цена (USDT TRC20) *</label>
+                            <input
+                                type="number"
+                                className="form-input"
+                                value={formData.price}
+                                onChange={(e) => setFormData({...formData, price: parseFloat(e.target.value) || 0})}
+                                min="0"
+                                step="0.01"
+                                placeholder="0.00"
+                                required
+                            />
+                        </div>
 
-                            <div className="form-group">
-                                <label>Валюта *</label>
-                                <select
-                                    className="form-select"
-                                    value={formData.price_currency}
-                                    onChange={(e) => setFormData({...formData, price_currency: e.target.value})}
-                                    required
-                                >
-                                    <option value="USD">USD ($)</option>
-                                    <option value="EUR">EUR (€)</option>
-                                </select>
-                            </div>
+                        <div className="form-group">
+                            <label>Ссылка на встречу</label>
+                            <input
+                                type="url"
+                                className="form-input"
+                                value={formData.meeting_link}
+                                onChange={(e) => setFormData({...formData, meeting_link: e.target.value})}
+                                placeholder="https://..."
+                            />
                         </div>
 
                         <div className="form-actions">
@@ -316,12 +309,10 @@ export default function AdminWebinars({ user, apiConnected }) {
                                     {webinar.duration && <p><strong>Продолжительность:</strong> {webinar.duration}</p>}
                                     {webinar.speaker && <p><strong>Спикер:</strong> {webinar.speaker}</p>}
                                     {((webinar.price_usd && webinar.price_usd > 0) || (webinar.price_eur && webinar.price_eur > 0)) && (
-                                        <p><strong>Цена:</strong> {
-                                            [
-                                                webinar.price_usd > 0 ? `$${webinar.price_usd}` : null,
-                                                webinar.price_eur > 0 ? `€${webinar.price_eur}` : null
-                                            ].filter(Boolean).join(' / ')
-                                        }</p>
+                                        <p>
+                                            <strong>Цена:</strong> {webinar.price_usd || webinar.price_eur} USDT
+                                            <span style={{ opacity: 0.7 }}> (TRC20)</span>
+                                        </p>
                                     )}
                                     {webinar.description && <p><strong>Описание:</strong> {webinar.description}</p>}
                                 </div>

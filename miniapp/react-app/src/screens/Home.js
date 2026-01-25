@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import CopyTradingHeader from '../components/CopyTradingHeader';
-import PromoBanner from '../components/PromoBanner';
+// import PromoBanner from '../components/PromoBanner';
 import CryptoCard from '../components/CryptoCard';
 import ScreenWrapper from '../components/ScreenWrapper';
 import { getPosts, createPost, updatePost, deletePost } from '../services/api';
@@ -349,7 +349,7 @@ export default function Home({ user, apiConnected, dbUser }) {
                     </div>
                 </section>
 
-                <PromoBanner onDepositClick={handleDepositClick} />
+                {/* <PromoBanner onDepositClick={handleDepositClick} /> */}
 
                 {loading ? (
                     <div className="loading-container">

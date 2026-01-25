@@ -122,3 +122,39 @@ def clear_database(admin_telegram_id: int = Query(...), db: Session = Depends(ge
     db.commit()
     db.execute(text("PRAGMA foreign_keys=ON"))
     return {"message": "Database cleared", "deleted_rows": total_deleted}
+
+
+@router.post("/clear-data")
+def clear_selected_data(
+    admin_telegram_id: int = Query(...),
+    targets: List[str] = Query(...),
+    db: Session = Depends(get_db)
+):
+    """Удалить выбранные данные (только для разработчика)"""
+    check_developer(admin_telegram_id, db)
+
+    if not targets:
+        raise HTTPException(status_code=400, detail="Не указаны данные для удаления")
+
+    targets_set = {target.strip() for target in targets if target and target.strip()}
+    allowed_tables = {table.name for table in Base.metadata.sorted_tables}
+    unknown_targets = sorted(targets_set - allowed_tables)
+    if unknown_targets:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Неизвестные таблицы для удаления: {', '.join(unknown_targets)}"
+        )
+
+    db.execute(text("PRAGMA foreign_keys=OFF"))
+    total_deleted = 0
+    details = []
+    for table in reversed(Base.metadata.sorted_tables):
+        if table.name not in targets_set:
+            continue
+        result = db.execute(table.delete())
+        deleted = result.rowcount if result.rowcount is not None else 0
+        total_deleted += deleted
+        details.append({"table": table.name, "deleted": deleted})
+    db.commit()
+    db.execute(text("PRAGMA foreign_keys=ON"))
+    return {"message": "Selected data cleared", "deleted_rows": total_deleted, "details": details}

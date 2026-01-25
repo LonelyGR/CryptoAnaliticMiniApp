@@ -429,6 +429,29 @@ export async function clearDatabase(adminTelegramId) {
 }
 
 /**
+ * Удалить выбранные данные (только для разработчика)
+ */
+export async function clearData(adminTelegramId, targets) {
+  try {
+    const targetParams = (targets || [])
+      .map(target => `targets=${encodeURIComponent(target)}`)
+      .join('&');
+    const response = await fetch(`${API_BASE_URL}/admins/clear-data?admin_telegram_id=${adminTelegramId}&${targetParams}`, {
+      method: 'POST',
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error('Failed to clear selected data:', error);
+    throw error;
+  }
+}
+
+/**
  * Получить все посты
  */
 export async function getPosts() {

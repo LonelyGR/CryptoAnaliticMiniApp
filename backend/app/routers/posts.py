@@ -5,7 +5,9 @@ from typing import List
 from app.database import SessionLocal
 from app.models.post import Post
 from app.models.admin import Admin
+from app.models.user import User
 from app.schemas.post import PostCreate, PostResponse
+from app.utils.telegram import send_telegram_message
 
 router = APIRouter(prefix="/posts", tags=["posts"])
 
@@ -58,6 +60,20 @@ def create_post(
     db.add(db_post)
     db.commit()
     db.refresh(db_post)
+
+    # Уведомление всем пользователям (в бот): новый пост
+    users = db.query(User).filter(
+        User.telegram_id.isnot(None),
+        User.is_blocked == False  # noqa: E712
+    ).all()
+    user_message = (
+        "📰 <b>Новая новость!</b>\n\n"
+        f"📌 <b>{db_post.title}</b>\n\n"
+        "Откройте мини‑приложение и посмотрите подробности."
+    )
+    for u in users:
+        send_telegram_message(u.telegram_id, user_message)
+
     return db_post
 
 

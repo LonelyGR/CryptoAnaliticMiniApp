@@ -1,0 +1,507 @@
+from __future__ import annotations
+
+import json
+import logging
+import os
+from datetime import datetime
+from typing import Optional
+
+import requests
+from dotenv import load_dotenv
+from fastapi import APIRouter, Body, Depends, HTTPException, Request, Response
+from sqlalchemy.orm import Session
+
+from app.database import SessionLocal
+from app.models.booking import Booking
+from app.models.nowpayments_ipn_event import NowPaymentsIpnEvent
+from app.models.nowpayments_payment import NowPaymentsPayment
+from app.models.payment import Payment as PaymentModel
+from app.schemas.nowpayments import (
+    CreatePaymentRequest,
+    CreatePaymentResponse,
+    NowPaymentsPaymentCreateRequest,
+    PaymentStatusMinimal,
+)
+from app.utils.security import verify_nowpayments_signature
+
+
+BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
+ENV_PATH = os.path.join(BASE_DIR, ".env")
+load_dotenv(ENV_PATH)
+
+logger = logging.getLogger("nowpayments")
+
+router = APIRouter(prefix="/payments", tags=["payments"])
+compat_router = APIRouter(tags=["payments"])
+
+
+def get_db():
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
+
+
+def parse_booking_id(order_id: Optional[str]) -> Optional[int]:
+    if not order_id:
+        return None
+    if not order_id.startswith("booking-"):
+        return None
+    try:
+        return int(order_id.split("booking-")[1])
+    except (ValueError, IndexError):
+        return None
+
+
+def get_booking_by_payment(db: Session, payment_id: int, order_id: Optional[str]) -> Optional[Booking]:
+    booking_id = parse_booking_id(order_id)
+    if booking_id:
+        return db.query(Booking).filter(Booking.id == booking_id).first()
+    return db.query(Booking).filter(Booking.payment_id == str(payment_id)).first()
+
+
+def nowpayments_request(method: str, path: str, **kwargs):
+    api_key = os.getenv("NOWPAYMENTS_API_KEY")
+    if not api_key:
+        raise HTTPException(status_code=500, detail="NOWPAYMENTS_API_KEY is not configured")
+
+    base_url = os.getenv("NOWPAYMENTS_API_BASE", "https://api.nowpayments.io/v1").rstrip("/")
+    timeout = float(os.getenv("NOWPAYMENTS_TIMEOUT", "15"))
+    url = f"{base_url}{path}"
+    headers = {
+        "x-api-key": api_key,
+        "Content-Type": "application/json",
+    }
+
+    try:
+        response = requests.request(method, url, headers=headers, timeout=timeout, **kwargs)
+    except requests.RequestException as exc:
+        raise HTTPException(status_code=502, detail="NOWPayments API is unavailable") from exc
+
+    if response.status_code >= 400:
+        detail = "NOWPayments API error"
+        try:
+            error_data = response.json()
+            detail = error_data.get("message", detail)
+        except ValueError:
+            if response.text:
+                detail = response.text
+        status_code = 502 if response.status_code >= 500 else 400
+        raise HTTPException(status_code=status_code, detail=detail)
+
+    return response.json()
+
+
+def _parse_iso_datetime(value: Optional[str]) -> Optional[datetime]:
+    if not value:
+        return None
+    try:
+        # NOWPayments часто присылает "...Z"
+        return datetime.fromisoformat(value.replace("Z", "+00:00"))
+    except ValueError:
+        return None
+
+
+def _upsert_nowpayments_payment_from_create(
+    db: Session,
+    request_payload: dict,
+    nowpayments_response: dict,
+) -> None:
+    payment_id = nowpayments_response.get("payment_id")
+    if payment_id is None:
+        return
+    payment_id = str(payment_id)
+
+    record = db.query(NowPaymentsPayment).filter(NowPaymentsPayment.payment_id == payment_id).first()
+    if not record:
+        record = NowPaymentsPayment(payment_id=payment_id)
+        db.add(record)
+
+    record.order_id = nowpayments_response.get("order_id") or request_payload.get("order_id")
+    record.price_amount = nowpayments_response.get("price_amount") or request_payload.get("price_amount")
+    record.price_currency = nowpayments_response.get("price_currency") or request_payload.get("price_currency")
+    record.pay_amount = nowpayments_response.get("pay_amount")
+    record.pay_currency = nowpayments_response.get("pay_currency") or request_payload.get("pay_currency")
+    record.status = nowpayments_response.get("payment_status")
+    record.expires_at = _parse_iso_datetime(nowpayments_response.get("expiration_estimate_date"))
+    record.raw_create_response = json.dumps(nowpayments_response)
+
+    db.commit()
+
+
+def _upsert_nowpayments_payment_from_ipn(db: Session, payload: dict) -> None:
+    payment_id = payload.get("payment_id")
+    if payment_id is None:
+        return
+    payment_id = str(payment_id)
+
+    record = db.query(NowPaymentsPayment).filter(NowPaymentsPayment.payment_id == payment_id).first()
+    if not record:
+        record = NowPaymentsPayment(payment_id=payment_id)
+        db.add(record)
+
+    record.order_id = payload.get("order_id") or record.order_id
+    record.status = payload.get("payment_status") or record.status
+    if payload.get("price_amount") is not None:
+        record.price_amount = payload.get("price_amount")
+    if payload.get("price_currency") is not None:
+        record.price_currency = payload.get("price_currency")
+    if payload.get("pay_amount") is not None:
+        record.pay_amount = payload.get("pay_amount")
+    if payload.get("pay_currency") is not None:
+        record.pay_currency = payload.get("pay_currency")
+    record.raw_last_ipn = json.dumps(payload)
+
+    db.commit()
+
+
+def _store_ipn_event(
+    db: Session,
+    payload: dict,
+    signature_header: str,
+    signature_valid: bool,
+) -> None:
+    ev = NowPaymentsIpnEvent(
+        payment_id=str(payload.get("payment_id")) if payload.get("payment_id") is not None else None,
+        payment_status=payload.get("payment_status"),
+        order_id=payload.get("order_id"),
+        signature_valid=bool(signature_valid),
+        signature_header=signature_header or None,
+        payload_json=json.dumps(payload),
+    )
+    db.add(ev)
+    db.commit()
+
+
+def _apply_non_finished_status(db: Session, payment_id: str, order_id: Optional[str], status: str, payload: dict) -> None:
+    # Обновляем существующую запись в payments (таблица приложения), если она уже есть
+    db_payment = db.query(PaymentModel).filter(PaymentModel.transaction_id == str(payment_id)).first()
+    booking = get_booking_by_payment(db, int(payment_id) if str(payment_id).isdigit() else 0, order_id)
+
+    if db_payment:
+        db_payment.payment_metadata = json.dumps(payload)
+        normalized = (status or "").lower()
+        if normalized in {"expired", "failed"}:
+            db_payment.status = "failed"
+        elif normalized == "refunded":
+            db_payment.status = "refunded"
+        else:
+            db_payment.status = "pending"
+
+    if booking:
+        normalized = (status or "").lower()
+        if normalized in {"expired", "failed"}:
+            booking.payment_status = "failed"
+        elif normalized == "refunded":
+            booking.payment_status = "refunded"
+            booking.status = "pending"
+            booking.payment_date = None
+        else:
+            booking.payment_status = "pending"
+
+    db.commit()
+
+
+def apply_finished_status(
+    db: Session,
+    payment_id: int,
+    order_id: Optional[str],
+    payload: dict,
+) -> None:
+    db_payment = db.query(PaymentModel).filter(PaymentModel.transaction_id == str(payment_id)).first()
+    booking = get_booking_by_payment(db, payment_id, order_id)
+
+    if db_payment:
+        if db_payment.status != "completed":
+            db_payment.status = "completed"
+            db_payment.completed_at = datetime.now()
+        db_payment.payment_metadata = json.dumps(payload)
+    elif booking:
+        db_payment = PaymentModel(
+            booking_id=booking.id,
+            user_id=booking.user_id,
+            webinar_id=booking.webinar_id,
+            amount=payload.get("price_amount") or booking.amount or 0,
+            currency=(payload.get("price_currency") or "USD").upper(),
+            payment_method="crypto",
+            payment_provider="nowpayments",
+            transaction_id=str(payment_id),
+            status="completed",
+            payment_metadata=json.dumps(payload),
+            completed_at=datetime.now(),
+        )
+        db.add(db_payment)
+
+    if booking:
+        booking.payment_status = "paid"
+        booking.status = "confirmed"
+        booking.payment_date = datetime.now()
+        booking.payment_id = str(payment_id)
+        if payload.get("price_amount"):
+            booking.amount = payload.get("price_amount")
+
+    db.commit()
+
+
+def get_currencies_from_nowpayments():
+    # NOWPayments: GET /v1/currencies
+    return nowpayments_request("GET", "/currencies")
+
+
+@router.get("/currencies")
+def currencies():
+    return get_currencies_from_nowpayments()
+
+
+@compat_router.get("/currencies")
+def currencies_root_compat():
+    return get_currencies_from_nowpayments()
+
+
+@router.post("/create", response_model=CreatePaymentResponse)
+def create_payment(payload: CreatePaymentRequest, db: Session = Depends(get_db)):
+    ipn_callback_url = os.getenv("NOWPAYMENTS_IPN_CALLBACK_URL")
+    if not ipn_callback_url:
+        raise HTTPException(status_code=500, detail="NOWPAYMENTS_IPN_CALLBACK_URL is not configured")
+
+    request_payload = {
+        "price_amount": payload.amount,
+        "price_currency": payload.price_currency,
+        "pay_currency": payload.pay_currency,
+        "order_id": payload.order_id,
+        "order_description": payload.order_description,
+        "ipn_callback_url": ipn_callback_url,
+    }
+    request_payload = {key: value for key, value in request_payload.items() if value is not None}
+    data = nowpayments_request("POST", "/payment", json=request_payload)
+
+    response = CreatePaymentResponse(
+        payment_id=data["payment_id"],
+        pay_address=data.get("pay_address"),
+        pay_amount=data.get("pay_amount"),
+        pay_currency=data.get("pay_currency"),
+    )
+
+    booking_id = parse_booking_id(payload.order_id)
+    if booking_id:
+        booking = db.query(Booking).filter(Booking.id == booking_id).first()
+        if booking:
+            db_payment = PaymentModel(
+                booking_id=booking.id,
+                user_id=booking.user_id,
+                webinar_id=booking.webinar_id,
+                amount=payload.amount,
+                currency=(payload.price_currency or "USD").upper(),
+                payment_method="crypto",
+                payment_provider="nowpayments",
+                transaction_id=str(data["payment_id"]),
+                status="pending",
+                payment_metadata=json.dumps(data),
+            )
+            db.add(db_payment)
+            booking.payment_status = "pending"
+            booking.payment_id = str(data["payment_id"])
+            booking.amount = payload.amount
+            db.commit()
+
+    return response
+
+
+@compat_router.post("/create-payment")
+def create_payment_nowpayments(payload: dict = Body(...), db: Session = Depends(get_db)):
+    """
+    Создание платежа NOWPayments.
+
+    Поддерживает:
+    - официальный формат NOWPayments: price_amount/price_currency/...
+    - legacy формат фронта: amount -> price_amount
+    """
+    if not isinstance(payload, dict):
+        raise HTTPException(status_code=422, detail="Body must be a JSON object")
+
+    logger.info("create-payment raw payload: %s", payload)
+
+    # Совместимость со старым фронтом: amount -> price_amount
+    mapped = dict(payload)
+    if "price_amount" not in mapped and "amount" in mapped:
+        mapped["price_amount"] = mapped.get("amount")
+
+    # Валидация pydantic-моделью (без extra=forbid)
+    try:
+        model = NowPaymentsPaymentCreateRequest(**mapped)
+    except Exception as exc:
+        # Явно возвращаем 422, чтобы было понятно что сломалось
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+
+    if hasattr(model, "model_dump"):
+        request_payload = model.model_dump(exclude_none=True)  # Pydantic v2
+    else:
+        request_payload = model.dict(exclude_none=True)  # Pydantic v1
+
+    # Если ipn_callback_url не передали — можно подставить из .env (поле optional)
+    if "ipn_callback_url" not in request_payload:
+        ipn_from_env = os.getenv("NOWPAYMENTS_IPN_CALLBACK_URL")
+        if ipn_from_env:
+            request_payload["ipn_callback_url"] = ipn_from_env
+
+    api_key = os.getenv("NOWPAYMENTS_API_KEY")
+    if not api_key:
+        raise HTTPException(status_code=500, detail="NOWPAYMENTS_API_KEY is not configured")
+
+    url = "https://api.nowpayments.io/v1/payment"
+    headers = {
+        "x-api-key": api_key,
+        "Content-Type": "application/json",
+    }
+
+    try:
+        np_response = requests.request(
+            method="POST",
+            url=url,
+            headers=headers,
+            json=request_payload,
+            timeout=float(os.getenv("NOWPAYMENTS_TIMEOUT", "30")),
+        )
+    except requests.RequestException as exc:
+        raise HTTPException(status_code=502, detail="NOWPayments API is unavailable") from exc
+
+    try:
+        data_for_db = np_response.json()
+    except ValueError:
+        data_for_db = None
+    if isinstance(data_for_db, dict):
+        logger.info("create-payment NOWPayments response: %s", data_for_db)
+        _upsert_nowpayments_payment_from_create(db, request_payload, data_for_db)
+
+    # Опционально: привяжем к booking, если order_id вида booking-123 (ответ клиенту не трогаем)
+    booking_id = parse_booking_id(model.order_id)
+    if booking_id and isinstance(data_for_db, dict):
+        booking = db.query(Booking).filter(Booking.id == booking_id).first()
+        if booking and data_for_db.get("payment_id") is not None:
+            db_payment = PaymentModel(
+                booking_id=booking.id,
+                user_id=booking.user_id,
+                webinar_id=booking.webinar_id,
+                amount=model.price_amount,
+                currency=(model.price_currency or "USD").upper(),
+                payment_method="crypto",
+                payment_provider="nowpayments",
+                transaction_id=str(data_for_db.get("payment_id")),
+                status="pending",
+                payment_metadata=json.dumps(data_for_db),
+            )
+            db.add(db_payment)
+            booking.payment_status = "pending"
+            booking.payment_id = str(data_for_db.get("payment_id"))
+            booking.amount = model.price_amount
+            db.commit()
+
+    content_type = np_response.headers.get("Content-Type", "application/json")
+    return Response(content=np_response.content, status_code=np_response.status_code, media_type=content_type)
+
+
+@router.get("/status/{payment_id}", response_model=PaymentStatusMinimal)
+def check_payment_status(payment_id: int, db: Session = Depends(get_db)):
+    data = nowpayments_request("GET", f"/payment/{payment_id}")
+    payment_status = data.get("payment_status")
+    # Важно: доступ/подписку выдаём только по IPN ("finished"), а не по GET.
+    if data.get("payment_id"):
+        try:
+            record = (
+                db.query(NowPaymentsPayment)
+                .filter(NowPaymentsPayment.payment_id == str(data.get("payment_id")))
+                .first()
+            )
+            if not record:
+                record = NowPaymentsPayment(payment_id=str(data.get("payment_id")))
+                db.add(record)
+            record.status = data.get("payment_status") or record.status
+            record.raw_last_status_response = json.dumps(data)
+            record.expires_at = _parse_iso_datetime(data.get("expiration_estimate_date")) or record.expires_at
+            if data.get("pay_amount") is not None:
+                record.pay_amount = data.get("pay_amount")
+            if data.get("pay_currency") is not None:
+                record.pay_currency = data.get("pay_currency")
+            if data.get("price_amount") is not None:
+                record.price_amount = data.get("price_amount")
+            if data.get("price_currency") is not None:
+                record.price_currency = data.get("price_currency")
+            if data.get("order_id") is not None:
+                record.order_id = data.get("order_id")
+            db.commit()
+        except Exception:
+            # не ломаем статус-эндпоинт из-за проблем записи в БД
+            pass
+    return PaymentStatusMinimal(payment_id=payment_id, payment_status=payment_status)
+
+
+@router.get("/payment/{payment_id}")
+def get_payment_full(payment_id: int, db: Session = Depends(get_db)):
+    # Полный ответ NOWPayments, чтобы фронт мог показать pay_address/pay_amount.
+    data = nowpayments_request("GET", f"/payment/{payment_id}")
+    try:
+        record = db.query(NowPaymentsPayment).filter(NowPaymentsPayment.payment_id == str(payment_id)).first()
+        if not record:
+            record = NowPaymentsPayment(payment_id=str(payment_id))
+            db.add(record)
+        record.status = data.get("payment_status") or record.status
+        record.raw_last_status_response = json.dumps(data)
+        record.expires_at = _parse_iso_datetime(data.get("expiration_estimate_date")) or record.expires_at
+        if data.get("pay_amount") is not None:
+            record.pay_amount = data.get("pay_amount")
+        if data.get("pay_currency") is not None:
+            record.pay_currency = data.get("pay_currency")
+        if data.get("price_amount") is not None:
+            record.price_amount = data.get("price_amount")
+        if data.get("price_currency") is not None:
+            record.price_currency = data.get("price_currency")
+        if data.get("order_id") is not None:
+            record.order_id = data.get("order_id")
+        db.commit()
+    except Exception:
+        pass
+    return data
+
+
+@compat_router.get("/payment/{payment_id}")
+def get_payment_status_root_compat(payment_id: int, db: Session = Depends(get_db)):
+    return get_payment_full(payment_id, db)
+
+
+@router.post("/ipn")
+async def nowpayments_ipn(request: Request, db: Session = Depends(get_db)):
+    secret = os.getenv("NOWPAYMENTS_IPN_SECRET", "")
+    signature = request.headers.get("X-NOWPayments-Sig", "")
+    raw_body = await request.body()
+    try:
+        payload = json.loads(raw_body.decode("utf-8") or "{}")
+    except json.JSONDecodeError as exc:
+        raise HTTPException(status_code=400, detail="Invalid JSON payload") from exc
+
+    signature_valid = verify_nowpayments_signature(payload, signature, secret)
+    logger.info("ipn payload: %s", payload)
+    _store_ipn_event(db, payload, signature, signature_valid)
+
+    if not signature_valid:
+        raise HTTPException(status_code=401, detail="Invalid signature")
+
+    payment_id = payload.get("payment_id")
+    if payment_id is None:
+        raise HTTPException(status_code=400, detail="Missing payment_id")
+
+    payment_status = payload.get("payment_status")
+    if not payment_status:
+        raise HTTPException(status_code=400, detail="Missing payment_status")
+
+    _upsert_nowpayments_payment_from_ipn(db, payload)
+
+    normalized = str(payment_status).lower()
+    if normalized == "finished":
+        # ЕДИНСТВЕННЫЙ источник истины для выдачи доступа — IPN finished
+        apply_finished_status(db, int(payment_id) if str(payment_id).isdigit() else 0, payload.get("order_id"), payload)
+    else:
+        # waiting / confirming / expired / failed / refunded и т.д.
+        _apply_non_finished_status(db, str(payment_id), payload.get("order_id"), normalized, payload)
+
+    return {"status": "ok"}

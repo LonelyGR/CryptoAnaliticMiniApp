@@ -6,6 +6,19 @@ from app.models.admin import Admin
 from app.models.post import Post
 from app.models.payment import Payment
 from app.models.webinar_material import WebinarMaterial
+from app.models.nowpayments_payment import NowPaymentsPayment
+from app.models.nowpayments_ipn_event import NowPaymentsIpnEvent
 
-__all__ = ["User", "ReferralInvite", "Booking", "Webinar", "Admin", "Post", "Payment", "WebinarMaterial"]
+__all__ = [
+    "User",
+    "ReferralInvite",
+    "Booking",
+    "Webinar",
+    "Admin",
+    "Post",
+    "Payment",
+    "WebinarMaterial",
+    "NowPaymentsPayment",
+    "NowPaymentsIpnEvent",
+]
 

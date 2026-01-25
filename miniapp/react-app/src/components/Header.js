@@ -17,17 +17,6 @@ export default function Header({ username, user }) {
           )}
         </div>
         <h1>Привет, {username || "Гость"}!</h1>
-        {user?.is_admin && (
-          <p className="admin-badge-header" style={{ 
-            color: '#4CAF50', 
-            fontWeight: 'bold', 
-            fontSize: '12px',
-            marginTop: '5px'
-          }}>
-            👑 Администратор {user?.role ? `(${user.role})` : ''}
-          </p>
-        )}
-        <p className="user-id">Telegram ID: {user?.telegram_id || user?.id || 'Неизвестно'}</p>
       </div>
     );
 }

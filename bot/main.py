@@ -1,126 +1,118 @@
-import asyncio
 import os
-from typing import Optional
+import time
 import requests
-from aiogram import Bot, Dispatcher, types
-from aiogram.filters import CommandStart
-from aiogram.exceptions import TelegramNetworkError, TelegramForbiddenError, TelegramAPIError
-from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton, FSInputFile
-from pathlib import Path
+from typing import Iterable
+from datetime import datetime, timedelta
 
-TOKEN = os.getenv("BOT_TOKEN", "8246818201:AAEnfD4po58nQg4sEzzv4W7q4vQVRYWLsP8")
-API_BASE_URL = os.getenv("BACKEND_API_URL", "http://localhost:8000")
-BOT_USERNAME = os.getenv("BOT_USERNAME", "crypto_sensebot").replace("@", "").strip()
+from apscheduler.schedulers.background import BackgroundScheduler
 
-ASSETS_PATH = Path(__file__).resolve().parent.parent / "miniapp" / "react-app" / "src" / "assets" / "logo.jpg"
+# ================== НАСТРОЙКИ ==================
 
-bot = Bot(token=TOKEN)
-dp = Dispatcher()
+BOT_TOKEN = "8246818201:AAEnfD4po58nQg4sEzzv4W7q4vQVRYWLsP8"  # ОБЯЗАТЕЛЬНО через env
+if not BOT_TOKEN:
+    raise RuntimeError("BOT_TOKEN is not set")
 
-def extract_referral_code(text: str) -> Optional[str]:
-    if not text:
-        return None
-    parts = text.split(maxsplit=1)
-    if len(parts) < 2:
-        return None
-    payload = parts[1]
-    if payload.startswith("ref_"):
-        return payload.replace("ref_", "", 1)
-    if payload.startswith("share_ref_"):
-        return payload.replace("share_ref_", "", 1)
-    return None
+TELEGRAM_API = f"https://api.telegram.org/bot{BOT_TOKEN}"
 
+# ================== TELEGRAM ==================
 
-async def track_referral(code: str, message: types.Message) -> None:
+def send_message(chat_id: int, text: str) -> bool:
+    """
+    Отправка одного сообщения.
+    Без async, без aiohttp, без aiogram.
+    """
     payload = {
-        "referral_code": code,
-        "referred_telegram_id": message.from_user.id,
-        "referred_username": message.from_user.username,
-        "referred_first_name": message.from_user.first_name,
-        "referred_last_name": message.from_user.last_name,
+        "chat_id": chat_id,
+        "text": text,
+        "parse_mode": "HTML",
+        "disable_web_page_preview": True,
     }
+
     try:
-        await asyncio.to_thread(
-            requests.post,
-            f"{API_BASE_URL}/referrals/track",
+        r = requests.post(
+            f"{TELEGRAM_API}/sendMessage",
             json=payload,
-            timeout=10,
+            timeout=5,
         )
-    except Exception as exc:
-        print(f"Referral track failed: {exc}")
+        r.raise_for_status()
+        return True
+
+    except requests.exceptions.HTTPError as e:
+        # 403 — пользователь заблокировал бота
+        if r.status_code == 403:
+            print(f"[TG] User {chat_id} blocked bot")
+            return False
+        print("[TG] HTTP error:", e)
+
+    except Exception as e:
+        print("[TG] Network error:", e)
+
+    return False
 
 
-async def send_referral_card(message: types.Message, referral_code: str) -> None:
-    if not BOT_USERNAME:
-        await safe_answer(message, "Юзернейм бота не настроен. Обратись к администратору.")
-        return
-
-    referral_link = f"https://t.me/{BOT_USERNAME}?start=ref_{referral_code}"
-    caption = (
-        "🚀 <b>Crypto Sensey — трейдинг по логике маркет‑мейкеров</b>\n\n"
-        "Бот зарабатывает на пампах и дампах, не завися от направления рынка.\n"
-        "Вебинары и персональные консультации включены.\n\n"
-        "Нажми кнопку ниже 👇"
-    )
-    keyboard = InlineKeyboardMarkup(
-        inline_keyboard=[
-            [InlineKeyboardButton(text="Войти в Crypto Sensey", url=referral_link)]
-        ]
-    )
-
-    if ASSETS_PATH.exists():
-        photo = FSInputFile(ASSETS_PATH)
-        try:
-            await message.answer_photo(photo=photo, caption=caption, reply_markup=keyboard, parse_mode="HTML")
-            return
-        except Exception as exc:
-            print(f"Failed to send referral photo: {exc}")
-
-    await safe_answer(message, f"{caption}\n\n{referral_link}")
+def broadcast(chat_ids: Iterable[int], text: str):
+    """
+    Массовая рассылка с защитой от rate limit.
+    """
+    for chat_id in chat_ids:
+        send_message(chat_id, text)
+        time.sleep(0.05)  # ~20 msg/sec — безопасно
 
 
-async def safe_answer(message: types.Message, text: str) -> None:
-    try:
-        await message.answer(text)
-    except TelegramForbiddenError:
-        # User blocked the bot or can't be reached
-        return
-    except TelegramNetworkError as exc:
-        print(f"Telegram network error: {exc}")
-    except TelegramAPIError as exc:
-        print(f"Telegram API error: {exc}")
-    except Exception as exc:
-        print(f"Unexpected bot error: {exc}")
+# ================== ПЛАНИРОВЩИК ==================
+
+scheduler = BackgroundScheduler()
+scheduler.start()
 
 
-@dp.message(CommandStart())
-async def send_welcome(message: types.Message):
-    referral_code = extract_referral_code(message.text)
-    if referral_code and message.text and "share_ref_" in message.text:
-        await send_referral_card(message, referral_code)
-        return
-    if referral_code:
-        await track_referral(referral_code, message)
+def schedule_webinar_reminder(
+    chat_ids: Iterable[int],
+    title: str,
+    start_time: datetime,
+    minutes_before: int = 15,
+):
+    """
+    Напоминание о вебинаре
+    """
+    run_at = start_time - timedelta(minutes=minutes_before)
 
-    await safe_answer(
-        message,
-        "Привет, {username}!\n"
-        "Следи за рынком, записывайся на вебинары и получай консультации от профессионалов 🚀".format(
-            username=message.from_user.full_name
+    def job():
+        broadcast(
+            chat_ids,
+            f"⏰ <b>Через {minutes_before} минут вебинар</b>\n\n"
+            f"📌 {title}"
         )
-    )
+
+    scheduler.add_job(job, "date", run_date=run_at)
+    print(f"[Scheduler] Reminder set at {run_at}")
 
 
-@dp.message()
-async def handle_any_message(message: types.Message):
-    await safe_answer(
-        message,
-        "Я на связи! Открой мини‑приложение, чтобы продолжить работу 🚀"
-    )
-
-async def main():
-    print("Бот запущен...")
-    await dp.start_polling(bot)
+# ================== ПРИМЕР ИСПОЛЬЗОВАНИЯ ==================
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    # ❗ Эти chat_id ты хранишь в БД
+    USERS = [
+        123456789,
+        987654321,
+    ]
+
+    # 1️⃣ Уведомление о новом вебинаре
+    broadcast(
+        USERS,
+        "🚀 <b>Новый вебинар уже доступен!</b>\n\n"
+        "Зайди в Mini App, чтобы узнать подробности."
+    )
+
+    # 2️⃣ Напоминание за 15 минут
+    webinar_start = datetime.now() + timedelta(minutes=20)
+
+    schedule_webinar_reminder(
+        chat_ids=USERS,
+        title="Как торговать по логике маркет-мейкеров",
+        start_time=webinar_start,
+        minutes_before=15,
+    )
+
+    print("Notifier is running...")
+    while True:
+        time.sleep(60)

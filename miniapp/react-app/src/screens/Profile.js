@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import ScreenWrapper from '../components/ScreenWrapper';
 import Header from '../components/Header';
-import { getUserBookings, getWebinars, createAdmin, getAdmins, updateAdmin, deleteAdmin, getReferralInfo, clearDatabase } from '../services/api';
+import { getUserBookings, getWebinars, getUserByTelegramId, createAdmin, getAdmins, updateAdmin, deleteAdmin, getReferralInfo, clearDatabase, clearData } from '../services/api';
 import logo from '../assets/logo.jpg';
 
 function formatDate(dateString) {
@@ -10,7 +10,7 @@ function formatDate(dateString) {
     return date.toLocaleDateString('ru-RU', options);
 }
 
-export default function Profile({ user, apiConnected, onNavigate }) {
+export default function Profile({ user, apiConnected, onNavigate, username }) {
     const [bookings, setBookings] = useState({ webinars: [], tickets: [] });
     const [webinars, setWebinars] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -25,9 +25,14 @@ export default function Profile({ user, apiConnected, onNavigate }) {
     const [editingAdmin, setEditingAdmin] = useState(null);
     const [referralInfo, setReferralInfo] = useState(null);
     const [loadingReferral, setLoadingReferral] = useState(false);
+    const [showDeleteDataModal, setShowDeleteDataModal] = useState(false);
+    const [deletingDataKey, setDeletingDataKey] = useState(null);
 
     // Проверка, является ли пользователь разработчиком
-    const isDeveloper = ['разработчик', 'developer', 'владелец', 'owner'].includes((user?.role || '').toLowerCase());
+    const roleLower = (user?.role || '').toLowerCase();
+    const isDeveloper = ['разработчик', 'developer', 'владелец', 'owner'].includes(roleLower);
+    const isAdminUser = Boolean(user?.is_admin);
+    const canManageAdmins = isDeveloper; // модератору/админу — только просмотр
 
     useEffect(() => {
         const loadUserData = async () => {
@@ -91,14 +96,35 @@ export default function Profile({ user, apiConnected, onNavigate }) {
         loadReferralInfo();
     }, [apiConnected, user?.telegram_id, user?.id]);
 
-    // Загружаем список админов для разработчика
+    // Загружаем список админов для админов (в т.ч. модератора) и разработчика
     useEffect(() => {
         const loadAdmins = async () => {
-            if (isDeveloper && apiConnected) {
+            if (isAdminUser && apiConnected) {
                 setLoadingAdmins(true);
                 try {
                     const adminsList = await getAdmins();
-                    setAdmins(adminsList || []);
+
+                    // Подтягиваем username для отображения (admins endpoint хранит только telegram_id + role)
+                    const enriched = await Promise.all((adminsList || []).map(async (admin) => {
+                        try {
+                            const u = await getUserByTelegramId(admin.telegram_id);
+                            return {
+                                ...admin,
+                                username: u?.username || null,
+                                first_name: u?.first_name || null,
+                                last_name: u?.last_name || null,
+                            };
+                        } catch (e) {
+                            return {
+                                ...admin,
+                                username: null,
+                                first_name: null,
+                                last_name: null,
+                            };
+                        }
+                    }));
+
+                    setAdmins(enriched);
                 } catch (error) {
                     console.error('Failed to load admins:', error);
                     setAdmins([]);
@@ -109,7 +135,7 @@ export default function Profile({ user, apiConnected, onNavigate }) {
         };
 
         loadAdmins();
-    }, [isDeveloper, apiConnected]);
+    }, [isAdminUser, apiConnected]);
 
     // Получаем название вебинара по webinar_id
     const getWebinarTitle = (webinarId) => {
@@ -184,13 +210,49 @@ export default function Profile({ user, apiConnected, onNavigate }) {
         }
     };
 
-    const handleClearDatabase = async () => {
+    const deleteOptions = [
+        {
+            key: 'posts',
+            title: 'Новости (посты)',
+            description: 'Удалить все посты в ленте',
+            targets: ['posts']
+        },
+        {
+            key: 'bookings',
+            title: 'Записи и платежи',
+            description: 'Удалить записи на вебинары, тикеты и платежи',
+            targets: ['payments', 'bookings']
+        },
+        {
+            key: 'webinars',
+            title: 'Вебинары и материалы',
+            description: 'Удалить вебинары и материалы',
+            targets: ['webinar_materials', 'webinars']
+        },
+        {
+            key: 'referrals',
+            title: 'Рефералы',
+            description: 'Удалить приглашения по реферальной ссылке',
+            targets: ['referral_invites']
+        },
+        {
+            key: 'users',
+            title: 'Пользователи и активности',
+            description: 'Удалить пользователей, их записи и рефералы',
+            targets: ['payments', 'bookings', 'referral_invites', 'users']
+        },
+        {
+            key: 'all',
+            title: 'Все данные (включая админов)',
+            description: 'Полная очистка базы данных',
+            mode: 'all'
+        }
+    ];
+
+    const handleDeleteData = async (option) => {
+        if (deletingDataKey) return;
         if (!apiConnected) {
             alert('Сервер недоступен');
-            return;
-        }
-
-        if (!window.confirm('Это удалит все данные из базы, включая админов. Продолжить?')) {
             return;
         }
 
@@ -200,12 +262,27 @@ export default function Profile({ user, apiConnected, onNavigate }) {
             return;
         }
 
+        const confirmText = option.key === 'all'
+            ? 'Это удалит все данные, включая админов. Продолжить?'
+            : `Удалить: ${option.title}?`;
+        if (!window.confirm(confirmText)) {
+            return;
+        }
+
         try {
-            await clearDatabase(adminTelegramId);
-            alert('База данных очищена');
+            setDeletingDataKey(option.key);
+            if (option.mode === 'all') {
+                await clearDatabase(adminTelegramId);
+            } else {
+                await clearData(adminTelegramId, option.targets);
+            }
+            alert('Удаление выполнено');
+            setShowDeleteDataModal(false);
         } catch (error) {
-            console.error('Failed to clear database:', error);
-            alert('Не удалось очистить базу');
+            console.error('Failed to delete data:', error);
+            alert('Не удалось удалить данные');
+        } finally {
+            setDeletingDataKey(null);
         }
     };
 
@@ -321,10 +398,6 @@ export default function Profile({ user, apiConnected, onNavigate }) {
                             <span className="info-value">{user?.first_name || 'Не указано'}</span>
                         </div>
                         <div className="info-row">
-                            <span className="info-label">Фамилия:</span>
-                            <span className="info-value">{user?.last_name || 'Не указано'}</span>
-                        </div>
-                        <div className="info-row">
                             <span className="info-label">Username:</span>
                             <span className="info-value">@{user?.username || 'Не указано'}</span>
                         </div>
@@ -332,76 +405,84 @@ export default function Profile({ user, apiConnected, onNavigate }) {
                             <span className="info-label">Telegram ID:</span>
                             <span className="info-value">{user?.telegram_id || user?.id || 'Неизвестно'}</span>
                         </div>
-                        {user?.id && user?.id !== user?.telegram_id && (
-                            <div className="info-row">
-                                <span className="info-label">ID в БД:</span>
-                                <span className="info-value">{user.id}</span>
-                            </div>
-                        )}
+                        <div className="info-row">
+                            <span className="info-label">Роль:</span>
+                            <span className="info-value">{user.role || 'Пользователь'}</span>
+                        </div>
                     </div>
                 </div>
 
-                {isDeveloper && (
+                {isAdminUser ? (
                     <div className="profile-section">
-                        <h2 className="section-title">Управление администраторами</h2>
+                        <h2 className="section-title">Администрация</h2>
                         <div className="profile-info-card">
-                            {!showAddAdminForm ? (
-                                <button
-                                    className="btn-primary"
-                                    onClick={() => setShowAddAdminForm(true)}
-                                    style={{ marginBottom: '20px', width: '100%' }}
-                                >
-                                    + Добавить администратора
-                                </button>
-                            ) : (
-                                <form onSubmit={handleAddAdmin} className="admin-form" style={{ marginBottom: '20px' }}>
-                                    <div className="form-group">
-                                        <label>Telegram ID пользователя *</label>
-                                        <input
-                                            type="number"
-                                            className="form-input"
-                                            value={adminFormData.telegram_id}
-                                            onChange={(e) => setAdminFormData({...adminFormData, telegram_id: e.target.value})}
-                                            placeholder="Введите Telegram ID"
-                                            required
-                                        />
-                                    </div>
-                                    <div className="form-group">
-                                        <label>Роль</label>
-                                        <select
-                                            className="form-select"
-                                            value={adminFormData.role}
-                                            onChange={(e) => setAdminFormData({...adminFormData, role: e.target.value})}
-                                        >
-                                            <option value="Администратор">Администратор</option>
-                                            <option value="владелец">Владелец</option>
-                                            <option value="Модератор">Модератор</option>
-                                        </select>
-                                    </div>
-                                    <div style={{ display: 'flex', gap: '12px', marginTop: '8px' }}>
+                            {!canManageAdmins && (
+                                <div style={{ marginBottom: 12, opacity: 0.75, fontSize: 13 }}>
+                                    Доступен только просмотр списка администраторов.
+                                </div>
+                            )}
+
+                            {canManageAdmins && (
+                                <>
+                                    {!showAddAdminForm ? (
                                         <button
-                                            type="submit"
                                             className="btn-primary"
-                                            disabled={submittingAdmin}
-                                            style={{ flex: 1, opacity: submittingAdmin ? 0.6 : 1 }}
+                                            onClick={() => setShowAddAdminForm(true)}
+                                            style={{ marginBottom: '20px', width: '100%' }}
                                         >
-                                            {submittingAdmin ? 'Добавление...' : 'Добавить'}
+                                            + Добавить администратора
                                         </button>
-                                        <button
-                                            type="button"
-                                            className="btn-secondary-admin"
-                                            onClick={() => {
-                                                setShowAddAdminForm(false);
-                                                setAdminFormData({
-                                                    telegram_id: '',
-                                                    role: 'Администратор'
-                                                });
-                                            }}
-                                        >
-                                            Отмена
-                                        </button>
-                                    </div>
-                                </form>
+                                    ) : (
+                                        <form onSubmit={handleAddAdmin} className="admin-form" style={{ marginBottom: '20px' }}>
+                                            <div className="form-group">
+                                                <label>Telegram ID пользователя *</label>
+                                                <input
+                                                    type="number"
+                                                    className="form-input"
+                                                    value={adminFormData.telegram_id}
+                                                    onChange={(e) => setAdminFormData({...adminFormData, telegram_id: e.target.value})}
+                                                    placeholder="Введите Telegram ID"
+                                                    required
+                                                />
+                                            </div>
+                                            <div className="form-group">
+                                                <label>Роль</label>
+                                                <select
+                                                    className="form-select"
+                                                    value={adminFormData.role}
+                                                    onChange={(e) => setAdminFormData({...adminFormData, role: e.target.value})}
+                                                >
+                                                    <option value="Администратор">Администратор</option>
+                                                    <option value="владелец">Владелец</option>
+                                                    <option value="Модератор">Модератор</option>
+                                                </select>
+                                            </div>
+                                            <div style={{ display: 'flex', gap: '12px', marginTop: '8px' }}>
+                                                <button
+                                                    type="submit"
+                                                    className="btn-primary"
+                                                    disabled={submittingAdmin}
+                                                    style={{ flex: 1, opacity: submittingAdmin ? 0.6 : 1 }}
+                                                >
+                                                    {submittingAdmin ? 'Добавление...' : 'Добавить'}
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    className="btn-secondary-admin"
+                                                    onClick={() => {
+                                                        setShowAddAdminForm(false);
+                                                        setAdminFormData({
+                                                            telegram_id: '',
+                                                            role: 'Администратор'
+                                                        });
+                                                    }}
+                                                >
+                                                    Отмена
+                                                </button>
+                                            </div>
+                                        </form>
+                                    )}
+                                </>
                             )}
 
                             <div className="admins-list">
@@ -418,7 +499,10 @@ export default function Profile({ user, apiConnected, onNavigate }) {
                                         <div key={admin.id} className="admin-item">
                                             <div className="admin-item-info">
                                                 <p className="admin-telegram-id">Telegram ID: {admin.telegram_id}</p>
-                                                {editingAdmin?.id === admin.id ? (
+                                                <p className="admin-user-name">
+                                                    Username: {admin.username ? `@${admin.username}` : '—'}
+                                                </p>
+                                                {canManageAdmins && editingAdmin?.id === admin.id ? (
                                                     <select
                                                         className="form-select admin-role-select"
                                                         value={editingAdmin.role === 'разработчик' || editingAdmin.role === 'developer' ? 'владелец' : editingAdmin.role}
@@ -432,61 +516,66 @@ export default function Profile({ user, apiConnected, onNavigate }) {
                                                     <p className="admin-role">Роль: {admin.role}</p>
                                                 )}
                                             </div>
-                                            <div className="admin-item-actions">
-                                                {editingAdmin?.id === admin.id ? (
-                                                    <>
-                                                        <button
-                                                            className="btn-save-admin"
-                                                            onClick={() => handleUpdateAdmin(admin.id, editingAdmin.role)}
-                                                        >
-                                                            Сохранить
-                                                        </button>
-                                                        <button
-                                                            className="btn-cancel-admin"
-                                                            onClick={() => setEditingAdmin(null)}
-                                                        >
-                                                            Отмена
-                                                        </button>
-                                                    </>
-                                                ) : (
-                                                    <>
-                                                        <button
-                                                            className="btn-edit-admin"
-                                                            onClick={() => setEditingAdmin(admin)}
-                                                        >
-                                                            Редактировать
-                                                        </button>
-                                                        <button
-                                                            className="btn-delete-admin"
-                                                            onClick={() => handleDeleteAdmin(admin.id)}
-                                                        >
-                                                            Удалить
-                                                        </button>
-                                                    </>
-                                                )}
-                                            </div>
+
+                                            {canManageAdmins && (
+                                                <div className="admin-item-actions">
+                                                    {editingAdmin?.id === admin.id ? (
+                                                        <>
+                                                            <button
+                                                                className="btn-save-admin"
+                                                                onClick={() => handleUpdateAdmin(admin.id, editingAdmin.role)}
+                                                            >
+                                                                Сохранить
+                                                            </button>
+                                                            <button
+                                                                className="btn-cancel-admin"
+                                                                onClick={() => setEditingAdmin(null)}
+                                                            >
+                                                                Отмена
+                                                            </button>
+                                                        </>
+                                                    ) : (
+                                                        <>
+                                                            <button
+                                                                className="btn-edit-admin"
+                                                                onClick={() => setEditingAdmin(admin)}
+                                                            >
+                                                                Редактировать
+                                                            </button>
+                                                            <button
+                                                                className="btn-delete-admin"
+                                                                onClick={() => handleDeleteAdmin(admin.id)}
+                                                            >
+                                                                Удалить
+                                                            </button>
+                                                        </>
+                                                    )}
+                                                </div>
+                                            )}
                                         </div>
                                     ))
                                 )}
                             </div>
 
-                            <div className="developer-actions">
-                                <button
-                                    className="btn-secondary-admin"
-                                    onClick={() => onNavigate && onNavigate('admin-users')}
-                                >
-                                    Управление пользователями
-                                </button>
-                                <button
-                                    className="btn-delete-admin"
-                                    onClick={handleClearDatabase}
-                                >
-                                    Очистить базу
-                                </button>
-                            </div>
+                            {canManageAdmins && (
+                                <div className="developer-actions">
+                                    <button
+                                        className="btn-secondary-admin"
+                                        onClick={() => onNavigate && onNavigate('admin-users')}
+                                    >
+                                        Управление пользователями
+                                    </button>
+                                    <button
+                                        className="btn-delete-admin"
+                                        onClick={() => setShowDeleteDataModal(true)}
+                                    >
+                                        Удалить данные
+                                    </button>
+                                </div>
+                            )}
                         </div>
                     </div>
-                )}
+                ) : null}
 
                 <div className="profile-section">
                     <h2 className="section-title">Мои записи на вебинары</h2>
@@ -610,6 +699,62 @@ export default function Profile({ user, apiConnected, onNavigate }) {
                     )}
                 </div>
             </div>
+
+            {showDeleteDataModal && (
+                <div
+                    className="modal-overlay"
+                    role="dialog"
+                    aria-modal="true"
+                    aria-label="Удаление данных"
+                    onClick={() => setShowDeleteDataModal(false)}
+                >
+                    <div className="modal-content" onClick={(event) => event.stopPropagation()}>
+                        <div className="modal-header">
+                            <h2>Удаление данных</h2>
+                            <button
+                                className="modal-close"
+                                type="button"
+                                onClick={() => setShowDeleteDataModal(false)}
+                                aria-label="Закрыть"
+                            >
+                                ×
+                            </button>
+                        </div>
+                        <div className="modal-body">
+                            <div className="modal-info">
+                                <p>Выберите, какие данные нужно удалить. Операция необратима.</p>
+                            </div>
+                            <div className="data-delete-options">
+                                {deleteOptions.map(option => (
+                                    <button
+                                        key={option.key}
+                                        type="button"
+                                        className={`data-delete-option ${option.key === 'all' ? 'data-delete-option--danger' : ''}`}
+                                        onClick={() => handleDeleteData(option)}
+                                        disabled={deletingDataKey === option.key}
+                                    >
+                                        <span className="data-delete-title">
+                                            {option.title}
+                                        </span>
+                                        <span className="data-delete-description">
+                                            {deletingDataKey === option.key ? 'Удаляем...' : option.description}
+                                        </span>
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+                        <div className="modal-footer">
+                            <button
+                                className="btn-secondary"
+                                type="button"
+                                onClick={() => setShowDeleteDataModal(false)}
+                            >
+                                Закрыть
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </ScreenWrapper>
     );
 }

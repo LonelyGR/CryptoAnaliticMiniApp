@@ -8,6 +8,7 @@ from app.models.booking import Booking
 from app.models.webinar import Webinar
 from app.models.user import User
 from app.models.admin import Admin
+from app.utils.telegram import send_telegram_message
 
 router = APIRouter(prefix="/reminders", tags=["reminders"])
 
@@ -36,15 +37,15 @@ def check_and_send_reminders(
     """Проверить и отправить напоминания о вебинарах (только для администраторов)
     
     Этот endpoint должен вызываться периодически (например, каждые 5 минут) через cron job или планировщик задач.
-    Он проверяет все предстоящие вебинары и отправляет напоминания за 24 часа, 1 час и 10 минут.
+    Он проверяет все предстоящие вебинары и отправляет напоминания за 12 часов, 2 часа и 15 минут (только оплатившим).
     """
     check_admin_access(admin_telegram_id, db)
     
     now = datetime.now()
     reminders_sent = {
-        "24h": 0,
-        "1h": 0,
-        "10m": 0
+        "12h": 0,
+        "2h": 0,
+        "15m": 0
     }
     
     # Получаем все предстоящие вебинары
@@ -64,39 +65,57 @@ def check_and_send_reminders(
             bookings = db.query(Booking).filter(
                 Booking.webinar_id == webinar.id,
                 Booking.status.in_(["confirmed", "paid"]),
-                Booking.payment_status.in_(["paid", None])  # Оплаченные или бесплатные
+                Booking.payment_status == "paid"  # только оплатившие
             ).all()
             
             time_until = webinar_datetime - now
             
             for booking in bookings:
                 user = db.query(User).filter(User.id == booking.user_id).first()
-                if not user:
+                if not user or not user.telegram_id or user.is_blocked:
                     continue
                 
-                # Напоминание за 24 часа
-                if timedelta(hours=23, minutes=50) <= time_until <= timedelta(hours=24, minutes=10):
+                # Напоминание за 12 часов (флаг reminder_sent_24h используется как "12h")
+                if timedelta(hours=11, minutes=50) <= time_until <= timedelta(hours=12, minutes=10):
                     if booking.reminder_sent_24h == 0:
-                        # Здесь должна быть отправка уведомления (email, Telegram и т.д.)
-                        # Пока просто обновляем флаг
+                        msg = (
+                            "⏰ <b>Напоминание о вебинаре</b>\n\n"
+                            f"Через <b>12 часов</b> начнётся вебинар:\n"
+                            f"📌 <b>{webinar.title}</b>\n"
+                            f"🗓 <b>{webinar.date}</b> ⏰ <b>{webinar.time}</b>\n\n"
+                            "Откройте мини‑приложение, чтобы посмотреть детали."
+                        )
+                        send_telegram_message(user.telegram_id, msg)
                         booking.reminder_sent_24h = 1
-                        reminders_sent["24h"] += 1
-                        # В реальном приложении здесь будет:
-                        # send_notification(user, webinar, "24h")
+                        reminders_sent["12h"] += 1
                 
-                # Напоминание за 1 час
-                elif timedelta(minutes=50) <= time_until <= timedelta(hours=1, minutes=10):
+                # Напоминание за 2 часа (флаг reminder_sent_1h используется как "2h")
+                elif timedelta(hours=1, minutes=50) <= time_until <= timedelta(hours=2, minutes=10):
                     if booking.reminder_sent_1h == 0:
+                        msg = (
+                            "⏰ <b>Напоминание о вебинаре</b>\n\n"
+                            f"Через <b>2 часа</b> начнётся вебинар:\n"
+                            f"📌 <b>{webinar.title}</b>\n"
+                            f"🗓 <b>{webinar.date}</b> ⏰ <b>{webinar.time}</b>\n\n"
+                            "Откройте мини‑приложение заранее, чтобы быть готовым."
+                        )
+                        send_telegram_message(user.telegram_id, msg)
                         booking.reminder_sent_1h = 1
-                        reminders_sent["1h"] += 1
-                        # send_notification(user, webinar, "1h")
+                        reminders_sent["2h"] += 1
                 
-                # Напоминание за 10 минут
-                elif timedelta(minutes=5) <= time_until <= timedelta(minutes=15):
+                # Напоминание за 15 минут (флаг reminder_sent_10m используется как "15m")
+                elif timedelta(minutes=10) <= time_until <= timedelta(minutes=20):
                     if booking.reminder_sent_10m == 0:
+                        msg = (
+                            "🚀 <b>Вебинар скоро начнётся</b>\n\n"
+                            f"Через <b>15 минут</b> старт:\n"
+                            f"📌 <b>{webinar.title}</b>\n"
+                            f"🗓 <b>{webinar.date}</b> ⏰ <b>{webinar.time}</b>\n\n"
+                            "Откройте мини‑приложение: кнопка <b>«Подключиться»</b> уже доступна."
+                        )
+                        send_telegram_message(user.telegram_id, msg)
                         booking.reminder_sent_10m = 1
-                        reminders_sent["10m"] += 1
-                        # send_notification(user, webinar, "10m")
+                        reminders_sent["15m"] += 1
             
             db.commit()
         except Exception as e:
