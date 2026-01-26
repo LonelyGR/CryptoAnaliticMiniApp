@@ -383,8 +383,8 @@ export default function Profile({ user, apiConnected, onNavigate, username }) {
                         {user?.is_admin && (
                             <div className="admin-badge" style={{
                                 padding: '10px',
-                                backgroundColor: '#4CAF50',
-                                color: 'white',
+                                backgroundColor: 'var(--accent)',
+                                color: 'var(--text)',
                                 borderRadius: '8px',
                                 marginBottom: '15px',
                                 textAlign: 'center',
@@ -580,7 +580,7 @@ export default function Profile({ user, apiConnected, onNavigate, username }) {
                 <div className="profile-section">
                     <h2 className="section-title">Мои записи на вебинары</h2>
                     {!apiConnected && (
-                        <div className="error-banner" style={{ margin: '20px 0', padding: '15px', backgroundColor: '#ff9800', color: 'white', borderRadius: '8px' }}>
+                        <div className="error-banner" style={{ margin: '20px 0', padding: '15px', backgroundColor: 'var(--yellow)', color: 'var(--bg)', borderRadius: '8px' }}>
                             ⚠️ Сервер недоступен. Записи не могут быть загружены.
                         </div>
                     )}
@@ -647,7 +647,7 @@ export default function Profile({ user, apiConnected, onNavigate, username }) {
                 <div className="profile-section">
                     <h2 className="section-title">Мои тикеты и консультации</h2>
                     {!apiConnected && (
-                        <div className="error-banner" style={{ margin: '20px 0', padding: '15px', backgroundColor: '#ff9800', color: 'white', borderRadius: '8px' }}>
+                        <div className="error-banner" style={{ margin: '20px 0', padding: '15px', backgroundColor: 'var(--yellow)', color: 'var(--bg)', borderRadius: '8px' }}>
                             ⚠️ Сервер недоступен. Тикеты не могут быть загружены.
                         </div>
                     )}

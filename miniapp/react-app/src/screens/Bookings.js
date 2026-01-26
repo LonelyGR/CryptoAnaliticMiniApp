@@ -152,7 +152,7 @@ export default function Bookings({ user, apiConnected }) {
                 <p className="page-subtitle">Выберите интересующий вас вебинар и запишитесь</p>
                 
                 {!apiConnected && (
-                    <div className="error-banner" style={{ margin: '20px 0', padding: '15px', backgroundColor: '#ff9800', color: 'white', borderRadius: '8px' }}>
+                    <div className="error-banner" style={{ margin: '20px 0', padding: '15px', backgroundColor: 'var(--yellow)', color: 'var(--bg)', borderRadius: '8px' }}>
                         ⚠️ Сервер недоступен. Вебинары не могут быть загружены.
                     </div>
                 )}

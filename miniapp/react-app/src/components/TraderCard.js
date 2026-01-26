@@ -2,9 +2,9 @@ import React from 'react';
 
 export default function TraderCard({ trader, rank, onCopyClick, onFollowClick }) {
     const getRankBadge = () => {
-        if (rank === 1) return { icon: '🥇', color: '#FFD700', label: '01' };
-        if (rank === 2) return { icon: '🥈', color: '#C0C0C0', label: '02' };
-        if (rank === 3) return { icon: '🥉', color: '#CD7F32', label: '03' };
+        if (rank === 1) return { icon: '🥇', color: 'var(--yellow)', label: '01' };
+        if (rank === 2) return { icon: '🥈', color: 'var(--text-2)', label: '02' };
+        if (rank === 3) return { icon: '🥉', color: 'var(--text-3)', label: '03' };
         return null;
     };
 
@@ -21,7 +21,7 @@ export default function TraderCard({ trader, rank, onCopyClick, onFollowClick })
             )}
             
             <div className="trader-avatar-container">
-                <div className="trader-avatar" style={{ background: trader.avatarBg || '#1E293B' }}>
+                <div className="trader-avatar" style={{ background: trader.avatarBg || 'var(--bg-2)' }}>
                     {trader.avatarIcon || '👤'}
                 </div>
                 {isTopThree && <div className="rank-glow" style={{ borderColor: rankBadge.color }}></div>}

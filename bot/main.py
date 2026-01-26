@@ -7,10 +7,13 @@ from datetime import datetime, timedelta
 from apscheduler.schedulers.background import BackgroundScheduler
 
 # ================== НАСТРОЙКИ ==================
-
-BOT_TOKEN = "8246818201:AAEnfD4po58nQg4sEzzv4W7q4vQVRYWLsP8"  # ОБЯЗАТЕЛЬНО через env
+#
+# IMPORTANT:
+# Never hardcode tokens. Set via env on server.
+#
+BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
 if not BOT_TOKEN:
-    raise RuntimeError("BOT_TOKEN is not set")
+    raise RuntimeError("TELEGRAM_BOT_TOKEN is not set")
 
 TELEGRAM_API = f"https://api.telegram.org/bot{BOT_TOKEN}"
 
@@ -90,29 +93,6 @@ def schedule_webinar_reminder(
 # ================== ПРИМЕР ИСПОЛЬЗОВАНИЯ ==================
 
 if __name__ == "__main__":
-    # ❗ Эти chat_id ты хранишь в БД
-    USERS = [
-        123456789,
-        987654321,
-    ]
-
-    # 1️⃣ Уведомление о новом вебинаре
-    broadcast(
-        USERS,
-        "🚀 <b>Новый вебинар уже доступен!</b>\n\n"
-        "Зайди в Mini App, чтобы узнать подробности."
-    )
-
-    # 2️⃣ Напоминание за 15 минут
-    webinar_start = datetime.now() + timedelta(minutes=20)
-
-    schedule_webinar_reminder(
-        chat_ids=USERS,
-        title="Как торговать по логике маркет-мейкеров",
-        start_time=webinar_start,
-        minutes_before=15,
-    )
-
-    print("Notifier is running...")
-    while True:
-        time.sleep(60)
+    # This file is kept for local testing / examples.
+    # In production prefer a dedicated worker that calls backend reminder endpoints.
+    print("Bot utility module loaded. Set TELEGRAM_BOT_TOKEN to send messages.")

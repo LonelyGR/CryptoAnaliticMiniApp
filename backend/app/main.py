@@ -27,11 +27,22 @@ async def validation_exception_handler(request, exc: RequestValidationError):
         except Exception:
             pass
     return await request_validation_exception_handler(request, exc)
-# Настройка CORS - разрешаем все источники и методы
-# Для ngrok важно разрешить все origins, так как URL может меняться
+def _get_cors_origins() -> list[str]:
+    """
+    CORS origins for production.
+    - If CORS_ALLOW_ORIGINS is set (comma-separated), use it.
+    - Else fallback to "*" (dev-friendly).
+    """
+    raw = (os.getenv("CORS_ALLOW_ORIGINS") or "").strip()
+    if not raw:
+        return ["*"]
+    return [o.strip() for o in raw.split(",") if o.strip()]
+
+
+# Настройка CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Разрешаем все источники (включая ngrok)
+    allow_origins=_get_cors_origins(),
     allow_credentials=False,  # Отключаем credentials (несовместимо с "*")
     allow_methods=["*"],  # Разрешаем все методы
     allow_headers=["*"],  # Разрешаем все заголовки (включая ngrok-specific)

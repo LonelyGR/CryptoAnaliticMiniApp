@@ -1,5 +1,6 @@
 // API конфигурация
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000';
+// Prod default: same-origin proxy (/api) when served via nginx
+const API_BASE_URL = process.env.REACT_APP_API_URL || '/api';
 
 // Логируем используемый URL для отладки
 console.log('API Base URL configured:', API_BASE_URL);

@@ -1,0 +1,49 @@
+services:
+  backend:
+    build:
+      context: ./backend
+    environment:
+      # Use DATABASE_URL to switch DB (sqlite/postgres)
+      # Example sqlite in container volume:
+      - DATABASE_URL=${DATABASE_URL:-sqlite:////data/db.sqlite3}
+      # Telegram bot token for sending reminders from backend
+      - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN}
+      # Bot username for referral links (optional)
+      - TELEGRAM_BOT_USERNAME=${TELEGRAM_BOT_USERNAME}
+      # Comma-separated origins in production, e.g. https://your-domain.com,https://t.me
+      - CORS_ALLOW_ORIGINS=${CORS_ALLOW_ORIGINS:-*}
+      # NOWPayments (optional)
+      - NOWPAYMENTS_API_KEY=${NOWPAYMENTS_API_KEY}
+      - NOWPAYMENTS_IPN_SECRET=${NOWPAYMENTS_IPN_SECRET}
+      - NOWPAYMENTS_IPN_CALLBACK_URL=${NOWPAYMENTS_IPN_CALLBACK_URL}
+      - NOWPAYMENTS_API_BASE=${NOWPAYMENTS_API_BASE:-https://api.nowpayments.io/v1}
+      - NOWPAYMENTS_TIMEOUT=${NOWPAYMENTS_TIMEOUT:-15}
+    volumes:
+      - backend-data:/data
+    ports:
+      - "8000:8000"
+
+  frontend:
+    build:
+      context: ./miniapp/react-app
+      args:
+        # Frontend will call /api (nginx proxy)
+        REACT_APP_API_URL: /api
+    depends_on:
+      - backend
+    ports:
+      - "80:80"
+
+  reminders-worker:
+    build:
+      context: ./bot
+    depends_on:
+      - backend
+    environment:
+      - BACKEND_URL=http://backend:8000
+      - ADMIN_TELEGRAM_ID=${ADMIN_TELEGRAM_ID}
+      - REMINDER_INTERVAL_SECONDS=${REMINDER_INTERVAL_SECONDS:-300}
+
+volumes:
+  backend-data:
+

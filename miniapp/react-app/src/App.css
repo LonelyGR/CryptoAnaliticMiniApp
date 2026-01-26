@@ -12,8 +12,10 @@
   --text-3: #B0B0B0;
   --muted: #7A7A7A;
 
-  --accent: #0066FF;
-  --accent-hover: #00A3FF;
+  /* requested: all blue -> orange */
+  --accent: #fd7900;
+  --accent-hover: #fd7900;
+  --accent-rgb: 253, 121, 0;
   --yellow: #FFCC00;
 
   --shadow: rgba(0, 0, 0, 0.45);
@@ -110,13 +112,13 @@ a:hover {
   width: 96px;
   height: 96px;
   border-radius: 50%;
-  background: radial-gradient(circle, #3e3f4e 0%, #1c1d2a 100%);
+  background: radial-gradient(circle, var(--card) 0%, var(--bg-2) 100%);
   margin-bottom: 16px;
   overflow: hidden;
   display: flex;
   align-items: center;
   justify-content: center;
-  border: 2px solid rgba(255, 255, 255, 0.1);
+  border: 2px solid var(--border-soft);
 }
 
 .avatar-img {
@@ -133,8 +135,8 @@ a:hover {
   justify-content: center;
   font-size: 36px;
   font-weight: 600;
-  color: rgba(255, 255, 255, 0.8);
-  background: radial-gradient(circle, #3e3f4e 0%, #1c1d2a 100%);
+  color: var(--text-2);
+  background: radial-gradient(circle, var(--card) 0%, var(--bg-2) 100%);
 }
 
 .header h1 {
@@ -145,7 +147,7 @@ a:hover {
 
 .header .user-id {
   font-size: 13px;
-  opacity: 0.6;
+  color: var(--muted);
   margin: 0;
 }
 
@@ -209,7 +211,7 @@ a:hover {
 }
 
 .nav-item.active .nav-icon {
-  text-shadow: 0 0 10px rgba(0, 102, 255, 0.35);
+  text-shadow: 0 0 10px rgba(var(--accent-rgb), 0.35);
 }
 
 .nav-item.active .nav-label {
@@ -227,12 +229,12 @@ a:hover {
   height: 48px;
   border-radius: 18px;
 
-  background: rgba(0, 102, 255, 0.16);
+  background: rgba(var(--accent-rgb), 0.16);
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
 
   box-shadow:
-    0 0 16px rgba(0, 102, 255, 0.18),
+    0 0 16px rgba(var(--accent-rgb), 0.18),
     inset 0 1px 0 rgba(255, 255, 255, 0.08);
 
   transition: left 0.35s cubic-bezier(0.4, 0, 0.2, 1);
@@ -443,7 +445,7 @@ a:hover {
   font-weight: 600;
   cursor: pointer;
   transition: transform 0.2s ease, box-shadow 0.2s ease;
-  box-shadow: 0 4px 12px rgba(0, 102, 255, 0.25);
+  box-shadow: 0 4px 12px rgba(var(--accent-rgb), 0.25);
 }
 
 .btn-book:active {
@@ -456,10 +458,10 @@ a:hover {
   color: var(--accent-hover);
   margin: 12px 0;
   padding: 8px 12px;
-  background: rgba(0, 102, 255, 0.12);
+  background: rgba(var(--accent-rgb), 0.12);
   border-radius: 8px;
   display: inline-block;
-  border: 1px solid rgba(0, 102, 255, 0.22);
+  border: 1px solid rgba(var(--accent-rgb), 0.22);
 }
 
 .webinar-platform {
@@ -484,7 +486,7 @@ a:hover {
   cursor: pointer;
   text-decoration: none;
   transition: transform 0.2s ease, box-shadow 0.2s ease;
-  box-shadow: 0 4px 12px rgba(0, 102, 255, 0.25);
+  box-shadow: 0 4px 12px rgba(var(--accent-rgb), 0.25);
 }
 
 .btn-meeting-link:disabled {
@@ -541,7 +543,7 @@ a:hover {
 }
 
 .material-link:hover {
-  background: rgba(0, 163, 255, 0.12);
+  background: rgba(var(--accent-rgb), 0.12);
 }
 
 .webinar-recording {
@@ -591,9 +593,9 @@ a:hover {
   font-weight: 600;
   color: var(--accent-hover);
   padding: 10px 20px;
-  background: rgba(0, 102, 255, 0.12);
+  background: rgba(var(--accent-rgb), 0.12);
   border-radius: 12px;
-  border: 1px solid rgba(0, 102, 255, 0.22);
+  border: 1px solid rgba(var(--accent-rgb), 0.22);
 }
 
 /* === SUPPORT SCREEN === */
@@ -679,9 +681,9 @@ a:hover {
 .form-textarea:focus,
 .form-select:focus {
   outline: none;
-  border-color: rgba(0, 163, 255, 0.55);
+  border-color: rgba(var(--accent-rgb), 0.55);
   background: rgba(46, 46, 46, 0.75);
-  box-shadow: 0 0 0 3px rgba(0, 102, 255, 0.16);
+  box-shadow: 0 0 0 3px rgba(var(--accent-rgb), 0.16);
 }
 
 .form-input::placeholder,
@@ -713,7 +715,7 @@ a:hover {
   font-weight: 600;
   cursor: pointer;
   transition: transform 0.2s ease, box-shadow 0.2s ease;
-  box-shadow: 0 4px 16px rgba(0, 102, 255, 0.25);
+  box-shadow: 0 4px 16px rgba(var(--accent-rgb), 0.25);
   margin-top: 8px;
 }
 
@@ -741,13 +743,13 @@ a:hover {
   position: relative;
   border-radius: 28px;
   padding: 28px;
-  background: linear-gradient(180deg, #0f172a 0%, #111827 100%);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: linear-gradient(180deg, var(--bg) 0%, var(--bg-2) 100%);
+  border: 1px solid rgba(68, 68, 68, 0.7);
   box-shadow:
     0 20px 40px rgba(0, 0, 0, 0.35),
     inset 0 1px 0 rgba(255, 255, 255, 0.05);
   overflow: hidden;
-  color: #e6faff;
+  color: var(--text);
 }
 
 .neo-dashboard::before,
@@ -782,7 +784,7 @@ a:hover {
   text-transform: uppercase;
   letter-spacing: 2px;
   font-size: 11px;
-  color: rgba(0, 255, 157, 0.8);
+  color: rgba(var(--accent-rgb), 0.95);
   margin-bottom: 8px;
 }
 
@@ -796,8 +798,8 @@ a:hover {
   font-size: 28px;
   font-weight: 700;
   margin: 0;
-  color: #ffffff;
-  text-shadow: 0 0 14px rgba(0, 255, 157, 0.25);
+  color: var(--text);
+  text-shadow: 0 0 14px rgba(var(--accent-rgb), 0.25);
 }
 
 .neo-status-pill {
@@ -805,16 +807,16 @@ a:hover {
   border-radius: 999px;
   font-size: 11px;
   font-weight: 600;
-  color: #00ff9d;
-  background: rgba(0, 255, 157, 0.12);
-  border: 1px solid rgba(0, 255, 157, 0.35);
-  box-shadow: inset 0 0 10px rgba(0, 255, 157, 0.2);
+  color: var(--accent-hover);
+  background: rgba(var(--accent-rgb), 0.12);
+  border: 1px solid rgba(var(--accent-rgb), 0.35);
+  box-shadow: inset 0 0 10px rgba(var(--accent-rgb), 0.18);
 }
 
 .neo-subtitle {
   margin: 10px 0 0 0;
   font-size: 14px;
-  color: rgba(230, 250, 255, 0.7);
+  color: var(--text-3);
   max-width: 520px;
   line-height: 1.5;
 }
@@ -832,18 +834,14 @@ a:hover {
   position: relative;
   padding: 16px;
   border-radius: 20px;
-  background: linear-gradient(
-    135deg,
-    rgba(255, 255, 255, 0.1),
-    rgba(255, 255, 255, 0.05)
-  );
-  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: var(--glass-2);
+  border: 1px solid var(--border-soft);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
   box-shadow:
     0 8px 18px rgba(0, 0, 0, 0.25),
     inset 0 1px 0 rgba(255, 255, 255, 0.08);
-  color: #e9fdff;
+  color: var(--text);
   overflow: hidden;
   appearance: none;
   text-align: left;
@@ -865,14 +863,14 @@ a:hover {
   grid-row: span 2;
   text-align: left;
   cursor: pointer;
-  border: 1px solid rgba(0, 255, 157, 0.35);
-  background: linear-gradient(135deg, rgba(0, 255, 157, 0.18), rgba(15, 23, 42, 0.7));
+  border: 1px solid rgba(var(--accent-rgb), 0.35);
+  background: linear-gradient(135deg, rgba(var(--accent-rgb), 0.22), rgba(26, 26, 31, 0.85));
   transition: transform 0.3s ease, box-shadow 0.3s ease;
 }
 
 .neo-card--hero:hover {
   transform: translateY(-4px);
-  box-shadow: 0 12px 24px rgba(0, 255, 157, 0.2);
+  box-shadow: 0 12px 24px rgba(var(--accent-rgb), 0.2);
 }
 
 .neo-card--hero .neo-card-title {
@@ -883,7 +881,7 @@ a:hover {
 
 .neo-card--hero .neo-card-subtitle {
   font-size: 13px;
-  color: rgba(230, 250, 255, 0.7);
+  color: var(--text-3);
   margin-bottom: 18px;
 }
 
@@ -891,7 +889,7 @@ a:hover {
   font-size: 12px;
   text-transform: uppercase;
   letter-spacing: 1px;
-  color: #00ff9d;
+  color: var(--accent-hover);
 }
 
 .neo-card--hero .neo-card-glow {
@@ -900,7 +898,7 @@ a:hover {
   bottom: -40px;
   width: 180px;
   height: 180px;
-  background: radial-gradient(circle, rgba(0, 255, 157, 0.4), transparent 65%);
+  background: radial-gradient(circle, rgba(var(--accent-rgb), 0.35), transparent 65%);
   filter: blur(10px);
 }
 
@@ -939,16 +937,16 @@ a:hover {
 .neo-card-title {
   font-size: 15px;
   font-weight: 600;
-  color: #ffffff;
+  color: var(--text);
 }
 
 .neo-tag {
   font-size: 11px;
-  color: rgba(0, 255, 157, 0.9);
-  background: rgba(0, 255, 157, 0.12);
+  color: var(--accent-hover);
+  background: rgba(var(--accent-rgb), 0.12);
   border-radius: 999px;
   padding: 3px 8px;
-  border: 1px solid rgba(0, 255, 157, 0.3);
+  border: 1px solid rgba(var(--accent-rgb), 0.3);
 }
 
 .neo-card-text {
@@ -969,8 +967,8 @@ a:hover {
   position: absolute;
   inset: 10px;
   border-radius: 50%;
-  border: 1px dashed rgba(0, 255, 157, 0.5);
-  box-shadow: 0 0 12px rgba(0, 255, 157, 0.2);
+  border: 1px dashed rgba(var(--accent-rgb), 0.55);
+  box-shadow: 0 0 12px rgba(var(--accent-rgb), 0.18);
 }
 
 .neo-coin {
@@ -978,8 +976,8 @@ a:hover {
   width: 28px;
   height: 28px;
   border-radius: 50%;
-  background: radial-gradient(circle at 30% 30%, #ffffff, #00ff9d 45%, #16a34a 100%);
-  box-shadow: 0 0 12px rgba(0, 255, 157, 0.45);
+  background: radial-gradient(circle at 30% 30%, #ffffff, var(--accent-hover) 45%, var(--accent) 100%);
+  box-shadow: 0 0 12px rgba(var(--accent-rgb), 0.35);
 }
 
 .neo-coin--a {
@@ -1006,9 +1004,9 @@ a:hover {
 .neo-hex {
   width: 32px;
   height: 36px;
-  background: linear-gradient(135deg, rgba(0, 255, 157, 0.35), rgba(0, 255, 157, 0.15));
+  background: linear-gradient(135deg, rgba(var(--accent-rgb), 0.35), rgba(var(--accent-rgb), 0.15));
   clip-path: polygon(25% 6%, 75% 6%, 100% 50%, 75% 94%, 25% 94%, 0 50%);
-  box-shadow: 0 0 10px rgba(0, 255, 157, 0.3);
+  box-shadow: 0 0 10px rgba(var(--accent-rgb), 0.22);
 }
 
 .neo-matrix-row {
@@ -1021,10 +1019,10 @@ a:hover {
   width: 44px;
   height: 24px;
   border-radius: 999px;
-  background: rgba(0, 255, 157, 0.18);
-  border: 1px solid rgba(0, 255, 157, 0.5);
+  background: rgba(var(--accent-rgb), 0.18);
+  border: 1px solid rgba(var(--accent-rgb), 0.5);
   position: relative;
-  box-shadow: inset 0 0 10px rgba(0, 255, 157, 0.3);
+  box-shadow: inset 0 0 10px rgba(var(--accent-rgb), 0.25);
 }
 
 .neo-toggle-dot {
@@ -1034,8 +1032,8 @@ a:hover {
   width: 16px;
   height: 16px;
   border-radius: 50%;
-  background: #00ff9d;
-  box-shadow: 0 0 10px rgba(0, 255, 157, 0.5);
+  background: var(--accent-hover);
+  box-shadow: 0 0 10px rgba(var(--accent-rgb), 0.4);
 }
 
 .neo-wallet {
@@ -1048,12 +1046,12 @@ a:hover {
   font-size: 10px;
   text-transform: uppercase;
   letter-spacing: 1px;
-  color: rgba(230, 250, 255, 0.6);
+  color: var(--muted);
 }
 
 .neo-wallet-value {
   font-size: 13px;
-  color: #e9fdff;
+  color: var(--text-2);
   font-weight: 600;
 }
 
@@ -1106,7 +1104,7 @@ a:hover {
 .neo-modal-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(15, 23, 42, 0.82);
+  background: var(--overlay);
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
   display: flex;
@@ -1122,9 +1120,9 @@ a:hover {
   width: min(780px, 92vw);
   max-height: 86vh;
   overflow-y: auto;
-  background: #1e293b;
+  background: var(--bg-2);
   border-radius: 26px;
-  border: 1px solid rgba(255, 255, 255, 0.12);
+  border: 1px solid var(--border-soft);
   box-shadow:
     0 30px 80px rgba(0, 0, 0, 0.45),
     inset 0 1px 0 rgba(255, 255, 255, 0.05);
@@ -1134,7 +1132,7 @@ a:hover {
 
 .neo-modal-body {
   padding: 64px 36px 30px;
-  color: #e9fdff;
+  color: var(--text);
 }
 
 .neo-modal-back {
@@ -1144,9 +1142,9 @@ a:hover {
   width: 36px;
   height: 36px;
   border-radius: 50%;
-  border: 1px solid rgba(0, 255, 157, 0.5);
-  background: rgba(0, 255, 157, 0.1);
-  color: #00ff9d;
+  border: 1px solid rgba(var(--accent-rgb), 0.5);
+  background: rgba(var(--accent-rgb), 0.12);
+  color: var(--accent-hover);
   font-size: 18px;
   cursor: pointer;
   display: flex;
@@ -1156,7 +1154,7 @@ a:hover {
 }
 
 .neo-modal-back:hover {
-  box-shadow: 0 0 12px rgba(0, 255, 157, 0.5);
+  box-shadow: 0 0 12px rgba(var(--accent-rgb), 0.45);
 }
 
 .neo-modal-back:active {
@@ -1167,13 +1165,13 @@ a:hover {
   font-size: 32px;
   font-weight: 700;
   margin: 6px 0 12px 0;
-  color: #ffffff;
+  color: var(--text);
 }
 
 .neo-modal-lead {
   margin: 0 0 24px 0;
   font-size: 15px;
-  color: rgba(230, 250, 255, 0.8);
+  color: var(--text-2);
   line-height: 1.6;
 }
 
@@ -1184,7 +1182,7 @@ a:hover {
 .neo-modal-section h3 {
   font-size: 16px;
   margin: 0 0 10px 0;
-  color: #00ff9d;
+  color: var(--accent-hover);
   text-transform: uppercase;
   letter-spacing: 1px;
 }
@@ -1306,8 +1304,8 @@ a:hover {
   height: 56px;
   border-radius: 50%;
   overflow: hidden;
-  background: radial-gradient(circle, #3e3f4e 0%, #1c1d2a 100%);
-  border: 2px solid rgba(255, 255, 255, 0.12);
+  background: radial-gradient(circle, var(--card) 0%, var(--bg-2) 100%);
+  border: 2px solid var(--border-soft);
   flex-shrink: 0;
 }
 
@@ -1357,7 +1355,7 @@ a:hover {
   font-weight: 700;
   font-size: 13px;
   cursor: pointer;
-  box-shadow: 0 6px 16px rgba(0, 102, 255, 0.22);
+  box-shadow: 0 6px 16px rgba(var(--accent-rgb), 0.22);
 }
 
 .referral-send-btn:disabled {
@@ -1480,8 +1478,8 @@ a:hover {
 }
 
 .booking-status.confirmed {
-  background: rgba(74, 222, 128, 0.2);
-  color: #4ade80;
+  background: rgba(var(--accent-rgb), 0.14);
+  color: var(--accent-hover);
 }
 
 .booking-details {
@@ -1605,9 +1603,9 @@ a:hover {
 }
 
 .btn-block-user.active {
-  background: rgba(244, 67, 54, 0.18);
-  border-color: rgba(244, 67, 54, 0.4);
-  color: #ff6b6b;
+  background: rgba(255, 204, 0, 0.14);
+  border-color: rgba(255, 204, 0, 0.35);
+  color: var(--yellow);
 }
 
 .admin-item {
@@ -1642,13 +1640,13 @@ a:hover {
   margin: 0 0 8px 0;
   font-size: 15px;
   font-weight: 600;
-  opacity: 0.9;
+  color: var(--text-2);
 }
 
 .admin-role {
   margin: 0;
   font-size: 14px;
-  opacity: 0.7;
+  color: var(--text-3);
 }
 
 .admin-role-select {
@@ -1665,8 +1663,8 @@ a:hover {
 
 .btn-edit-admin,
 .btn-save-admin {
-  background: linear-gradient(135deg, #6366f1, #8b5cf6);
-  color: white;
+  background: linear-gradient(135deg, var(--accent), var(--accent-hover));
+  color: var(--text);
   border: none;
   border-radius: 10px;
   padding: 10px 16px;
@@ -1674,7 +1672,7 @@ a:hover {
   font-weight: 600;
   cursor: pointer;
   transition: transform 0.2s ease, box-shadow 0.2s ease;
-  box-shadow: 0 2px 8px rgba(99, 102, 241, 0.3);
+  box-shadow: 0 2px 8px rgba(var(--accent-rgb), 0.22);
 }
 
 .btn-edit-admin:active,
@@ -1683,9 +1681,9 @@ a:hover {
 }
 
 .btn-delete-admin {
-  background: rgba(244, 67, 54, 0.2);
-  color: #f44336;
-  border: 1px solid rgba(244, 67, 54, 0.3);
+  background: rgba(255, 204, 0, 0.14);
+  color: var(--yellow);
+  border: 1px solid rgba(255, 204, 0, 0.25);
   border-radius: 10px;
   padding: 10px 16px;
   font-size: 14px;
@@ -1696,7 +1694,7 @@ a:hover {
 
 .btn-delete-admin:active {
   transform: scale(0.95);
-  background: rgba(244, 67, 54, 0.3);
+  background: rgba(255, 204, 0, 0.2);
 }
 
 .btn-cancel-admin {
@@ -1713,7 +1711,7 @@ a:hover {
 
 .btn-cancel-admin:active {
   transform: scale(0.95);
-  background: rgba(0, 163, 255, 0.12);
+  background: rgba(var(--accent-rgb), 0.12);
 }
 
 .empty-hint {
@@ -1820,7 +1818,7 @@ a:hover {
   font-weight: 600;
   cursor: pointer;
   transition: all 0.2s ease;
-  box-shadow: 0 2px 8px rgba(0, 102, 255, 0.25);
+  box-shadow: 0 2px 8px rgba(var(--accent-rgb), 0.25);
 }
 
 .deposit-btn:active {
@@ -1866,7 +1864,7 @@ a:hover {
   margin: 16px;
   margin-top: 72px;
   background: var(--bg-2);
-  background-image: radial-gradient(circle at center, rgba(0, 102, 255, 0.22) 0%, transparent 70%);
+  background-image: radial-gradient(circle at center, rgba(var(--accent-rgb), 0.22) 0%, transparent 70%);
   border-radius: 20px;
   padding: 20px;
   border: 1px solid rgba(255, 255, 255, 0.1);
@@ -1912,7 +1910,7 @@ a:hover {
 .promo-title {
   font-size: 17px;
   font-weight: 700;
-  color: #FFFFFF;
+  color: var(--text);
   margin: 0 0 4px 0;
   text-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
   letter-spacing: 0.2px;
@@ -1920,37 +1918,37 @@ a:hover {
 
 .promo-subtitle {
   font-size: 12px;
-  color: #A0A0A0;
+  color: var(--text-3);
   margin: 0;
 }
 
 .promo-description {
   font-size: 14px;
-  color: #FFFFFF;
+  color: var(--text-2);
   margin: 14px 0;
   line-height: 1.6;
   font-weight: 400;
 }
 
 .highlight-green {
-  color: #00FF9D;
+  color: var(--accent-hover);
   font-weight: 700;
-  text-shadow: 0 0 12px rgba(0, 255, 157, 0.5);
+  text-shadow: 0 0 12px rgba(var(--accent-rgb), 0.45);
   animation: textGlow 2s ease-in-out infinite alternate;
 }
 
 @keyframes textGlow {
   from {
-    text-shadow: 0 0 12px rgba(0, 255, 157, 0.5);
+    text-shadow: 0 0 12px rgba(var(--accent-rgb), 0.45);
   }
   to {
-    text-shadow: 0 0 20px rgba(0, 255, 157, 0.8);
+    text-shadow: 0 0 20px rgba(var(--accent-rgb), 0.6);
   }
 }
 
 .promo-divider {
   height: 1px;
-  background: rgba(255, 255, 255, 0.2);
+  background: rgba(68, 68, 68, 0.7);
   margin: 16px 0;
 }
 
@@ -2033,7 +2031,7 @@ a:hover {
 .tier-bar {
   width: 100%;
   max-width: 42px;
-  background: linear-gradient(180deg, #00FF9D 0%, #00CC7A 50%, #00AA66 100%);
+  background: linear-gradient(180deg, var(--accent-hover) 0%, var(--accent) 60%, rgba(var(--accent-rgb), 0.72) 100%);
   border-radius: 8px 8px 0 0;
   display: flex;
   align-items: flex-start;
@@ -2041,12 +2039,12 @@ a:hover {
   padding: 4px 2px 0 2px;
   position: relative;
   box-shadow: 
-    0 0 16px rgba(0, 255, 157, 0.4),
+    0 0 16px rgba(var(--accent-rgb), 0.28),
     inset 0 1px 3px rgba(255, 255, 255, 0.2);
   animation: 
     barGrow 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) both,
     glow 2s ease-in-out infinite alternate 0.8s;
-  border: 1px solid rgba(0, 255, 157, 0.3);
+  border: 1px solid rgba(var(--accent-rgb), 0.3);
   overflow: visible;
   box-sizing: border-box;
 }
@@ -2089,12 +2087,12 @@ a:hover {
 @keyframes glow {
   from {
     box-shadow: 
-      0 0 20px rgba(0, 255, 157, 0.5),
+      0 0 20px rgba(var(--accent-rgb), 0.35),
       inset 0 2px 4px rgba(255, 255, 255, 0.2);
   }
   to {
     box-shadow: 
-      0 0 30px rgba(0, 255, 157, 0.7),
+      0 0 30px rgba(var(--accent-rgb), 0.45),
       inset 0 2px 4px rgba(255, 255, 255, 0.3);
   }
 }
@@ -2115,7 +2113,7 @@ a:hover {
 .tier-bonus-number {
   font-size: 9px;
   font-weight: 700;
-  color: #000000;
+  color: var(--bg);
   line-height: 1;
   text-shadow: 0 1px 2px rgba(255, 255, 255, 0.3);
   white-space: nowrap;
@@ -2124,7 +2122,7 @@ a:hover {
 .tier-bonus-currency {
   font-size: 7px;
   font-weight: 600;
-  color: #000000;
+  color: var(--bg);
   line-height: 1;
   text-shadow: 0 1px 2px rgba(255, 255, 255, 0.3);
   opacity: 0.85;
@@ -2173,20 +2171,20 @@ a:hover {
 .tier-deposit-amount {
   font-weight: 700;
   font-size: 10px;
-  color: #00FF9D;
+  color: var(--accent-hover);
   white-space: nowrap;
 }
 
 .tier-deposit-label {
   font-size: 8px;
-  opacity: 0.7;
+  color: var(--text-3);
   white-space: nowrap;
 }
 
 .promo-time {
   font-size: 11px;
   font-weight: 600;
-  color: #FFD700;
+  color: var(--yellow);
   text-align: center;
   margin: 12px 0 8px 0;
   letter-spacing: 0.3px;
@@ -2195,9 +2193,9 @@ a:hover {
   justify-content: center;
   gap: 6px;
   padding: 8px 10px;
-  background: rgba(255, 215, 0, 0.1);
+  background: rgba(255, 204, 0, 0.12);
   border-radius: 8px;
-  border: 1px solid rgba(255, 215, 0, 0.2);
+  border: 1px solid rgba(255, 204, 0, 0.24);
   animation: fadeIn 0.5s ease-out 0.6s both;
   transition: opacity 0.3s ease-out, transform 0.3s ease-out;
 }
@@ -2223,14 +2221,14 @@ a:hover {
 
 .time-text {
   font-weight: 700;
-  text-shadow: 0 0 8px rgba(255, 215, 0, 0.5);
+  text-shadow: 0 0 8px rgba(255, 204, 0, 0.45);
 }
 
 .promo-cta {
   width: 100%;
   height: 48px;
-  background: linear-gradient(135deg, #00FF9D 0%, #00CC7A 100%);
-  color: #000000;
+  background: linear-gradient(135deg, var(--accent) 0%, var(--accent-hover) 100%);
+  color: var(--text);
   border: none;
   border-radius: 12px;
   font-size: 16px;
@@ -2238,8 +2236,8 @@ a:hover {
   cursor: pointer;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   box-shadow: 
-    0 4px 16px rgba(0, 255, 157, 0.3),
-    0 0 0 0 rgba(0, 255, 157, 0.4);
+    0 4px 16px rgba(var(--accent-rgb), 0.25),
+    0 0 0 0 rgba(var(--accent-rgb), 0.28);
   margin-top: 12px;
   position: relative;
   overflow: hidden;
@@ -2264,8 +2262,8 @@ a:hover {
 .promo-cta:active {
   transform: scale(0.97);
   box-shadow: 
-    0 2px 8px rgba(0, 255, 157, 0.3),
-    0 0 0 4px rgba(0, 255, 157, 0.2);
+    0 2px 8px rgba(var(--accent-rgb), 0.25),
+    0 0 0 4px rgba(var(--accent-rgb), 0.16);
 }
 
 .promo-cta:active::before {
@@ -2296,7 +2294,7 @@ a:hover {
 }
 
 .promo-dot.active {
-  background: #00FF9D;
+  background: var(--accent-hover);
   width: 24px;
   border-radius: 4px;
 }
@@ -2319,7 +2317,7 @@ a:hover {
 
 .section-subtitle {
   font-size: 14px;
-  color: rgba(255, 255, 255, 0.7);
+  color: var(--text-3);
   margin: 0;
 }
 
@@ -2332,14 +2330,14 @@ a:hover {
 
 /* === TRADER CARD === */
 .trader-card {
-  background: #1E293B;
+  background: var(--bg-2);
   border-radius: 12px;
   padding: 16px;
   display: flex;
   align-items: center;
   gap: 12px;
   position: relative;
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid var(--border-soft);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
   transition: all 0.2s ease;
   min-height: 80px;
@@ -2351,8 +2349,8 @@ a:hover {
 }
 
 .trader-card.top-three {
-  border: 2px solid rgba(255, 215, 0, 0.3);
-  background: linear-gradient(135deg, #1E293B 0%, #2D3748 100%);
+  border: 2px solid rgba(255, 204, 0, 0.35);
+  background: linear-gradient(135deg, var(--bg-2) 0%, rgba(46, 46, 46, 0.85) 100%);
 }
 
 .rank-badge {
@@ -2363,7 +2361,7 @@ a:hover {
   height: 32px;
   border-radius: 50%;
   border: 2px solid;
-  background: #0F172A;
+  background: var(--bg);
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -2469,7 +2467,7 @@ a:hover {
 }
 
 .pnl-label {
-  color: rgba(255, 255, 255, 0.7);
+  color: var(--text-3);
   font-size: 12px;
 }
 
@@ -2478,7 +2476,7 @@ a:hover {
 }
 
 .pnl-value.positive {
-  color: #00FF9D;
+  color: var(--accent-hover);
 }
 
 .pnl-value.bold {
@@ -2494,8 +2492,8 @@ a:hover {
   min-width: 80px;
   height: 32px;
   padding: 0 16px;
-  background: #FFD700;
-  color: #000000;
+  background: var(--yellow);
+  color: var(--bg);
   border: none;
   border-radius: 16px;
   font-size: 13px;
@@ -2511,21 +2509,21 @@ a:hover {
 }
 
 .copy-btn.top-three-btn {
-  background: linear-gradient(135deg, #FFD700 0%, #FFA500 100%);
-  box-shadow: 0 2px 8px rgba(255, 215, 0, 0.3);
+  background: linear-gradient(135deg, var(--yellow) 0%, rgba(255, 204, 0, 0.75) 100%);
+  box-shadow: 0 2px 8px rgba(255, 204, 0, 0.22);
 }
 
 .copy-btn.following {
-  background: #00FF9D;
-  color: #000000;
+  background: linear-gradient(135deg, var(--accent), var(--accent-hover));
+  color: var(--text);
 }
 
 .view-more-btn {
   width: 100%;
   height: 48px;
-  background: rgba(255, 255, 255, 0.1);
-  color: #FFFFFF;
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: rgba(46, 46, 46, 0.55);
+  color: var(--text);
+  border: 1px solid var(--border-soft);
   border-radius: 12px;
   font-size: 15px;
   font-weight: 600;
@@ -2535,7 +2533,7 @@ a:hover {
 }
 
 .view-more-btn:active {
-  background: rgba(255, 255, 255, 0.15);
+  background: rgba(var(--accent-rgb), 0.12);
   transform: scale(0.98);
 }
 
@@ -2553,10 +2551,10 @@ a:hover {
 
 /* === CRYPTO CARD === */
 .crypto-card {
-  background: #1E293B;
+  background: var(--bg-2);
   border-radius: 16px;
   padding: 16px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid var(--border-soft);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
   transition: all 0.2s ease;
 }
@@ -2585,13 +2583,13 @@ a:hover {
   width: 40px;
   height: 40px;
   border-radius: 50%;
-  background: rgba(255, 255, 255, 0.1);
+  background: rgba(46, 46, 46, 0.55);
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
   overflow: hidden;
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(68, 68, 68, 0.6);
 }
 
 .crypto-icon img {
@@ -2608,7 +2606,7 @@ a:hover {
   justify-content: center;
   font-size: 18px;
   font-weight: 700;
-  color: rgba(255, 255, 255, 0.8);
+  color: var(--text-2);
 }
 
 .crypto-name-section {
@@ -2641,13 +2639,13 @@ a:hover {
 }
 
 .crypto-change.positive {
-  color: #22c55e;
-  background: rgba(34, 197, 94, 0.15);
+  color: var(--accent-hover);
+  background: rgba(var(--accent-rgb), 0.12);
 }
 
 .crypto-change.negative {
-  color: #ef4444;
-  background: rgba(239, 68, 68, 0.15);
+  color: var(--yellow);
+  background: rgba(255, 204, 0, 0.12);
 }
 
 .crypto-price-section {
@@ -2711,8 +2709,8 @@ a:hover {
 .loading-spinner {
   width: 40px;
   height: 40px;
-  border: 3px solid rgba(255, 255, 255, 0.1);
-  border-top-color: #00FF9D;
+  border: 3px solid rgba(68, 68, 68, 0.65);
+  border-top-color: var(--accent-hover);
   border-radius: 50%;
   animation: spin 0.8s linear infinite;
   margin-bottom: 16px;
@@ -2725,14 +2723,14 @@ a:hover {
 }
 
 .loading-container p {
-  color: rgba(255, 255, 255, 0.7);
+  color: var(--text-3);
   font-size: 14px;
   margin: 0;
 }
 
 .error-banner {
-  background: rgba(239, 68, 68, 0.15);
-  border: 1px solid rgba(239, 68, 68, 0.3);
+  background: rgba(255, 204, 0, 0.12);
+  border: 1px solid rgba(255, 204, 0, 0.22);
   border-radius: 12px;
   padding: 12px 16px;
   margin-bottom: 16px;
@@ -2743,15 +2741,15 @@ a:hover {
 }
 
 .error-banner span {
-  color: #ef4444;
+  color: var(--yellow);
   font-size: 14px;
   flex: 1;
 }
 
 .error-banner button {
-  background: rgba(239, 68, 68, 0.2);
-  color: #ef4444;
-  border: 1px solid rgba(239, 68, 68, 0.3);
+  background: rgba(255, 204, 0, 0.14);
+  color: var(--bg);
+  border: 1px solid rgba(255, 204, 0, 0.22);
   border-radius: 8px;
   padding: 6px 12px;
   font-size: 12px;
@@ -2761,7 +2759,7 @@ a:hover {
 }
 
 .error-banner button:active {
-  background: rgba(239, 68, 68, 0.3);
+  background: rgba(255, 204, 0, 0.22);
   transform: scale(0.95);
 }
 
@@ -2772,7 +2770,7 @@ a:hover {
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0, 0, 0, 0.7);
+  background: var(--overlay);
   backdrop-filter: blur(4px);
   display: flex;
   align-items: center;
@@ -2792,13 +2790,13 @@ a:hover {
 }
 
 .modal-content {
-  background: #1E293B;
+  background: var(--bg-2);
   border-radius: 20px;
   width: 100%;
   max-width: 400px;
   max-height: 90vh;
   overflow-y: auto;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.55);
   animation: slideUp 0.3s ease;
 }
 
@@ -2818,13 +2816,13 @@ a:hover {
   align-items: center;
   justify-content: space-between;
   padding: 20px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  border-bottom: 1px solid var(--border-soft);
 }
 
 .modal-header h2 {
   font-size: 20px;
   font-weight: 700;
-  color: #FFFFFF;
+  color: var(--text);
   margin: 0;
 }
 
@@ -2832,8 +2830,8 @@ a:hover {
   width: 32px;
   height: 32px;
   border: none;
-  background: rgba(255, 255, 255, 0.1);
-  color: #FFFFFF;
+  background: rgba(46, 46, 46, 0.6);
+  color: var(--text);
   border-radius: 50%;
   font-size: 24px;
   line-height: 1;
@@ -2845,7 +2843,7 @@ a:hover {
 }
 
 .modal-close:active {
-  background: rgba(255, 255, 255, 0.2);
+  background: rgba(var(--accent-rgb), 0.12);
   transform: scale(0.9);
 }
 
@@ -2858,16 +2856,17 @@ a:hover {
   align-items: center;
   gap: 12px;
   padding: 16px;
-  background: rgba(255, 255, 255, 0.05);
+  background: rgba(46, 46, 46, 0.5);
   border-radius: 12px;
   margin-bottom: 20px;
+  border: 1px solid var(--border-soft);
 }
 
 .trader-avatar-small {
   width: 48px;
   height: 48px;
   border-radius: 50%;
-  background: #0F172A;
+  background: var(--bg);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -2878,21 +2877,22 @@ a:hover {
 .trader-name-small {
   font-size: 16px;
   font-weight: 600;
-  color: #FFFFFF;
+  color: var(--text);
   margin: 0 0 4px 0;
 }
 
 .trader-stats-small {
   font-size: 13px;
-  color: rgba(255, 255, 255, 0.7);
+  color: var(--text-3);
   margin: 0;
 }
 
 .modal-info {
   padding: 12px;
-  background: rgba(0, 255, 157, 0.1);
+  background: rgba(var(--accent-rgb), 0.12);
   border-radius: 8px;
   margin-bottom: 20px;
+  border: 1px solid rgba(var(--accent-rgb), 0.22);
 }
 
 .modal-info p {
@@ -2932,7 +2932,7 @@ a:hover {
 .pay-modern__title {
   font-size: 18px;
   font-weight: 800;
-  color: #ffffff;
+  color: var(--text);
   line-height: 1.25;
 }
 
@@ -2940,8 +2940,8 @@ a:hover {
   margin-top: 6px;
   font-size: 26px;
   font-weight: 900;
-  color: #00ff9d;
-  text-shadow: 0 0 14px rgba(0, 255, 157, 0.25);
+  color: var(--accent-hover);
+  text-shadow: 0 0 14px rgba(var(--accent-rgb), 0.25);
 }
 
 .pay-modern__close {
@@ -2949,8 +2949,8 @@ a:hover {
   height: 34px;
   border: none;
   border-radius: 10px;
-  background: rgba(255, 255, 255, 0.1);
-  color: #fff;
+  background: rgba(46, 46, 46, 0.6);
+  color: var(--text);
   font-size: 22px;
   cursor: pointer;
 }
@@ -2960,8 +2960,8 @@ a:hover {
   align-items: center;
   gap: 12px;
   padding: 12px;
-  background: rgba(255, 255, 255, 0.06);
-  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(46, 46, 46, 0.5);
+  border: 1px solid var(--border-soft);
   border-radius: 14px;
 }
 
@@ -2971,8 +2971,8 @@ a:hover {
   gap: 12px;
   padding: 14px 14px;
   border-radius: 16px;
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--border-soft);
+  background: rgba(46, 46, 46, 0.5);
 }
 
 .pay-modern__statusIcon {
@@ -2983,39 +2983,39 @@ a:hover {
 .pay-modern__statusText {
   font-size: 15px;
   font-weight: 800;
-  color: #ffffff;
+  color: var(--text);
 }
 
 .pay-modern__timer {
   margin-top: 6px;
   font-size: 13px;
-  color: rgba(255, 255, 255, 0.75);
+  color: var(--text-3);
 }
 
 .pay-modern__status--success {
-  border-color: rgba(34, 197, 94, 0.35);
-  background: rgba(34, 197, 94, 0.10);
+  border-color: rgba(var(--accent-rgb), 0.35);
+  background: rgba(var(--accent-rgb), 0.10);
 }
 
 .pay-modern__status--info {
-  border-color: rgba(59, 130, 246, 0.35);
-  background: rgba(59, 130, 246, 0.10);
+  border-color: rgba(var(--accent-rgb), 0.35);
+  background: rgba(var(--accent-rgb), 0.10);
 }
 
 .pay-modern__status--warning {
-  border-color: rgba(245, 158, 11, 0.35);
-  background: rgba(245, 158, 11, 0.10);
+  border-color: rgba(255, 204, 0, 0.35);
+  background: rgba(255, 204, 0, 0.10);
 }
 
 .pay-modern__status--danger {
-  border-color: rgba(239, 68, 68, 0.35);
-  background: rgba(239, 68, 68, 0.10);
+  border-color: rgba(255, 204, 0, 0.35);
+  background: rgba(255, 204, 0, 0.08);
 }
 
 .pay-modern__method {
   font-size: 14px;
   font-weight: 700;
-  color: rgba(255, 255, 255, 0.9);
+  color: var(--text-2);
 }
 
 .pay-modern__pill {
@@ -3023,25 +3023,25 @@ a:hover {
   padding: 4px 10px;
   border-radius: 999px;
   margin: 0 4px;
-  background: rgba(0, 255, 157, 0.14);
-  border: 1px solid rgba(0, 255, 157, 0.35);
-  color: #00ff9d;
+  background: rgba(var(--accent-rgb), 0.14);
+  border: 1px solid rgba(var(--accent-rgb), 0.35);
+  color: var(--accent-hover);
 }
 
 .pay-modern__pill--network {
-  background: rgba(59, 130, 246, 0.14);
-  border-color: rgba(59, 130, 246, 0.35);
-  color: #93c5fd;
+  background: rgba(var(--accent-rgb), 0.14);
+  border-color: rgba(var(--accent-rgb), 0.35);
+  color: var(--accent-hover);
 }
 
 .pay-modern__warning {
   padding: 12px 14px;
   border-radius: 14px;
-  border: 1px solid rgba(239, 68, 68, 0.35);
-  background: rgba(239, 68, 68, 0.10);
+  border: 1px solid rgba(255, 204, 0, 0.35);
+  background: rgba(255, 204, 0, 0.10);
   font-size: 13px;
   line-height: 1.45;
-  color: rgba(255, 255, 255, 0.9);
+  color: var(--text-2);
 }
 
 .pay-modern__grid {
@@ -3053,15 +3053,15 @@ a:hover {
 .pay-modern__card {
   padding: 14px;
   border-radius: 16px;
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--border-soft);
+  background: rgba(46, 46, 46, 0.5);
 }
 
 .pay-modern__label {
   font-size: 12px;
   letter-spacing: 0.8px;
   text-transform: uppercase;
-  color: rgba(255, 255, 255, 0.65);
+  color: var(--text-3);
   margin-bottom: 8px;
 }
 
@@ -3126,16 +3126,16 @@ a:hover {
 
 .pay-modern__btn--primary {
   border: none;
-  background: linear-gradient(135deg, #00ff9d, #36e3e3);
-  color: #0f172a;
-  box-shadow: 0 6px 16px rgba(0, 255, 157, 0.25);
+  background: linear-gradient(135deg, var(--accent), var(--accent-hover));
+  color: var(--text);
+  box-shadow: 0 6px 16px rgba(var(--accent-rgb), 0.22);
 }
 
 .pay-modern__qrWrap {
   padding: 14px;
   border-radius: 16px;
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--border-soft);
+  background: rgba(46, 46, 46, 0.5);
 }
 
 .pay-modern__qr {
@@ -3143,8 +3143,8 @@ a:hover {
   justify-content: center;
   padding: 10px;
   border-radius: 14px;
-  background: rgba(15, 23, 42, 0.7);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(26, 26, 31, 0.78);
+  border: 1px solid rgba(68, 68, 68, 0.65);
 }
 
 .pay-modern__qr img {
@@ -3213,9 +3213,9 @@ a:hover {
 }
 
 .payment-mode-btn.active {
-  background: linear-gradient(135deg, #22c55e, #16a34a);
-  border-color: rgba(34, 197, 94, 0.6);
-  box-shadow: 0 8px 20px rgba(34, 197, 94, 0.25);
+  background: linear-gradient(135deg, var(--accent), var(--accent-hover));
+  border-color: rgba(var(--accent-rgb), 0.6);
+  box-shadow: 0 8px 20px rgba(var(--accent-rgb), 0.2);
 }
 
 .payment-mode-btn:disabled {
@@ -3312,9 +3312,9 @@ a:hover {
 .btn-secondary {
   flex: 1;
   height: 44px;
-  background: rgba(255, 255, 255, 0.1);
-  color: #FFFFFF;
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: rgba(46, 46, 46, 0.55);
+  color: var(--text);
+  border: 1px solid var(--border-soft);
   border-radius: 12px;
   font-size: 15px;
   font-weight: 600;
@@ -3323,22 +3323,22 @@ a:hover {
 }
 
 .btn-secondary:active {
-  background: rgba(255, 255, 255, 0.15);
+  background: rgba(var(--accent-rgb), 0.12);
   transform: scale(0.98);
 }
 
 .btn-primary {
   flex: 1;
   height: 44px;
-  background: linear-gradient(135deg, #00FF9D 0%, #00CC7A 100%);
-  color: #000000;
+  background: linear-gradient(135deg, var(--accent) 0%, var(--accent-hover) 100%);
+  color: var(--text);
   border: none;
   border-radius: 12px;
   font-size: 15px;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.2s ease;
-  box-shadow: 0 4px 12px rgba(0, 255, 157, 0.3);
+  box-shadow: 0 4px 12px rgba(var(--accent-rgb), 0.25);
 }
 
 .btn-primary:active {
@@ -3364,8 +3364,8 @@ a:hover {
 .loading-spinner {
   width: 48px;
   height: 48px;
-  border: 4px solid rgba(0, 255, 157, 0.2);
-  border-top-color: #00FF9D;
+  border: 4px solid rgba(68, 68, 68, 0.65);
+  border-top-color: var(--accent-hover);
   border-radius: 50%;
   animation: spin 1s linear infinite;
   margin-bottom: 16px;
@@ -3378,7 +3378,7 @@ a:hover {
 }
 
 .loading-container p {
-  color: rgba(255, 255, 255, 0.7);
+  color: var(--text-3);
   font-size: 14px;
   margin: 0;
 }
@@ -3386,8 +3386,8 @@ a:hover {
 .error-banner {
   margin: 16px;
   padding: 12px 16px;
-  background: rgba(255, 77, 77, 0.2);
-  border: 1px solid #FF4D4D;
+  background: rgba(255, 204, 0, 0.12);
+  border: 1px solid rgba(255, 204, 0, 0.22);
   border-radius: 12px;
   display: flex;
   align-items: center;
@@ -3396,15 +3396,15 @@ a:hover {
 }
 
 .error-banner span {
-  color: #FF4D4D;
+  color: var(--yellow);
   font-size: 14px;
   flex: 1;
 }
 
 .error-banner button {
   padding: 6px 12px;
-  background: #FF4D4D;
-  color: #FFFFFF;
+  background: rgba(255, 204, 0, 0.14);
+  color: var(--bg);
   border: none;
   border-radius: 8px;
   font-size: 12px;
@@ -3449,17 +3449,17 @@ a:hover {
 
 /* === BOTTOM NAVIGATION UPDATE FOR COPY TRADING === */
 .bottom-nav {
-  background: #0F172A;
-  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  background: var(--glass-2);
+  border-top: 1px solid var(--border-soft);
 }
 
 .nav-item.active {
-  color: #00FF9D;
+  color: var(--accent-hover);
 }
 
 .nav-indicator {
-  background: rgba(0, 255, 157, 0.2);
-  border: 1px solid rgba(0, 255, 157, 0.3);
+  background: rgba(var(--accent-rgb), 0.16);
+  border: 1px solid rgba(var(--accent-rgb), 0.25);
 }
 
 /* === CRYPTO SLIDER === */
@@ -3494,7 +3494,7 @@ a:hover {
 }
 
 .crypto-dot.active {
-  background: #00FF9D;
+  background: var(--accent-hover);
   width: 24px;
   border-radius: 4px;
 }
@@ -3509,8 +3509,8 @@ a:hover {
 }
 
 .btn-create-post {
-  background: linear-gradient(135deg, #6366f1, #8b5cf6);
-  color: white;
+  background: linear-gradient(135deg, var(--accent), var(--accent-hover));
+  color: var(--text);
   border: none;
   border-radius: 12px;
   padding: 14px 24px;
@@ -3518,7 +3518,7 @@ a:hover {
   font-weight: 600;
   cursor: pointer;
   transition: transform 0.2s ease, box-shadow 0.2s ease;
-  box-shadow: 0 4px 16px rgba(99, 102, 241, 0.3);
+  box-shadow: 0 4px 16px rgba(var(--accent-rgb), 0.25);
   width: 100%;
 }
 
@@ -3527,24 +3527,20 @@ a:hover {
 }
 
 .post-form-container {
-  background: linear-gradient(
-    135deg,
-    rgba(255, 255, 255, 0.1),
-    rgba(255, 255, 255, 0.05)
-  );
+  background: var(--glass-2);
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
   border-radius: 20px;
   padding: 20px;
   margin: 16px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid var(--border-soft);
 }
 
 .post-form-container h3 {
   font-size: 20px;
   font-weight: 600;
   margin-bottom: 20px;
-  color: #FFFFFF;
+  color: var(--text);
 }
 
 .post-form-actions {
@@ -3684,9 +3680,9 @@ a:hover {
 .ticket-response {
   margin-top: 16px;
   padding: 12px;
-  background: rgba(34, 197, 94, 0.1);
+  background: rgba(var(--accent-rgb), 0.1);
   border-radius: 8px;
-  border-left: 2px solid rgba(34, 197, 94, 0.5);
+  border-left: 2px solid rgba(var(--accent-rgb), 0.5);
 }
 
 .ticket-response-header {
@@ -3699,14 +3695,14 @@ a:hover {
 
 .ticket-response-header strong {
   font-size: 13px;
-  color: #22c55e;
+  color: var(--accent-hover);
 }
 
 .admin-role-badge {
   font-size: 11px;
   padding: 4px 8px;
-  background: rgba(34, 197, 94, 0.2);
-  color: #22c55e;
+  background: rgba(var(--accent-rgb), 0.14);
+  color: var(--accent-hover);
   border-radius: 6px;
   font-weight: 600;
 }
@@ -3721,8 +3717,8 @@ a:hover {
 }
 
 .booking-status.answered {
-  background: rgba(34, 197, 94, 0.2);
-  color: #22c55e;
+  background: rgba(var(--accent-rgb), 0.14);
+  color: var(--accent-hover);
 }
 
 .booking-meeting-link,

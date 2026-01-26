@@ -1,0 +1,75 @@
+services:
+  caddy:
+    image: caddy:2.8-alpine
+    restart: unless-stopped
+    env_file:
+      - .env
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - frontend
+      - backend
+
+  frontend:
+    build:
+      context: ./miniapp/react-app
+    restart: unless-stopped
+    expose:
+      - "80"
+    depends_on:
+      - backend
+
+  backend:
+    build:
+      context: ./backend
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      # DB inside volume by default
+      - DATABASE_URL=${DATABASE_URL:-sqlite:////data/db.sqlite3}
+      # Tight CORS from env (use https://<DOMAIN>)
+      - CORS_ALLOW_ORIGINS=${CORS_ALLOW_ORIGINS}
+      # Telegram + NOWPayments (optional)
+      - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN}
+      - TELEGRAM_BOT_USERNAME=${TELEGRAM_BOT_USERNAME}
+      - NOWPAYMENTS_API_KEY=${NOWPAYMENTS_API_KEY}
+      - NOWPAYMENTS_IPN_SECRET=${NOWPAYMENTS_IPN_SECRET}
+      - NOWPAYMENTS_IPN_CALLBACK_URL=${NOWPAYMENTS_IPN_CALLBACK_URL}
+      - NOWPAYMENTS_API_BASE=${NOWPAYMENTS_API_BASE:-https://api.nowpayments.io/v1}
+      - NOWPAYMENTS_TIMEOUT=${NOWPAYMENTS_TIMEOUT:-15}
+    volumes:
+      - backend-data:/data
+    expose:
+      - "8000"
+
+  bot:
+    build:
+      context: ./bot
+    restart: unless-stopped
+    env_file:
+      - .env
+    command: ["python", "bot_service.py"]
+    depends_on:
+      - backend
+
+  reminders-worker:
+    build:
+      context: ./bot
+    restart: unless-stopped
+    env_file:
+      - .env
+    command: ["python", "reminders_worker.py"]
+    depends_on:
+      - backend
+
+volumes:
+  backend-data:
+  caddy_data:
+  caddy_config:
+

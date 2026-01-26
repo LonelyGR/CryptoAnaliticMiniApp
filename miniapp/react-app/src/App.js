@@ -145,8 +145,8 @@ function App() {
       {!apiConnected && (
         <div className="api-warning" style={{
           padding: '8px',
-          backgroundColor: '#ff9800',
-          color: 'white',
+          backgroundColor: 'var(--yellow)',
+          color: 'var(--bg)',
           textAlign: 'center',
           fontSize: '12px'
         }}>

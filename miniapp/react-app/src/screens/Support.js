@@ -145,7 +145,7 @@ export default function Support({ user, apiConnected }) {
                 <h1 className="page-title">Поддержка</h1>
                 
                 {!apiConnected && (
-                    <div className="error-banner" style={{ margin: '20px 0', padding: '15px', backgroundColor: '#ff9800', color: 'white', borderRadius: '8px' }}>
+                    <div className="error-banner" style={{ margin: '20px 0', padding: '15px', backgroundColor: 'var(--yellow)', color: 'var(--bg)', borderRadius: '8px' }}>
                         ⚠️ Сервер недоступен. Запись на консультацию недоступна.
                     </div>
                 )}
