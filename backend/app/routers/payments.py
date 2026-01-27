@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from sqlalchemy.orm import Session
 from typing import List, Optional
 
@@ -8,6 +8,7 @@ from app.models.booking import Booking
 from app.models.webinar import Webinar
 from app.models.admin import Admin
 from app.schemas.payment import PaymentCreate, PaymentResponse, PaymentUpdate
+from app.utils.telegram_webapp import resolve_admin_telegram_id
 
 router = APIRouter(prefix="/payments", tags=["payments"])
 
@@ -20,9 +21,10 @@ def get_db():
         db.close()
 
 
-def check_admin_access(admin_telegram_id: int = Query(..., description="Telegram ID администратора"), db: Session = Depends(get_db)):
+def check_admin_access(request: Request, admin_telegram_id: int | None, db: Session) -> Admin:
     """Проверка прав администратора"""
-    admin = db.query(Admin).filter(Admin.telegram_id == admin_telegram_id).first()
+    requester_id = resolve_admin_telegram_id(request, admin_telegram_id)
+    admin = db.query(Admin).filter(Admin.telegram_id == requester_id).first()
     if not admin:
         raise HTTPException(status_code=403, detail="Доступ запрещен. Требуются права администратора")
     return admin
@@ -63,13 +65,14 @@ def get_user_payments(user_id: int, db: Session = Depends(get_db)):
 
 @router.put("/{payment_id}", response_model=PaymentResponse)
 def update_payment(
+    request: Request,
     payment_id: int,
     payment_update: PaymentUpdate,
-    admin_telegram_id: int = Query(..., description="Telegram ID администратора"),
+    admin_telegram_id: int = Query(None, description="Telegram ID администратора (legacy)"),
     db: Session = Depends(get_db)
 ):
     """Обновить статус платежа (только для администраторов)"""
-    check_admin_access(admin_telegram_id, db)
+    check_admin_access(request, admin_telegram_id, db)
     
     db_payment = db.query(Payment).filter(Payment.id == payment_id).first()
     if not db_payment:
@@ -97,12 +100,13 @@ def update_payment(
 
 @router.get("/", response_model=List[PaymentResponse])
 def get_all_payments(
-    admin_telegram_id: int = Query(..., description="Telegram ID администратора"),
+    request: Request,
+    admin_telegram_id: int = Query(None, description="Telegram ID администратора (legacy)"),
     skip: int = 0,
     limit: int = 100,
     db: Session = Depends(get_db)
 ):
     """Получить все платежи (только для администраторов)"""
-    check_admin_access(admin_telegram_id, db)
+    check_admin_access(request, admin_telegram_id, db)
     payments = db.query(Payment).offset(skip).limit(limit).all()
     return payments

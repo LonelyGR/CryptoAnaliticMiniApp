@@ -7,7 +7,6 @@ from datetime import datetime
 from typing import Optional
 
 import requests
-from dotenv import load_dotenv
 from fastapi import APIRouter, Body, Depends, HTTPException, Request, Response
 from sqlalchemy.orm import Session
 
@@ -16,23 +15,13 @@ from app.models.booking import Booking
 from app.models.nowpayments_ipn_event import NowPaymentsIpnEvent
 from app.models.nowpayments_payment import NowPaymentsPayment
 from app.models.payment import Payment as PaymentModel
-from app.schemas.nowpayments import (
-    CreatePaymentRequest,
-    CreatePaymentResponse,
-    NowPaymentsPaymentCreateRequest,
-    PaymentStatusMinimal,
-)
+from app.schemas.nowpayments import CreatePaymentRequest, CreatePaymentResponse, PaymentStatusMinimal
 from app.utils.security import verify_nowpayments_signature
 
-
-BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
-ENV_PATH = os.path.join(BASE_DIR, ".env")
-load_dotenv(ENV_PATH)
 
 logger = logging.getLogger("nowpayments")
 
 router = APIRouter(prefix="/payments", tags=["payments"])
-compat_router = APIRouter(tags=["payments"])
 
 
 def get_db():
@@ -254,11 +243,6 @@ def currencies():
     return get_currencies_from_nowpayments()
 
 
-@compat_router.get("/currencies")
-def currencies_root_compat():
-    return get_currencies_from_nowpayments()
-
-
 @router.post("/create", response_model=CreatePaymentResponse)
 def create_payment(payload: CreatePaymentRequest, db: Session = Depends(get_db)):
     ipn_callback_url = os.getenv("NOWPAYMENTS_IPN_CALLBACK_URL")
@@ -308,97 +292,6 @@ def create_payment(payload: CreatePaymentRequest, db: Session = Depends(get_db))
     return response
 
 
-@compat_router.post("/create-payment")
-def create_payment_nowpayments(payload: dict = Body(...), db: Session = Depends(get_db)):
-    """
-    Создание платежа NOWPayments.
-
-    Поддерживает:
-    - официальный формат NOWPayments: price_amount/price_currency/...
-    - legacy формат фронта: amount -> price_amount
-    """
-    if not isinstance(payload, dict):
-        raise HTTPException(status_code=422, detail="Body must be a JSON object")
-
-    logger.info("create-payment raw payload: %s", payload)
-
-    # Совместимость со старым фронтом: amount -> price_amount
-    mapped = dict(payload)
-    if "price_amount" not in mapped and "amount" in mapped:
-        mapped["price_amount"] = mapped.get("amount")
-
-    # Валидация pydantic-моделью (без extra=forbid)
-    try:
-        model = NowPaymentsPaymentCreateRequest(**mapped)
-    except Exception as exc:
-        # Явно возвращаем 422, чтобы было понятно что сломалось
-        raise HTTPException(status_code=422, detail=str(exc)) from exc
-
-    if hasattr(model, "model_dump"):
-        request_payload = model.model_dump(exclude_none=True)  # Pydantic v2
-    else:
-        request_payload = model.dict(exclude_none=True)  # Pydantic v1
-
-    # Если ipn_callback_url не передали — можно подставить из .env (поле optional)
-    if "ipn_callback_url" not in request_payload:
-        ipn_from_env = os.getenv("NOWPAYMENTS_IPN_CALLBACK_URL")
-        if ipn_from_env:
-            request_payload["ipn_callback_url"] = ipn_from_env
-
-    api_key = os.getenv("NOWPAYMENTS_API_KEY")
-    if not api_key:
-        raise HTTPException(status_code=500, detail="NOWPAYMENTS_API_KEY is not configured")
-
-    url = "https://api.nowpayments.io/v1/payment"
-    headers = {
-        "x-api-key": api_key,
-        "Content-Type": "application/json",
-    }
-
-    try:
-        np_response = requests.request(
-            method="POST",
-            url=url,
-            headers=headers,
-            json=request_payload,
-            timeout=float(os.getenv("NOWPAYMENTS_TIMEOUT", "30")),
-        )
-    except requests.RequestException as exc:
-        raise HTTPException(status_code=502, detail="NOWPayments API is unavailable") from exc
-
-    try:
-        data_for_db = np_response.json()
-    except ValueError:
-        data_for_db = None
-    if isinstance(data_for_db, dict):
-        logger.info("create-payment NOWPayments response: %s", data_for_db)
-        _upsert_nowpayments_payment_from_create(db, request_payload, data_for_db)
-
-    # Опционально: привяжем к booking, если order_id вида booking-123 (ответ клиенту не трогаем)
-    booking_id = parse_booking_id(model.order_id)
-    if booking_id and isinstance(data_for_db, dict):
-        booking = db.query(Booking).filter(Booking.id == booking_id).first()
-        if booking and data_for_db.get("payment_id") is not None:
-            db_payment = PaymentModel(
-                booking_id=booking.id,
-                user_id=booking.user_id,
-                webinar_id=booking.webinar_id,
-                amount=model.price_amount,
-                currency=(model.price_currency or "USD").upper(),
-                payment_method="crypto",
-                payment_provider="nowpayments",
-                transaction_id=str(data_for_db.get("payment_id")),
-                status="pending",
-                payment_metadata=json.dumps(data_for_db),
-            )
-            db.add(db_payment)
-            booking.payment_status = "pending"
-            booking.payment_id = str(data_for_db.get("payment_id"))
-            booking.amount = model.price_amount
-            db.commit()
-
-    content_type = np_response.headers.get("Content-Type", "application/json")
-    return Response(content=np_response.content, status_code=np_response.status_code, media_type=content_type)
 
 
 @router.get("/status/{payment_id}", response_model=PaymentStatusMinimal)
@@ -464,11 +357,6 @@ def get_payment_full(payment_id: int, db: Session = Depends(get_db)):
     return data
 
 
-@compat_router.get("/payment/{payment_id}")
-def get_payment_status_root_compat(payment_id: int, db: Session = Depends(get_db)):
-    return get_payment_full(payment_id, db)
-
-
 @router.post("/ipn")
 async def nowpayments_ipn(request: Request, db: Session = Depends(get_db)):
     secret = os.getenv("NOWPAYMENTS_IPN_SECRET", "")
@@ -480,7 +368,14 @@ async def nowpayments_ipn(request: Request, db: Session = Depends(get_db)):
         raise HTTPException(status_code=400, detail="Invalid JSON payload") from exc
 
     signature_valid = verify_nowpayments_signature(payload, signature, secret)
-    logger.info("ipn payload: %s", payload)
+    logger.info(
+        "ipn received payment_id=%s status=%s signature_valid=%s",
+        payload.get("payment_id"),
+        payload.get("payment_status"),
+        signature_valid,
+    )
+    if os.getenv("DEBUG_NOWPAYMENTS_IPN") == "1":
+        logger.info("ipn payload: %s", payload)
     _store_ipn_event(db, payload, signature, signature_valid)
 
     if not signature_valid:

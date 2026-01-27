@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from sqlalchemy.orm import Session
 from typing import List
 
@@ -8,6 +8,7 @@ from app.models.admin import Admin
 from app.models.user import User
 from app.schemas.post import PostCreate, PostResponse
 from app.utils.telegram import send_telegram_message
+from app.utils.telegram_webapp import resolve_admin_telegram_id
 
 router = APIRouter(prefix="/posts", tags=["posts"])
 
@@ -20,13 +21,15 @@ def get_db():
         db.close()
 
 
-def check_admin_access(admin_telegram_id: int = Query(..., description="Telegram ID администратора"), db: Session = Depends(get_db)):
+def check_admin_access(request: Request, admin_telegram_id: int | None, db: Session) -> Admin:
     """Проверка прав администратора для создания/редактирования постов"""
-    admin = db.query(Admin).filter(Admin.telegram_id == admin_telegram_id).first()
+    requester_id = resolve_admin_telegram_id(request, admin_telegram_id)
+    admin = db.query(Admin).filter(Admin.telegram_id == requester_id).first()
     if not admin:
         raise HTTPException(status_code=403, detail="Доступ запрещен. Требуются права администратора")
     # Проверяем, что роль - админ или разработчик
-    if admin.role.lower() not in ['админ', 'администратор', 'разработчик', 'developer', 'admin']:
+    role = (admin.role or "").lower()
+    if role not in ['админ', 'администратор', 'разработчик', 'developer', 'admin', 'owner', 'владелец']:
         raise HTTPException(status_code=403, detail="Доступ запрещен. Требуются права администратора или разработчика")
     return admin
 
@@ -49,12 +52,13 @@ def get_post(post_id: int, db: Session = Depends(get_db)):
 
 @router.post("/", response_model=PostResponse)
 def create_post(
+    request: Request,
     post: PostCreate,
-    admin_telegram_id: int = Query(..., description="Telegram ID администратора"),
+    admin_telegram_id: int = Query(None, description="Telegram ID администратора (legacy)"),
     db: Session = Depends(get_db)
 ):
     """Создать пост (только для администраторов и разработчиков)"""
-    check_admin_access(admin_telegram_id, db)
+    check_admin_access(request, admin_telegram_id, db)
     
     db_post = Post(**post.model_dump())
     db.add(db_post)
@@ -79,13 +83,14 @@ def create_post(
 
 @router.put("/{post_id}", response_model=PostResponse)
 def update_post(
+    request: Request,
     post_id: int,
     post: PostCreate,
-    admin_telegram_id: int = Query(..., description="Telegram ID администратора"),
+    admin_telegram_id: int = Query(None, description="Telegram ID администратора (legacy)"),
     db: Session = Depends(get_db)
 ):
     """Обновить пост (только для администраторов и разработчиков)"""
-    check_admin_access(admin_telegram_id, db)
+    check_admin_access(request, admin_telegram_id, db)
     
     db_post = db.query(Post).filter(Post.id == post_id).first()
     if not db_post:
@@ -101,12 +106,13 @@ def update_post(
 
 @router.delete("/{post_id}")
 def delete_post(
+    request: Request,
     post_id: int,
-    admin_telegram_id: int = Query(..., description="Telegram ID администратора"),
+    admin_telegram_id: int = Query(None, description="Telegram ID администратора (legacy)"),
     db: Session = Depends(get_db)
 ):
     """Удалить пост (только для администраторов и разработчиков)"""
-    check_admin_access(admin_telegram_id, db)
+    check_admin_access(request, admin_telegram_id, db)
     
     db_post = db.query(Post).filter(Post.id == post_id).first()
     if not db_post:

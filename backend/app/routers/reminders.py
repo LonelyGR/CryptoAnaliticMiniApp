@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from sqlalchemy.orm import Session
 from datetime import datetime, timedelta
 from typing import List
@@ -9,6 +9,7 @@ from app.models.webinar import Webinar
 from app.models.user import User
 from app.models.admin import Admin
 from app.utils.telegram import send_telegram_message
+from app.utils.telegram_webapp import resolve_admin_telegram_id
 
 router = APIRouter(prefix="/reminders", tags=["reminders"])
 
@@ -21,9 +22,11 @@ def get_db():
         db.close()
 
 
-def check_admin_access(admin_telegram_id: int = Query(..., description="Telegram ID администратора"), db: Session = Depends(get_db)):
+def check_admin_access(request: Request, admin_telegram_id: int | None, db: Session) -> Admin:
     """Проверка прав администратора"""
-    admin = db.query(Admin).filter(Admin.telegram_id == admin_telegram_id).first()
+    # reminders-worker calls this endpoint from inside Docker network; allow internal key bypass
+    requester_id = resolve_admin_telegram_id(request, admin_telegram_id, allow_internal=True)
+    admin = db.query(Admin).filter(Admin.telegram_id == requester_id).first()
     if not admin:
         raise HTTPException(status_code=403, detail="Доступ запрещен. Требуются права администратора")
     return admin
@@ -31,7 +34,8 @@ def check_admin_access(admin_telegram_id: int = Query(..., description="Telegram
 
 @router.post("/check-and-send")
 def check_and_send_reminders(
-    admin_telegram_id: int = Query(..., description="Telegram ID администратора"),
+    request: Request,
+    admin_telegram_id: int = Query(None, description="Telegram ID администратора (legacy)"),
     db: Session = Depends(get_db)
 ):
     """Проверить и отправить напоминания о вебинарах (только для администраторов)
@@ -39,7 +43,7 @@ def check_and_send_reminders(
     Этот endpoint должен вызываться периодически (например, каждые 5 минут) через cron job или планировщик задач.
     Он проверяет все предстоящие вебинары и отправляет напоминания за 12 часов, 2 часа и 15 минут (только оплатившим).
     """
-    check_admin_access(admin_telegram_id, db)
+    check_admin_access(request, admin_telegram_id, db)
     
     now = datetime.now()
     reminders_sent = {
@@ -131,11 +135,12 @@ def check_and_send_reminders(
 
 @router.get("/upcoming")
 def get_upcoming_reminders(
-    admin_telegram_id: int = Query(..., description="Telegram ID администратора"),
+    request: Request,
+    admin_telegram_id: int = Query(None, description="Telegram ID администратора (legacy)"),
     db: Session = Depends(get_db)
 ):
     """Получить список предстоящих вебинаров, которым нужны напоминания (только для администраторов)"""
-    check_admin_access(admin_telegram_id, db)
+    check_admin_access(request, admin_telegram_id, db)
     
     now = datetime.now()
     upcoming = []

@@ -5,13 +5,11 @@
 ## Основной поток оплаты
 
 1. Пользователь нажимает «Оплатить» в вебинарах.
-2. Фронт вызывает бэкенд `POST /create-payment`.
-3. Бэкенд создаёт invoice, затем payment по invoice.
-4. Фронт получает `payment_link`/`invoice_url` + `pay_address` и показывает выбор:
-   - «Оплата через кошелёк» (ссылка)
-   - «Оплата через QR» (QR по ссылке)
-5. Фронт каждые 10 секунд опрашивает `/payment/{payment_id}`.
-6. Вебхук NOWPayments подтверждает оплату и обновляет Booking/Payment в БД.
+2. Фронт вызывает бэкенд `POST /payments/create`.
+3. Бэкенд создаёт платёж в NOWPayments (`/v1/payment`) и сохраняет `payment_id` в БД (если `order_id` вида `booking-123`).
+4. Фронт получает `payment_id`, `pay_address`, `pay_amount` и показывает инструкции/QR.
+5. Фронт каждые 10 секунд опрашивает `GET /payments/payment/{payment_id}` (полный объект NOWPayments).
+6. IPN (webhook) от NOWPayments (`POST /payments/ipn`) подтверждает оплату и обновляет Booking/Payment в БД.
 
 ---
 
@@ -20,14 +18,14 @@
 ### `backend/app/routers/nowpayments.py`
 **Что делает:**
 - Эндпоинты:
-  - `GET /currencies`
-  - `POST /create-payment`
-  - `GET /payment/{payment_id}`
-  - `POST /webhook/nowpayments`
-- Создаёт **invoice** (`/invoice`) и **payment по invoice** (`/invoice-payment`).
-- Формирует `payment_link` и возвращает его на фронт.
-- Обновляет платежи/бронь в БД.
-- Проверяет подписи webhook и идемпотентность.
+  - `GET /payments/currencies`
+  - `POST /payments/create`
+  - `GET /payments/status/{payment_id}`
+  - `GET /payments/payment/{payment_id}`
+  - `POST /payments/ipn`
+- Работает с NOWPayments API через `requests`.
+- Проверяет подпись IPN (`X-NOWPayments-Sig`) и пишет событие IPN в БД.
+- Обновляет платеж/бронь в БД по статусам NOWPayments (выдача доступа только по `finished`).
 
 **Ключевые места:**
 - Формирование invoice и payment.
@@ -37,24 +35,9 @@
 
 ---
 
-### `backend/app/services/nowpayments.py`
-**Что делает:**
-- Работа с NOWPayments API через `httpx`.
-- Методы:
-  - `get_currencies()`
-  - `create_invoice()`
-  - `create_invoice_payment()`
-  - `create_payment()` (прямой платеж, сейчас не используется)
-  - `get_payment()`
-  - `get_min_amount()`
-
----
-
 ### `backend/app/schemas/nowpayments.py`
 **Что делает:**
-- Pydantic‑модели для всех запросов и ответов NOWPayments.
-- Нормализация `purchase_id` (иногда приходит числом).
-- Поля `invoice_url`, `payment_url`, `payment_link` доступны на фронте.
+- Pydantic‑модели для запросов/ответов бекенда по NOWPayments.
 
 ---
 
@@ -73,11 +56,11 @@
 
 ---
 
-### `.env (backend)`
+### `.env (root проекта)`
 **Что нужно:**
 - `NOWPAYMENTS_API_KEY=...`
 - `NOWPAYMENTS_IPN_SECRET=...`
-- `NOWPAYMENTS_IPN_CALLBACK_URL=https://<домен>/webhook/nowpayments` (желательно)
+- `NOWPAYMENTS_IPN_CALLBACK_URL=https://<домен>/api/payments/ipn`
 
 ---
 
@@ -89,18 +72,15 @@
 - Передаёт:
   - `orderId` (booking)
   - `amount` (цена в USDT)
-  - `priceCurrency` = `usdttrc20`
+  - `priceCurrency` = `usd`
   - `fixedPayCurrency` = `usdttrc20`
 
 ---
 
 ### `miniapp/react-app/src/components/PaymentFlow.js`
 **Что делает:**
-- Загружает `payment_link` и `pay_address`.
-- Показывает выбор:
-  - «Оплата через кошелёк» (ссылка)
-  - «Оплата через QR» (QR по ссылке)
-- Поллит `/payment/{payment_id}`.
+- Создаёт платёж через `POST /payments/create`.
+- Поллит `GET /payments/payment/{payment_id}`.
 - Показывает статусы, таймер, кнопки копирования.
 
 ---
@@ -113,8 +93,6 @@
 
 ## Примечания
 
-- NOWPayments может не отдавать `payment_url`, поэтому используется `invoice_url`.
-- QR строится **по ссылке**, чтобы открывать оплату на телефоне.
-- Если нужно вернуть «прямую оплату» без invoice — можно вернуть `POST /payment`,
-  но тогда не будет кликабельной ссылки для телефона.
+- Снаружи (через Caddy) все API эндпоинты вызываются как `/api/...`, например IPN: `/api/payments/ipn`.
+- QR строится по deep-link (например `tron:<address>?amount=<...>`), чтобы кошельки могли открыть оплату на телефоне.
 

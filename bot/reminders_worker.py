@@ -7,6 +7,7 @@ def main():
     backend_url = (os.getenv("BACKEND_URL") or "http://backend:8000").rstrip("/")
     admin_telegram_id = os.getenv("ADMIN_TELEGRAM_ID")
     interval_seconds = int(os.getenv("REMINDER_INTERVAL_SECONDS") or "300")
+    internal_key = (os.getenv("INTERNAL_API_KEY") or "").strip()
 
     if not admin_telegram_id:
         raise RuntimeError("ADMIN_TELEGRAM_ID is not set")
@@ -14,7 +15,8 @@ def main():
     while True:
         try:
             url = f"{backend_url}/reminders/check-and-send"
-            r = requests.post(url, params={"admin_telegram_id": admin_telegram_id}, timeout=20)
+            headers = {"X-Internal-Key": internal_key} if internal_key else {}
+            r = requests.post(url, params={"admin_telegram_id": admin_telegram_id}, headers=headers, timeout=20)
             print("[reminders-worker]", r.status_code, r.text[:500])
         except Exception as e:
             print("[reminders-worker] error:", e)

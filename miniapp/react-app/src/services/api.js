@@ -9,12 +9,28 @@ console.log('REACT_APP_API_URL env:', process.env.REACT_APP_API_URL);
 /**
  * Универсальная функция для выполнения API запросов с обработкой ошибок
  */
+function getTelegramInitData() {
+  try {
+    return (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initData) || '';
+  } catch {
+    return '';
+  }
+}
+
+function buildHeaders(extra = {}) {
+  const initData = getTelegramInitData();
+  return {
+    'Content-Type': 'application/json',
+    ...(initData ? { 'X-Telegram-Init-Data': initData } : {}),
+    ...extra,
+  };
+}
+
 async function apiRequest(endpoint, options = {}) {
   try {
     const response = await fetch(`${API_BASE_URL}${endpoint}`, {
       headers: {
-        'Content-Type': 'application/json',
-        ...options.headers,
+        ...buildHeaders(options.headers),
       },
       ...options,
     });
@@ -58,9 +74,7 @@ export async function createOrUpdateUser(telegramId, userData) {
     
     const response = await fetch(`${API_BASE_URL}/users/telegram/${telegramId}`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers: buildHeaders(),
       body: JSON.stringify(requestBody),
     });
 
@@ -125,9 +139,7 @@ export async function createBooking(bookingData) {
     
     const response = await fetch(`${API_BASE_URL}/bookings/`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers: buildHeaders(),
       body: JSON.stringify(bookingData),
     });
 
@@ -178,9 +190,7 @@ export async function deleteTicket(ticketId, adminTelegramId) {
   try {
     const response = await fetch(`${API_BASE_URL}/bookings/${ticketId}?admin_telegram_id=${adminTelegramId}`, {
       method: 'DELETE',
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers: buildHeaders(),
     });
 
     if (!response.ok) {
@@ -201,9 +211,7 @@ export async function respondToConsultation(bookingId, adminTelegramId, response
   try {
     const response_data = await fetch(`${API_BASE_URL}/bookings/${bookingId}/respond?admin_telegram_id=${adminTelegramId}`, {
       method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers: buildHeaders(),
       body: JSON.stringify({
         admin_response: response,
         admin_id: 0, // Игнорируется на бэкенде, используется admin_telegram_id
@@ -230,9 +238,7 @@ export async function createWebinar(adminTelegramId, webinarData) {
   try {
     const response = await fetch(`${API_BASE_URL}/webinars/?admin_telegram_id=${adminTelegramId}`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers: buildHeaders(),
       body: JSON.stringify(webinarData),
     });
 
@@ -254,9 +260,7 @@ export async function updateWebinar(webinarId, adminTelegramId, webinarData) {
   try {
     const response = await fetch(`${API_BASE_URL}/webinars/${webinarId}?admin_telegram_id=${adminTelegramId}`, {
       method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers: buildHeaders(),
       body: JSON.stringify(webinarData),
     });
 
@@ -278,6 +282,7 @@ export async function deleteWebinar(webinarId, adminTelegramId) {
   try {
     const response = await fetch(`${API_BASE_URL}/webinars/${webinarId}?admin_telegram_id=${adminTelegramId}`, {
       method: 'DELETE',
+      headers: buildHeaders(),
     });
 
     if (!response.ok) {
@@ -346,9 +351,7 @@ export async function createAdmin(adminData) {
   try {
     const response = await fetch(`${API_BASE_URL}/admins/`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers: buildHeaders(),
       body: JSON.stringify(adminData),
     });
 
@@ -370,9 +373,7 @@ export async function updateAdmin(adminId, adminData) {
   try {
     const response = await fetch(`${API_BASE_URL}/admins/${adminId}`, {
       method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers: buildHeaders(),
       body: JSON.stringify({
         role: adminData.role
       }),
@@ -396,6 +397,7 @@ export async function deleteAdmin(adminId) {
   try {
     const response = await fetch(`${API_BASE_URL}/admins/${adminId}`, {
       method: 'DELETE',
+      headers: buildHeaders(),
     });
 
     if (!response.ok) {
@@ -416,6 +418,7 @@ export async function clearDatabase(adminTelegramId) {
   try {
     const response = await fetch(`${API_BASE_URL}/admins/clear-db?admin_telegram_id=${adminTelegramId}`, {
       method: 'POST',
+      headers: buildHeaders(),
     });
 
     if (!response.ok) {
@@ -439,6 +442,7 @@ export async function clearData(adminTelegramId, targets) {
       .join('&');
     const response = await fetch(`${API_BASE_URL}/admins/clear-data?admin_telegram_id=${adminTelegramId}&${targetParams}`, {
       method: 'POST',
+      headers: buildHeaders(),
     });
 
     if (!response.ok) {
@@ -471,9 +475,7 @@ export async function createPost(adminTelegramId, postData) {
   try {
     const response = await fetch(`${API_BASE_URL}/posts/?admin_telegram_id=${adminTelegramId}`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers: buildHeaders(),
       body: JSON.stringify(postData),
     });
 
@@ -495,9 +497,7 @@ export async function updatePost(postId, adminTelegramId, postData) {
   try {
     const response = await fetch(`${API_BASE_URL}/posts/${postId}?admin_telegram_id=${adminTelegramId}`, {
       method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers: buildHeaders(),
       body: JSON.stringify(postData),
     });
 
@@ -519,6 +519,7 @@ export async function deletePost(postId, adminTelegramId) {
   try {
     const response = await fetch(`${API_BASE_URL}/posts/${postId}?admin_telegram_id=${adminTelegramId}`, {
       method: 'DELETE',
+      headers: buildHeaders(),
     });
 
     if (!response.ok) {
@@ -539,9 +540,7 @@ export async function createPayment(paymentData) {
   try {
     const response = await fetch(`${API_BASE_URL}/payments/`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers: buildHeaders(),
       body: JSON.stringify(paymentData),
     });
 
@@ -587,9 +586,7 @@ export async function updatePayment(paymentId, adminTelegramId, paymentData) {
   try {
     const response = await fetch(`${API_BASE_URL}/payments/${paymentId}?admin_telegram_id=${adminTelegramId}`, {
       method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers: buildHeaders(),
       body: JSON.stringify(paymentData),
     });
 
@@ -623,9 +620,7 @@ export async function createWebinarMaterial(adminTelegramId, materialData) {
   try {
     const response = await fetch(`${API_BASE_URL}/webinar-materials/?admin_telegram_id=${adminTelegramId}`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers: buildHeaders(),
       body: JSON.stringify(materialData),
     });
 
@@ -647,9 +642,7 @@ export async function updateWebinarMaterial(materialId, adminTelegramId, materia
   try {
     const response = await fetch(`${API_BASE_URL}/webinar-materials/${materialId}?admin_telegram_id=${adminTelegramId}`, {
       method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers: buildHeaders(),
       body: JSON.stringify(materialData),
     });
 
@@ -671,6 +664,7 @@ export async function deleteWebinarMaterial(materialId, adminTelegramId) {
   try {
     const response = await fetch(`${API_BASE_URL}/webinar-materials/${materialId}?admin_telegram_id=${adminTelegramId}`, {
       method: 'DELETE',
+      headers: buildHeaders(),
     });
 
     if (!response.ok) {
@@ -697,9 +691,7 @@ export async function checkApiHealth() {
     
     const response = await fetch(`${API_BASE_URL}/`, {
       method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers: buildHeaders(),
       signal: controller.signal,
     });
     

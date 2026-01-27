@@ -35,18 +35,17 @@ Invoke-RestMethod -Method Get -Uri "$BASE_URL/"
 
 ## NOWPayments (backend-only)
 
-### POST `/create-payment`
+### POST `/payments/create`
 
-Тело запроса (строго по NOWPayments `/v1/payment`):
+Тело запроса (эндпоинт бекенда; `ipn_callback_url` берется из `NOWPAYMENTS_IPN_CALLBACK_URL`):
 
 ```json
 {
-  "price_amount": 5,
+  "order_id": "booking-123",
+  "amount": 5,
   "price_currency": "usd",
   "pay_currency": "usdttrc20",
-  "order_id": "test_001",
-  "order_description": "Telegram Mini App test",
-  "ipn_callback_url": "https://backend-username.eu.ngrok.io/payments/ipn"
+  "order_description": "Telegram Mini App test"
 }
 ```
 
@@ -54,32 +53,31 @@ PowerShell:
 
 ```powershell
 $body = @{
-  price_amount = 5
+  order_id = "booking-123"
+  amount = 5
   price_currency = "usd"
   pay_currency = "usdttrc20"
-  order_id = "test_001"
   order_description = "Telegram Mini App test"
-  ipn_callback_url = "$BASE_URL/payments/ipn"
 } | ConvertTo-Json
 
-Invoke-RestMethod -Method Post -Uri "$BASE_URL/create-payment" -ContentType "application/json" -Body $body
+Invoke-RestMethod -Method Post -Uri "$BASE_URL/payments/create" -ContentType "application/json" -Body $body
 ```
 
-### GET `/currencies`
+### GET `/payments/currencies`
 
 PowerShell:
 
 ```powershell
-Invoke-RestMethod -Method Get -Uri "$BASE_URL/currencies"
+Invoke-RestMethod -Method Get -Uri "$BASE_URL/payments/currencies"
 ```
 
-### GET `/payment/{payment_id}`
+### GET `/payments/payment/{payment_id}`
 
 PowerShell:
 
 ```powershell
 $paymentId = 123456
-Invoke-RestMethod -Method Get -Uri "$BASE_URL/payment/$paymentId"
+Invoke-RestMethod -Method Get -Uri "$BASE_URL/payments/payment/$paymentId"
 ```
 
 ### POST `/payments/ipn`

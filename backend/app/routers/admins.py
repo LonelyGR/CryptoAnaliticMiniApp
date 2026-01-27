@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from sqlalchemy.orm import Session
 from typing import List
 from sqlalchemy import text
@@ -8,6 +8,7 @@ from app.models.admin import Admin
 from app.database import Base
 from app.models import admin, booking, payment, post, referral_invite, user, webinar_material, webinar  # noqa: F401
 from app.schemas.admin import AdminCreate, AdminResponse, AdminUpdate
+from app.utils.telegram_webapp import resolve_admin_telegram_id
 
 router = APIRouter(prefix="/admins", tags=["admins"])
 
@@ -17,7 +18,7 @@ def get_db():
     try:
         yield db
     finally:
-        db.close
+        db.close()
 
 
 def check_admin(telegram_id: int, db: Session) -> Admin:
@@ -37,8 +38,16 @@ def check_developer(telegram_id: int, db: Session) -> Admin:
 
 
 @router.get("/", response_model=List[AdminResponse])
-def get_admins(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
+def get_admins(
+    request: Request,
+    admin_telegram_id: int = Query(None, description="Telegram ID администратора (legacy)"),
+    skip: int = 0,
+    limit: int = 100,
+    db: Session = Depends(get_db),
+):
     """Получить список всех админов (только для админов)"""
+    requester_id = resolve_admin_telegram_id(request, admin_telegram_id)
+    check_admin(requester_id, db)
     admins = db.query(Admin).offset(skip).limit(limit).all()
     return admins
 
@@ -67,8 +76,15 @@ def check_admin_status(telegram_id: int, db: Session = Depends(get_db)):
 
 
 @router.post("/", response_model=AdminResponse)
-def create_admin(admin: AdminCreate, db: Session = Depends(get_db)):
-    """Создать нового админа"""
+def create_admin(
+    request: Request,
+    admin: AdminCreate,
+    admin_telegram_id: int = Query(None, description="Telegram ID администратора (legacy)"),
+    db: Session = Depends(get_db),
+):
+    """Создать нового админа (только для разработчика)"""
+    requester_id = resolve_admin_telegram_id(request, admin_telegram_id)
+    check_developer(requester_id, db)
     # Проверяем, существует ли админ
     existing_admin = db.query(Admin).filter(Admin.telegram_id == admin.telegram_id).first()
     if existing_admin:
@@ -86,8 +102,16 @@ def create_admin(admin: AdminCreate, db: Session = Depends(get_db)):
 
 
 @router.put("/{admin_id}", response_model=AdminResponse)
-def update_admin(admin_id: int, admin: AdminUpdate, db: Session = Depends(get_db)):
-    """Обновить админа (изменить роль)"""
+def update_admin(
+    request: Request,
+    admin_id: int,
+    admin: AdminUpdate,
+    admin_telegram_id: int = Query(None, description="Telegram ID администратора (legacy)"),
+    db: Session = Depends(get_db),
+):
+    """Обновить админа (изменить роль) (только для разработчика)"""
+    requester_id = resolve_admin_telegram_id(request, admin_telegram_id)
+    check_developer(requester_id, db)
     db_admin = db.query(Admin).filter(Admin.id == admin_id).first()
     if not db_admin:
         raise HTTPException(status_code=404, detail="Admin not found")
@@ -98,8 +122,15 @@ def update_admin(admin_id: int, admin: AdminUpdate, db: Session = Depends(get_db
     return db_admin
 
 @router.delete("/{admin_id}")
-def delete_admin(admin_id: int, db: Session = Depends(get_db)):
-    """Удалить админа"""
+def delete_admin(
+    request: Request,
+    admin_id: int,
+    admin_telegram_id: int = Query(None, description="Telegram ID администратора (legacy)"),
+    db: Session = Depends(get_db),
+):
+    """Удалить админа (только для разработчика)"""
+    requester_id = resolve_admin_telegram_id(request, admin_telegram_id)
+    check_developer(requester_id, db)
     admin = db.query(Admin).filter(Admin.id == admin_id).first()
     if not admin:
         raise HTTPException(status_code=404, detail="Admin not found")
@@ -109,9 +140,14 @@ def delete_admin(admin_id: int, db: Session = Depends(get_db)):
 
 
 @router.post("/clear-db")
-def clear_database(admin_telegram_id: int = Query(...), db: Session = Depends(get_db)):
+def clear_database(
+    request: Request,
+    admin_telegram_id: int = Query(None, description="Telegram ID администратора (legacy)"),
+    db: Session = Depends(get_db),
+):
     """Полная очистка базы данных (только для разработчика)"""
-    check_developer(admin_telegram_id, db)
+    requester_id = resolve_admin_telegram_id(request, admin_telegram_id)
+    check_developer(requester_id, db)
 
     db.execute(text("PRAGMA foreign_keys=OFF"))
     total_deleted = 0
@@ -126,12 +162,14 @@ def clear_database(admin_telegram_id: int = Query(...), db: Session = Depends(ge
 
 @router.post("/clear-data")
 def clear_selected_data(
-    admin_telegram_id: int = Query(...),
+    request: Request,
+    admin_telegram_id: int = Query(None, description="Telegram ID администратора (legacy)"),
     targets: List[str] = Query(...),
     db: Session = Depends(get_db)
 ):
     """Удалить выбранные данные (только для разработчика)"""
-    check_developer(admin_telegram_id, db)
+    requester_id = resolve_admin_telegram_id(request, admin_telegram_id)
+    check_developer(requester_id, db)
 
     if not targets:
         raise HTTPException(status_code=400, detail="Не указаны данные для удаления")

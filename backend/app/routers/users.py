@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, Body, Query
+from fastapi import APIRouter, Depends, HTTPException, Body, Query, Request
 from sqlalchemy.orm import Session
 from typing import List, Optional
 
@@ -6,6 +6,7 @@ from app.database import SessionLocal
 from app.models.user import User
 from app.models.admin import Admin
 from app.schemas.user import UserCreate, UserResponse, UserUpdate
+from app.utils.telegram_webapp import resolve_admin_telegram_id
 
 router = APIRouter(prefix="/users", tags=["users"])
 
@@ -283,12 +284,14 @@ def create_or_update_user_by_telegram(
 
 @router.put("/{user_id}/block")
 def update_user_block_status(
+    request: Request,
     user_id: int,
-    admin_telegram_id: int = Query(..., description="Telegram ID администратора"),
+    admin_telegram_id: int = Query(None, description="Telegram ID администратора (legacy)"),
     is_blocked: bool = Body(..., embed=True),
     db: Session = Depends(get_db)
 ):
-    admin = db.query(Admin).filter(Admin.telegram_id == admin_telegram_id).first()
+    requester_id = resolve_admin_telegram_id(request, admin_telegram_id)
+    admin = db.query(Admin).filter(Admin.telegram_id == requester_id).first()
     if not admin or (admin.role or "").lower() not in ["разработчик", "developer", "владелец", "owner"]:
         raise HTTPException(status_code=403, detail="Доступ запрещен. Требуются права разработчика")
 

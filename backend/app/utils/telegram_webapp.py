@@ -1,0 +1,111 @@
+from __future__ import annotations
+
+import hashlib
+import hmac
+import json
+import os
+import time
+import urllib.parse
+
+from fastapi import HTTPException, Request
+
+
+def _parse_init_data(init_data: str) -> dict[str, str]:
+    # initData приходит как querystring (urlencoded), напр: "query_id=...&user=...&auth_date=...&hash=..."
+    parsed = urllib.parse.parse_qs(init_data, strict_parsing=False, keep_blank_values=True)
+    # берём первые значения
+    return {k: (v[0] if isinstance(v, list) and v else "") for k, v in parsed.items()}
+
+
+def _build_data_check_string(data: dict[str, str]) -> str:
+    # Telegram: сортируем "key=value" (без hash) по key, соединяем \n
+    items = []
+    for key, value in data.items():
+        if key == "hash":
+            continue
+        items.append(f"{key}={value}")
+    items.sort()
+    return "\n".join(items)
+
+
+def verify_telegram_webapp_init_data(init_data: str, bot_token: str) -> dict:
+    """
+    Verifies Telegram WebApp initData signature.
+    Returns parsed 'user' dict on success.
+    Raises HTTPException on failure.
+    """
+    init_data = (init_data or "").strip()
+    if not init_data:
+        raise HTTPException(status_code=401, detail="Missing Telegram initData")
+
+    bot_token = (bot_token or "").strip()
+    if not bot_token:
+        raise HTTPException(status_code=500, detail="TELEGRAM_BOT_TOKEN is not configured")
+
+    data = _parse_init_data(init_data)
+    received_hash = (data.get("hash") or "").strip()
+    if not received_hash:
+        raise HTTPException(status_code=401, detail="Missing Telegram initData hash")
+
+    secret_key = hashlib.sha256(bot_token.encode("utf-8")).digest()
+    data_check_string = _build_data_check_string(data).encode("utf-8")
+    calculated_hash = hmac.new(secret_key, data_check_string, hashlib.sha256).hexdigest()
+    if not hmac.compare_digest(calculated_hash, received_hash):
+        raise HTTPException(status_code=401, detail="Invalid Telegram initData signature")
+
+    # optional TTL check
+    max_age = int(os.getenv("TELEGRAM_AUTH_MAX_AGE_SECONDS", "86400"))
+    auth_date_raw = (data.get("auth_date") or "").strip()
+    if auth_date_raw.isdigit():
+        auth_date = int(auth_date_raw)
+        if max_age > 0 and int(time.time()) - auth_date > max_age:
+            raise HTTPException(status_code=401, detail="Telegram initData expired")
+
+    user_raw = data.get("user") or ""
+    if not user_raw:
+        raise HTTPException(status_code=401, detail="Telegram initData has no user")
+    try:
+        user = json.loads(user_raw)
+    except json.JSONDecodeError as exc:
+        raise HTTPException(status_code=401, detail="Invalid Telegram initData user") from exc
+    if not isinstance(user, dict) or not user.get("id"):
+        raise HTTPException(status_code=401, detail="Telegram initData user has no id")
+    return user
+
+
+def get_request_telegram_user_id(request: Request) -> int:
+    init_data = (request.headers.get("X-Telegram-Init-Data") or "").strip()
+    user = verify_telegram_webapp_init_data(init_data, os.getenv("TELEGRAM_BOT_TOKEN", ""))
+    return int(user["id"])
+
+
+def resolve_admin_telegram_id(
+    request: Request,
+    fallback_admin_telegram_id: int | None,
+    *,
+    allow_internal: bool = False,
+) -> int:
+    """
+    Resolves requester Telegram ID:
+    - If X-Telegram-Init-Data present and valid -> returns its user.id
+    - Else if REQUIRE_TELEGRAM_AUTH=1 -> 401
+    - Else fallback to query admin_telegram_id (legacy)
+    """
+    init_data = (request.headers.get("X-Telegram-Init-Data") or "").strip()
+    if init_data:
+        return get_request_telegram_user_id(request)
+
+    if allow_internal:
+        internal_key = (os.getenv("INTERNAL_API_KEY") or "").strip()
+        provided = (request.headers.get("X-Internal-Key") or "").strip()
+        if internal_key and provided and hmac.compare_digest(internal_key, provided):
+            if fallback_admin_telegram_id is None:
+                raise HTTPException(status_code=401, detail="Missing admin_telegram_id")
+            return int(fallback_admin_telegram_id)
+
+    if os.getenv("REQUIRE_TELEGRAM_AUTH") == "1":
+        raise HTTPException(status_code=401, detail="Telegram auth required")
+
+    if fallback_admin_telegram_id is None:
+        raise HTTPException(status_code=401, detail="Missing admin_telegram_id")
+    return int(fallback_admin_telegram_id)

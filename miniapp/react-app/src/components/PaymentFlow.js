@@ -59,13 +59,27 @@ export default function PaymentFlow({
   onComplete,
   webinarTitle
 }) {
-  const apiBase = backendUrl || process.env.REACT_APP_API_URL || 'http://localhost:8000';
+  const apiBase = backendUrl || process.env.REACT_APP_API_URL || '/api';
   const [payment, setPayment] = useState(null);
   const [error, setError] = useState(null);
   const [creating, setCreating] = useState(false);
   const [loadingExisting, setLoadingExisting] = useState(false);
   const [expiresAt, setExpiresAt] = useState(null);
   const [nowSec, setNowSec] = useState(Math.floor(Date.now() / 1000));
+
+  const tgInitData = useMemo(() => {
+    try {
+      return (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initData) || '';
+    } catch {
+      return '';
+    }
+  }, []);
+
+  const headers = useMemo(() => {
+    const h = { 'Content-Type': 'application/json' };
+    if (tgInitData) h['X-Telegram-Init-Data'] = tgInitData;
+    return h;
+  }, [tgInitData]);
 
   const statusView = useMemo(() => getStatusView(payment?.payment_status), [payment?.payment_status]);
   const isSuccess = SUCCESS_STATUSES.has((payment?.payment_status || '').toLowerCase());
@@ -117,7 +131,7 @@ export default function PaymentFlow({
       setLoadingExisting(true);
       setError(null);
       try {
-        const resp = await fetch(`${apiBase}/payment/${paymentId}`);
+        const resp = await fetch(`${apiBase}/payments/payment/${paymentId}`, { headers });
         if (!resp.ok) throw new Error('Не удалось получить платеж');
         const data = await resp.json();
         if (!mounted) return;
@@ -150,11 +164,11 @@ export default function PaymentFlow({
       setCreating(true);
       setError(null);
       try {
-        const resp = await fetch(`${apiBase}/create-payment`, {
+        const resp = await fetch(`${apiBase}/payments/create`, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers,
           body: JSON.stringify({
-            price_amount: amount,
+            amount,
             price_currency: priceCurrency,
             pay_currency: fixedPayCurrency,
             order_id: orderId,
@@ -194,7 +208,7 @@ export default function PaymentFlow({
     const id = payment.payment_id;
     const interval = setInterval(async () => {
       try {
-        const resp = await fetch(`${apiBase}/payment/${id}`);
+        const resp = await fetch(`${apiBase}/payments/payment/${id}`, { headers });
         if (!resp.ok) return;
         const data = await resp.json();
         setPayment((prev) => ({ ...(prev || {}), ...data }));

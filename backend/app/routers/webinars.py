@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from sqlalchemy.orm import Session
 from typing import List, Optional
 
@@ -8,6 +8,7 @@ from app.models.admin import Admin
 from app.models.user import User
 from app.schemas.webinar import WebinarCreate, WebinarResponse
 from app.utils.telegram import send_telegram_message
+from app.utils.telegram_webapp import resolve_admin_telegram_id
 
 router = APIRouter(prefix="/webinars", tags=["webinars"])
 
@@ -20,9 +21,10 @@ def get_db():
         db.close()
 
 
-def check_admin_access(admin_telegram_id: int = Query(..., description="Telegram ID администратора"), db: Session = Depends(get_db)):
+def check_admin_access(request: Request, admin_telegram_id: int | None, db: Session) -> Admin:
     """Проверка прав администратора для создания вебинаров"""
-    admin = db.query(Admin).filter(Admin.telegram_id == admin_telegram_id).first()
+    requester_id = resolve_admin_telegram_id(request, admin_telegram_id)
+    admin = db.query(Admin).filter(Admin.telegram_id == requester_id).first()
     if not admin:
         raise HTTPException(status_code=403, detail="Доступ запрещен. Требуются права администратора для создания вебинаров")
     return admin
@@ -46,8 +48,9 @@ def get_webinar(webinar_id: int, db: Session = Depends(get_db)):
 
 @router.post("/", response_model=WebinarResponse)
 def create_webinar(
+    request: Request,
     webinar: WebinarCreate,
-    admin_telegram_id: int = Query(..., description="Telegram ID администратора"),
+    admin_telegram_id: int = Query(None, description="Telegram ID администратора (legacy)"),
     db: Session = Depends(get_db)
 ):
     """Создать вебинар (только для администраторов)
@@ -55,7 +58,7 @@ def create_webinar(
     Требуется параметр: admin_telegram_id с Telegram ID администратора
     """
     # Проверяем права администратора
-    admin = check_admin_access(admin_telegram_id, db)
+    admin = check_admin_access(request, admin_telegram_id, db)
     
     # Создаем вебинар
     db_webinar = Webinar(**webinar.model_dump())
@@ -92,9 +95,10 @@ def create_webinar(
 
 @router.put("/{webinar_id}", response_model=WebinarResponse)
 def update_webinar(
+    request: Request,
     webinar_id: int,
     webinar: WebinarCreate,
-    admin_telegram_id: int = Query(..., description="Telegram ID администратора"),
+    admin_telegram_id: int = Query(None, description="Telegram ID администратора (legacy)"),
     db: Session = Depends(get_db)
 ):
     """Обновить вебинар (только для администраторов)
@@ -102,7 +106,7 @@ def update_webinar(
     Требуется параметр: admin_telegram_id с Telegram ID администратора
     """
     # Проверяем права администратора
-    admin = check_admin_access(admin_telegram_id, db)
+    admin = check_admin_access(request, admin_telegram_id, db)
     
     # Находим вебинар
     db_webinar = db.query(Webinar).filter(Webinar.id == webinar_id).first()
@@ -120,8 +124,9 @@ def update_webinar(
 
 @router.delete("/{webinar_id}")
 def delete_webinar(
+    request: Request,
     webinar_id: int,
-    admin_telegram_id: int = Query(..., description="Telegram ID администратора"),
+    admin_telegram_id: int = Query(None, description="Telegram ID администратора (legacy)"),
     db: Session = Depends(get_db)
 ):
     """Удалить вебинар (только для администраторов)
@@ -130,7 +135,7 @@ def delete_webinar(
     При удалении вебинара также удаляются все связанные бронирования
     """
     # Проверяем права администратора
-    admin = check_admin_access(admin_telegram_id, db)
+    admin = check_admin_access(request, admin_telegram_id, db)
     
     # Находим вебинар
     db_webinar = db.query(Webinar).filter(Webinar.id == webinar_id).first()

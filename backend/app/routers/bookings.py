@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from sqlalchemy.orm import Session
 from typing import List
 
@@ -7,6 +7,7 @@ from app.models.booking import Booking
 from app.models.user import User
 from app.models.admin import Admin
 from app.schemas.booking import BookingCreate, BookingResponse, BookingResponseAdmin, BookingResponseUpdate
+from app.utils.telegram_webapp import resolve_admin_telegram_id
 
 router = APIRouter(prefix="/bookings", tags=["bookings"])
 
@@ -33,13 +34,15 @@ def get_bookings(skip: int = 0, limit: int = 100, db: Session = Depends(get_db))
 
 @router.get("/consultations", response_model=List[BookingResponseAdmin])
 def get_consultations(
-    admin_telegram_id: int = Query(..., description="Telegram ID администратора"),
+    request: Request,
+    admin_telegram_id: int = Query(None, description="Telegram ID администратора (legacy)"),
     skip: int = 0,
     limit: int = 100,
     db: Session = Depends(get_db)
 ):
     """Получить все консультации (только для администраторов)"""
-    check_admin(admin_telegram_id, db)
+    requester_id = resolve_admin_telegram_id(request, admin_telegram_id)
+    check_admin(requester_id, db)
     
     consultations = db.query(Booking).filter(
         Booking.type == "consultation"
@@ -70,13 +73,15 @@ def get_consultations(
 
 @router.get("/support-tickets", response_model=List[BookingResponseAdmin])
 def get_support_tickets(
-    admin_telegram_id: int = Query(..., description="Telegram ID администратора"),
+    request: Request,
+    admin_telegram_id: int = Query(None, description="Telegram ID администратора (legacy)"),
     skip: int = 0,
     limit: int = 100,
     db: Session = Depends(get_db)
 ):
     """Получить все обращения в поддержку (только для администраторов)"""
-    check_admin(admin_telegram_id, db)
+    requester_id = resolve_admin_telegram_id(request, admin_telegram_id)
+    check_admin(requester_id, db)
     
     support_tickets = db.query(Booking).filter(
         Booking.type == "support"
@@ -179,12 +184,14 @@ def get_booking(booking_id: int, db: Session = Depends(get_db)):
 
 @router.delete("/{booking_id}")
 def delete_booking(
+    request: Request,
     booking_id: int,
-    admin_telegram_id: int = Query(..., description="Telegram ID администратора"),
+    admin_telegram_id: int = Query(None, description="Telegram ID администратора (legacy)"),
     db: Session = Depends(get_db)
 ):
     """Удалить тикет (только для администраторов)"""
-    check_admin(admin_telegram_id, db)
+    requester_id = resolve_admin_telegram_id(request, admin_telegram_id)
+    check_admin(requester_id, db)
     
     booking = db.query(Booking).filter(Booking.id == booking_id).first()
     if not booking:
@@ -196,16 +203,18 @@ def delete_booking(
 
 @router.put("/{booking_id}/respond", response_model=BookingResponse)
 def respond_to_consultation(
+    request: Request,
     booking_id: int,
     response: BookingResponseUpdate,
-    admin_telegram_id: int = Query(..., description="Telegram ID администратора"),
+    admin_telegram_id: int = Query(None, description="Telegram ID администратора (legacy)"),
     db: Session = Depends(get_db)
 ):
     """Ответить на консультацию или обращение в поддержку (только для администраторов)"""
-    admin = check_admin(admin_telegram_id, db)
+    requester_id = resolve_admin_telegram_id(request, admin_telegram_id)
+    admin = check_admin(requester_id, db)
     
     # Получаем user_id админа из БД
-    admin_user = db.query(User).filter(User.telegram_id == admin_telegram_id).first()
+    admin_user = db.query(User).filter(User.telegram_id == requester_id).first()
     if not admin_user:
         raise HTTPException(status_code=404, detail="Admin user not found")
     
