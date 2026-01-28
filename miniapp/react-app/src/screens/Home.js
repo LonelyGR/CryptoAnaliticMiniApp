@@ -3,7 +3,7 @@ import CopyTradingHeader from '../components/CopyTradingHeader';
 // import PromoBanner from '../components/PromoBanner';
 import CryptoCard from '../components/CryptoCard';
 import ScreenWrapper from '../components/ScreenWrapper';
-import { getPosts, createPost, updatePost, deletePost } from '../services/api';
+import { getPosts } from '../services/api';
 
 // Popular cryptocurrencies to fetch from Binance
 const BINANCE_SYMBOLS = [
@@ -22,18 +22,11 @@ export default function Home({ user, apiConnected, dbUser }) {
     const [error, setError] = useState(null);
     const [aboutModalOpen, setAboutModalOpen] = useState(false);
     const [posts, setPosts] = useState([]);
-    const [showPostForm, setShowPostForm] = useState(false);
-    const [editingPost, setEditingPost] = useState(null);
-    const [postFormData, setPostFormData] = useState({ title: '', content: '' });
+    // Admin actions were moved to backend admin panel (/admin)
     const touchStartX = useRef(null);
     const touchEndX = useRef(null);
 
-    // Проверка прав администратора
-    const isAdmin = dbUser?.is_admin && (dbUser?.role?.toLowerCase() === 'админ' || 
-                                          dbUser?.role?.toLowerCase() === 'администратор' || 
-                                          dbUser?.role?.toLowerCase() === 'разработчик' || 
-                                          dbUser?.role?.toLowerCase() === 'developer' || 
-                                          dbUser?.role?.toLowerCase() === 'admin');
+    // Mini app: no admin actions here (use backend admin panel)
 
     const getMockCryptoData = useCallback(() => {
         // Generate mock sparkline data for fallback
@@ -173,80 +166,7 @@ export default function Home({ user, apiConnected, dbUser }) {
         // Handle deposit action
     };
 
-    // Обработчики для постов
-    const handleCreatePost = async () => {
-        if (!apiConnected || !isAdmin) return;
-        
-        const telegramId = user?.telegram_id || user?.id;
-        if (!telegramId) {
-            alert('Пользователь не найден');
-            return;
-        }
-
-        try {
-            await createPost(telegramId, postFormData);
-            alert('Пост успешно создан!');
-            setPostFormData({ title: '', content: '' });
-            setShowPostForm(false);
-            loadPosts();
-        } catch (error) {
-            console.error('Failed to create post:', error);
-            alert('Не удалось создать пост');
-        }
-    };
-
-    const handleUpdatePost = async () => {
-        if (!apiConnected || !isAdmin || !editingPost) return;
-        
-        const telegramId = user?.telegram_id || user?.id;
-        if (!telegramId) {
-            alert('Пользователь не найден');
-            return;
-        }
-
-        try {
-            await updatePost(editingPost.id, telegramId, postFormData);
-            alert('Пост успешно обновлен!');
-            setPostFormData({ title: '', content: '' });
-            setEditingPost(null);
-            loadPosts();
-        } catch (error) {
-            console.error('Failed to update post:', error);
-            alert('Не удалось обновить пост');
-        }
-    };
-
-    const handleDeletePost = async (postId) => {
-        if (!apiConnected || !isAdmin) return;
-        if (!window.confirm('Вы уверены, что хотите удалить этот пост?')) return;
-        
-        const telegramId = user?.telegram_id || user?.id;
-        if (!telegramId) {
-            alert('Пользователь не найден');
-            return;
-        }
-
-        try {
-            await deletePost(postId, telegramId);
-            alert('Пост успешно удален!');
-            loadPosts();
-        } catch (error) {
-            console.error('Failed to delete post:', error);
-            alert('Не удалось удалить пост');
-        }
-    };
-
-    const handleEditPost = (post) => {
-        setEditingPost(post);
-        setPostFormData({ title: post.title, content: post.content });
-        setShowPostForm(true);
-    };
-
-    const handleCancelPost = () => {
-        setShowPostForm(false);
-        setEditingPost(null);
-        setPostFormData({ title: '', content: '' });
-    };
+    // Creating/updating/deleting posts is handled in backend admin panel.
 
     const formatDate = (dateString) => {
         if (!dateString) return '';
@@ -396,62 +316,7 @@ export default function Home({ user, apiConnected, dbUser }) {
                     </section>
                 )}
 
-                {/* Кнопка создания поста (только для админов) */}
-                {isAdmin && apiConnected && (
-                    <div className="posts-section">
-                        <button 
-                            className="btn-create-post"
-                            onClick={() => {
-                                setShowPostForm(true);
-                                setEditingPost(null);
-                                setPostFormData({ title: '', content: '' });
-                            }}
-                        >
-                            + Создать пост
-                        </button>
-                    </div>
-                )}
-
-                {/* Форма создания/редактирования поста */}
-                {showPostForm && isAdmin && (
-                    <div className="post-form-container">
-                        <h3>{editingPost ? 'Редактировать пост' : 'Создать пост'}</h3>
-                        <div className="form-group">
-                            <label>Заголовок</label>
-                            <input
-                                type="text"
-                                className="form-input"
-                                value={postFormData.title}
-                                onChange={(e) => setPostFormData({ ...postFormData, title: e.target.value })}
-                                placeholder="Введите заголовок"
-                            />
-                        </div>
-                        <div className="form-group">
-                            <label>Содержание</label>
-                            <textarea
-                                className="form-textarea"
-                                value={postFormData.content}
-                                onChange={(e) => setPostFormData({ ...postFormData, content: e.target.value })}
-                                placeholder="Введите содержание поста"
-                                rows={5}
-                            />
-                        </div>
-                        <div className="post-form-actions">
-                            <button 
-                                className="btn-primary"
-                                onClick={editingPost ? handleUpdatePost : handleCreatePost}
-                            >
-                                {editingPost ? 'Сохранить' : 'Создать'}
-                            </button>
-                            <button 
-                                className="btn-secondary-admin"
-                                onClick={handleCancelPost}
-                            >
-                                Отмена
-                            </button>
-                        </div>
-                    </div>
-                )}
+                {/* Админ‑действия (создание/удаление постов) перенесены в backend админ‑панель (/admin) */}
 
                 {/* Список постов */}
                 <section className="posts-list-section">
@@ -470,22 +335,6 @@ export default function Home({ user, apiConnected, dbUser }) {
                                 <div key={post.id} className="post-card">
                                     <div className="post-header">
                                         <h3 className="post-title">{post.title}</h3>
-                                        {isAdmin && (
-                                            <div className="post-actions">
-                                                <button 
-                                                    className="btn-edit-post"
-                                                    onClick={() => handleEditPost(post)}
-                                                >
-                                                    ✏️
-                                                </button>
-                                                <button 
-                                                    className="btn-delete-post"
-                                                    onClick={() => handleDeletePost(post.id)}
-                                                >
-                                                    🗑️
-                                                </button>
-                                            </div>
-                                        )}
                                     </div>
                                     <p className="post-content">{post.content}</p>
                                     <div className="post-date">

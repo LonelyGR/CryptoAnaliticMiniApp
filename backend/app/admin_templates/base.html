@@ -9,7 +9,7 @@
   <body>
     <div class="wrap">
       <div class="topbar">
-        <div class="brand">CryptoAnaliticMiniApp · Admin</div>
+        <div class="brand">CryptoSensei · Admin</div>
         <div class="topbar__right">
           <div class="nav">
             <a href="/admin/posts" class="{{ 'active' if section=='posts' else '' }}">Посты</a>
@@ -17,9 +17,7 @@
             <a href="/admin/tickets" class="{{ 'active' if section=='tickets' else '' }}">Тикеты</a>
             <a href="/admin/admins" class="{{ 'active' if section=='admins' else '' }}">Админы</a>
             <a href="/admin/data" class="{{ 'active' if section=='data' else '' }}">Данные</a>
-            {% if can_manage_users %}
-              <a href="/admin/users" class="{{ 'active' if section=='users' else '' }}">Пользователи панели</a>
-            {% endif %}
+            <a href="/admin/users" class="{{ 'active' if section=='users' else '' }}">Пользователи панели</a>
           </div>
           <div class="topbar__meta">
             {{ admin_user or "" }}

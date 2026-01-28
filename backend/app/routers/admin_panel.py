@@ -264,9 +264,27 @@ def require_admin_session(request: Request, db=Depends(get_db)) -> AdminPanelUse
 def require_scope(scope: str):
     def _dep(user: AdminPanelUser = Depends(require_admin_session)) -> AdminPanelUser:
         if not _has_scope(user, scope):
-            raise HTTPException(status_code=403, detail="Forbidden")
+            # Friendly forbidden page (keep navbar)
+            raise HTTPException(status_code=303, headers={"Location": f"/admin/forbidden?need={scope}"})
         return user
     return _dep
+
+
+@router.get("/forbidden")
+def admin_forbidden(
+    request: Request,
+    user: AdminPanelUser = Depends(require_admin_session),
+):
+    need = request.query_params.get("need") or ""
+    return _render(
+        request,
+        "forbidden.html",
+        section="",
+        title="Admin · Доступ запрещён",
+        need=need,
+        admin_user=f"{user.username} · {user.role}",
+        can_manage_users=_has_scope(user, "users:manage"),
+    )
 
 
 @router.get("/ping")

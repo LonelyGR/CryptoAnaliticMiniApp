@@ -4,9 +4,6 @@ import Home from "./screens/Home";
 import Bookings from "./screens/Bookings";
 import Support from "./screens/Support";
 import Profile from "./screens/Profile";
-import AdminWebinars from "./screens/AdminWebinars";
-import AdminTickets from "./screens/AdminTickets";
-import UsersManagement from "./screens/UsersManagement";
 import { getUserByTelegramId, createOrUpdateUser, checkApiHealth, trackReferral } from "./services/api";
 
 function App() {
@@ -201,15 +198,6 @@ function App() {
             onNavigate={(tab) => setActiveTab(tab)}
           />
         )}
-        {activeTab === "admin-users" && (
-          <UsersManagement
-            user={displayUser}
-            apiConnected={apiConnected}
-            onBack={() => setActiveTab("profile")}
-          />
-        )}
-        {activeTab === "admin-webinars" && displayUser?.is_admin && <AdminWebinars user={displayUser} apiConnected={apiConnected} />}
-        {activeTab === "admin-tickets" && displayUser?.is_admin && <AdminTickets user={displayUser} apiConnected={apiConnected} />}
       </div>
 
       <div className="bottom-nav" ref={navRef}>
@@ -231,38 +219,14 @@ function App() {
           <span className="nav-label">Vebinars</span>
         </div>
 
-        {displayUser?.is_admin && (
-          <div
-            className={`nav-item ${activeTab === "admin-webinars" ? "active" : ""}`}
-            onClick={() => setActiveTab("admin-webinars")}
-            data-tab="admin-webinars"
-          >
-            <span className="nav-icon">➕</span>
-            <span className="nav-label">Создать</span>
-          </div>
-        )}
-
-        {displayUser?.is_admin && (
-          <div
-            className={`nav-item ${activeTab === "admin-tickets" ? "active" : ""}`}
-            onClick={() => setActiveTab("admin-tickets")}
-            data-tab="admin-tickets"
-          >
-            <span className="nav-icon">🎫</span>
-            <span className="nav-label">Тикеты</span>
-          </div>
-        )}
-
-        {!displayUser?.is_admin && (
-          <div
-            className={`nav-item ${activeTab === "support" ? "active" : ""}`}
-            onClick={() => setActiveTab("support")}
-            data-tab="support"
-          >
-            <span className="nav-icon">💼</span>
-            <span className="nav-label">Support</span>
-          </div>
-        )}
+        <div
+          className={`nav-item ${activeTab === "support" ? "active" : ""}`}
+          onClick={() => setActiveTab("support")}
+          data-tab="support"
+        >
+          <span className="nav-icon">💼</span>
+          <span className="nav-label">Support</span>
+        </div>
 
         <div
           className={`nav-item ${activeTab === "profile" ? "active" : ""}`}
