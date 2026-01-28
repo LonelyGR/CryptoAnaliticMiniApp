@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+{% block content %}
+  <div class="grid">
+    <div class="card">
+      <h2>Создать вебинар</h2>
+      <form method="post" action="/admin/webinars/create">
+        <div class="field"><label>Название</label><input name="title" required /></div>
+        <div class="row">
+          <div class="field" style="flex:1"><label>Дата</label><input type="date" name="date" required /></div>
+          <div class="field" style="flex:1"><label>Время</label><input type="time" name="time" required /></div>
+        </div>
+        <div class="row">
+          <div class="field" style="flex:1"><label>Длительность</label><input name="duration" placeholder="60m" /></div>
+          <div class="field" style="flex:1"><label>Спикер</label><input name="speaker" /></div>
+        </div>
+        <div class="field">
+          <label>Статус</label>
+          <select name="status">
+            <option value="upcoming">upcoming</option>
+            <option value="completed">completed</option>
+            <option value="cancelled">cancelled</option>
+          </select>
+        </div>
+        <div class="field"><label>Описание</label><textarea name="description"></textarea></div>
+        <div class="row">
+          <div class="field" style="flex:1"><label>Цена USD</label><input name="price_usd" type="number" step="0.01" value="0" /></div>
+          <div class="field" style="flex:1"><label>Meeting link</label><input name="meeting_link" placeholder="https://..." /></div>
+        </div>
+        <button class="btn primary" type="submit">Создать</button>
+      </form>
+    </div>
+
+    <div class="card">
+      <h2>Список вебинаров</h2>
+      <table class="table">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Тема</th>
+            <th>Дата</th>
+            <th>Цена</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for w in webinars %}
+            <tr>
+              <td>{{ w.id }}</td>
+              <td>
+                <div style="font-weight:900">{{ w.title }}</div>
+                <div class="muted" style="margin-top:6px">{{ w.status }} · {{ w.speaker or "—" }}</div>
+              </td>
+              <td class="muted">{{ w.date }} {{ w.time }}</td>
+              <td><span class="pill">${{ '%.2f'|format(w.price_usd or 0) }}</span></td>
+              <td>
+                <form method="post" action="/admin/webinars/{{ w.id }}/delete" onsubmit="return confirm('Удалить вебинар {{ w.id }}?')">
+                  <button class="btn danger" type="submit">Удалить</button>
+                </form>
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      {% if not webinars %}
+        <div class="muted">Вебинаров пока нет.</div>
+      {% endif %}
+    </div>
+  </div>
+{% endblock %}
+

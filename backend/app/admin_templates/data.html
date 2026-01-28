@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block content %}
+  <div class="grid">
+    <div class="card">
+      <h2>Полная очистка</h2>
+      <div class="muted">Удаляет все таблицы (SQLite: DELETE, Postgres: TRUNCATE CASCADE).</div>
+      <form method="post" action="/admin/data/clear-db" onsubmit="return confirm('ТОЧНО удалить ВСЕ данные?')">
+        <button class="btn danger" type="submit" style="margin-top:12px">Удалить ВСЕ данные</button>
+      </form>
+    </div>
+
+    <div class="card">
+      <h2>Выборочное удаление</h2>
+      <div class="muted">Выбери таблицы и нажми “Удалить выбранное”.</div>
+      <form method="post" action="/admin/data/clear-selected" style="margin-top:12px">
+        <div class="field">
+          <label>Таблицы</label>
+          <select name="targets" multiple size="10">
+            {% for t in tables %}
+              <option value="{{ t }}">{{ t }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <button class="btn danger" type="submit" onclick="return confirm('Удалить выбранные данные?')">Удалить выбранное</button>
+      </form>
+    </div>
+  </div>
+{% endblock %}
+

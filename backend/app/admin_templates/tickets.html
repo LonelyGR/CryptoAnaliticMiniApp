@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+{% block content %}
+  <div class="grid">
+    <div class="card">
+      <h2>Тикеты поддержки</h2>
+      <table class="table">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Пользователь</th>
+            <th>Тема</th>
+            <th>Статус</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for t in support %}
+            <tr>
+              <td>{{ t.id }}</td>
+              <td class="muted">{{ t.user_first_name or "—" }} {% if t.user_username %}@{{ t.user_username }}{% endif %}<br/>ID: {{ t.user_telegram_id }}</td>
+              <td>
+                <div style="font-weight:900">{{ t.topic or "Support" }}</div>
+                <div class="muted" style="margin-top:6px; white-space:pre-wrap">{{ t.message }}</div>
+              </td>
+              <td><span class="pill">{{ t.status }}</span></td>
+              <td>
+                <form method="post" action="/admin/tickets/{{ t.id }}/respond">
+                  <div class="field">
+                    <label>Ответ</label>
+                    <textarea name="admin_response" placeholder="Ответ пользователю..." required></textarea>
+                  </div>
+                  <button class="btn ok" type="submit">Отправить ответ</button>
+                </form>
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      {% if not support %}
+        <div class="muted">Тикетов поддержки пока нет.</div>
+      {% endif %}
+    </div>
+
+    <div class="card">
+      <h2>Консультации</h2>
+      <table class="table">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Пользователь</th>
+            <th>Сообщение</th>
+            <th>Статус</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for c in consultations %}
+            <tr>
+              <td>{{ c.id }}</td>
+              <td class="muted">{{ c.user_first_name or "—" }} {% if c.user_username %}@{{ c.user_username }}{% endif %}<br/>ID: {{ c.user_telegram_id }}</td>
+              <td>
+                <div style="font-weight:900">{{ c.topic or "Consultation" }}</div>
+                <div class="muted" style="margin-top:6px; white-space:pre-wrap">{{ c.message }}</div>
+              </td>
+              <td><span class="pill">{{ c.status }}</span></td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      {% if not consultations %}
+        <div class="muted">Консультаций пока нет.</div>
+      {% endif %}
+    </div>
+  </div>
+{% endblock %}
+

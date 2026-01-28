@@ -5,3 +5,5 @@ pydantic
 python-dotenv
 requests
 httpx
+jinja2
+python-multipart

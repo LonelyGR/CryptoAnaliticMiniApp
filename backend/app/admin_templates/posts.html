@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+{% block content %}
+  <div class="grid">
+    <div class="card">
+      <h2>Создать пост</h2>
+      <form method="post" action="/admin/posts/create">
+        <div class="field">
+          <label>Заголовок</label>
+          <input name="title" required />
+        </div>
+        <div class="field">
+          <label>Контент</label>
+          <textarea name="content" required></textarea>
+        </div>
+        <button class="btn primary" type="submit">Создать</button>
+      </form>
+      <div class="muted" style="margin-top:10px">
+        Эта админка работает без Telegram initData. Доступ — по логину/паролю из env.
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Список постов</h2>
+      <table class="table">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Заголовок</th>
+            <th>Создан</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for p in posts %}
+            <tr>
+              <td>{{ p.id }}</td>
+              <td>
+                <div style="font-weight:900">{{ p.title }}</div>
+                <div class="muted" style="margin-top:6px; white-space:pre-wrap">{{ (p.content or '')[:220] }}{% if (p.content or '')|length > 220 %}…{% endif %}</div>
+              </td>
+              <td class="muted">{{ p.created_at }}</td>
+              <td>
+                <form method="post" action="/admin/posts/{{ p.id }}/delete" onsubmit="return confirm('Удалить пост {{ p.id }}?')">
+                  <button class="btn danger" type="submit">Удалить</button>
+                </form>
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      {% if not posts %}
+        <div class="muted">Постов пока нет.</div>
+      {% endif %}
+    </div>
+  </div>
+{% endblock %}
+

@@ -3,10 +3,11 @@ import logging
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 from fastapi.exceptions import RequestValidationError
 from fastapi.exception_handlers import request_validation_exception_handler
 
-from app.routers import users, bookings, webinars, admins, posts, payments, webinar_materials, reminders, referrals, nowpayments
+from app.routers import users, bookings, webinars, admins, posts, payments, webinar_materials, reminders, referrals, nowpayments, admin_panel
 
 from app.database import engine, Base
 from app.models import User, Booking, Webinar, Admin, Post, Payment, WebinarMaterial, ReferralInvite
@@ -63,3 +64,9 @@ app.include_router(webinar_materials.router)
 app.include_router(reminders.router)
 app.include_router(referrals.router)
 app.include_router(nowpayments.router)
+app.include_router(admin_panel.router)
+
+# Static assets for backend admin panel
+_admin_static_dir = os.path.join(os.path.dirname(__file__), "admin_static")
+if os.path.isdir(_admin_static_dir):
+    app.mount("/admin/static", StaticFiles(directory=_admin_static_dir), name="admin-static")

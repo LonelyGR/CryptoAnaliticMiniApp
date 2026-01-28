@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+{% block content %}
+  <div class="grid">
+    <div class="card">
+      <h2>Добавить администратора</h2>
+      <form method="post" action="/admin/admins/create">
+        <div class="field">
+          <label>Telegram ID</label>
+          <input name="telegram_id" type="number" required />
+        </div>
+        <div class="field">
+          <label>Роль</label>
+          <select name="role">
+            <option value="Администратор">Администратор</option>
+            <option value="Модератор">Модератор</option>
+            <option value="developer">developer</option>
+            <option value="владелец">владелец</option>
+          </select>
+        </div>
+        <button class="btn primary" type="submit">Добавить</button>
+      </form>
+      <div class="muted" style="margin-top:10px">
+        Внимание: это админка бэкенда. Telegram initData тут не нужен.
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Список админов</h2>
+      <table class="table">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Telegram ID</th>
+            <th>Роль</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for a in admins %}
+            <tr>
+              <td>{{ a.id }}</td>
+              <td><span class="pill">{{ a.telegram_id }}</span></td>
+              <td>
+                <form method="post" action="/admin/admins/{{ a.id }}/update" class="row">
+                  <select name="role">
+                    <option value="{{ a.role }}" selected>{{ a.role }}</option>
+                    <option value="Администратор">Администратор</option>
+                    <option value="Модератор">Модератор</option>
+                    <option value="developer">developer</option>
+                    <option value="владелец">владелец</option>
+                  </select>
+                  <button class="btn" type="submit">Сохранить</button>
+                </form>
+              </td>
+              <td>
+                <form method="post" action="/admin/admins/{{ a.id }}/delete" onsubmit="return confirm('Удалить админа {{ a.id }}?')">
+                  <button class="btn danger" type="submit">Удалить</button>
+                </form>
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      {% if not admins %}
+        <div class="muted">Админов пока нет.</div>
+      {% endif %}
+    </div>
+  </div>
+{% endblock %}
+

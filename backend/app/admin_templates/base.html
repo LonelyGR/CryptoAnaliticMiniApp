@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{{ title or "Admin" }}</title>
+    <link rel="stylesheet" href="/admin/static/admin.css" />
+  </head>
+  <body>
+    <div class="wrap">
+      <div class="topbar">
+        <div class="brand">CryptoAnaliticMiniApp · Admin</div>
+        <div class="nav">
+          <a href="/admin/posts" class="{{ 'active' if section=='posts' else '' }}">Посты</a>
+          <a href="/admin/webinars" class="{{ 'active' if section=='webinars' else '' }}">Вебинары</a>
+          <a href="/admin/tickets" class="{{ 'active' if section=='tickets' else '' }}">Тикеты</a>
+          <a href="/admin/admins" class="{{ 'active' if section=='admins' else '' }}">Админы</a>
+          <a href="/admin/data" class="{{ 'active' if section=='data' else '' }}">Данные</a>
+        </div>
+      </div>
+
+      {% if flash %}
+        <div class="flash {{ 'ok' if flash_kind=='ok' else 'bad' }}">
+          <strong>{{ flash }}</strong>
+          {% if flash_details %}<div class="muted" style="margin-top:6px">{{ flash_details }}</div>{% endif %}
+        </div>
+      {% endif %}
+
+      {% block content %}{% endblock %}
+    </div>
+  </body>
+</html>
+
