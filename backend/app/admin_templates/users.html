@@ -50,76 +50,78 @@
 
     <div class="card">
       <h2>Пользователи</h2>
-      <table class="table">
-        <thead>
-          <tr>
-            <th>ID</th>
-            <th>Username</th>
-            <th>Role / Права</th>
-            <th>Scopes</th>
-            <th>Active</th>
-            <th>Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-          {% for u in users %}
-            <tr>
-              <td>{{ u.id }}</td>
-              <td><span class="pill">{{ u.username }}</span></td>
-              <td>
-                <form method="post" action="/admin/users/{{ u.id }}/update" class="row">
-                  <input name="role" value="{{ u.role }}" style="min-width:140px" />
-                  <div class="perm-actions">
-                    <label class="btn"><input type="checkbox" name="perms" value="*" {% if '*' in user_scopes[u.id] %}checked{% endif %} /> *</label>
+      <div class="user-list">
+        {% for u in users %}
+          <details class="card" {% if loop.first %}open{% endif %}>
+            <summary class="user-summary">
+              <div class="user-summary__left">
+                <span class="pill">#{{ u.id }}</span>
+                <span class="pill">{{ u.username }}</span>
+                <span class="pill">{{ u.role }}</span>
+                <span class="pill">{{ 'active' if u.is_active else 'inactive' }}</span>
+              </div>
+              <div class="user-summary__right muted">
+                {{ u.scopes or '— (по роли)' }}
+              </div>
+            </summary>
+            <div class="details__body">
+              <form method="post" action="/admin/users/{{ u.id }}/update" class="user-form">
+                <div class="user-form__row">
+                  <div class="field">
+                    <label>Role</label>
+                    <input name="role" value="{{ u.role }}" />
                   </div>
-                  <div class="perm-grid" style="min-width:520px">
-                    {% for group, scope, title, desc in perms %}
-                      <div class="perm">
-                        <div class="perm__head">
-                          <div>
-                            <div class="perm__title">{{ title }}</div>
-                            <div class="muted perm__desc">{{ group }}</div>
-                          </div>
-                          <label class="switch">
-                            <input
-                              type="checkbox"
-                              name="perms"
-                              value="{{ scope }}"
-                              {% if (scope in user_scopes[u.id]) or (scope.split(':')[0] in user_scopes[u.id]) or ('*' in user_scopes[u.id]) %}checked{% endif %}
-                            />
-                          </label>
-                        </div>
-                      </div>
-                    {% endfor %}
+                  <div class="field">
+                    <label>Scopes (ручной ввод, опционально)</label>
+                    <input name="scopes" value="{{ u.scopes or '' }}" placeholder="posts:view,posts:write, ... или *" />
                   </div>
-                  <input name="scopes" value="{{ u.scopes or '' }}" placeholder="ручной scopes (опционально)" style="min-width:240px" />
-                  <label class="muted" style="display:flex; align-items:center; gap:8px;">
-                    <input type="checkbox" name="is_active" value="1" {% if u.is_active %}checked{% endif %} />
-                    active
-                  </label>
-                  <button class="btn" type="submit">Сохранить</button>
-                </form>
-              </td>
-              <td class="muted">{{ u.scopes or '— (по роли)' }}</td>
-              <td><span class="pill">{{ 'yes' if u.is_active else 'no' }}</span></td>
-              <td>
-                <div class="row">
-                  <form method="post" action="/admin/users/{{ u.id }}/reset-password" onsubmit="return confirm('Сбросить пароль пользователю {{ u.username }}?')">
-                    <input name="new_password" type="password" placeholder="Новый пароль" required />
-                    <button class="btn ok" type="submit">Сохранить</button>
-                  </form>
-                  <form method="post" action="/admin/users/{{ u.id }}/delete" onsubmit="return confirm('Удалить пользователя {{ u.username }}?')">
-                    <button class="btn danger" type="submit">Удалить</button>
-                  </form>
                 </div>
-              </td>
-            </tr>
-          {% endfor %}
-        </tbody>
-      </table>
-      {% if not users %}
-        <div class="muted">Пользователей пока нет.</div>
-      {% endif %}
+
+                <div class="perm-actions">
+                  <label class="btn"><input type="checkbox" name="perms" value="*" {% if '*' in user_scopes[u.id] %}checked{% endif %} /> полный доступ (*)</label>
+                  <label class="toggle"><input type="checkbox" name="is_active" value="1" {% if u.is_active %}checked{% endif %} /> <strong>active</strong></label>
+                  <button class="btn" type="submit">Сохранить</button>
+                </div>
+
+                <div class="perm-grid">
+                  {% for group, scope, title, desc in perms %}
+                    <div class="perm">
+                      <div class="perm__head">
+                        <div>
+                          <div class="perm__title">{{ title }}</div>
+                          <div class="muted perm__desc">{{ group }} · {{ desc }}</div>
+                        </div>
+                        <label class="switch">
+                          <input
+                            type="checkbox"
+                            name="perms"
+                            value="{{ scope }}"
+                            {% if (scope in user_scopes[u.id]) or (scope.split(':')[0] in user_scopes[u.id]) or ('*' in user_scopes[u.id]) %}checked{% endif %}
+                          />
+                        </label>
+                      </div>
+                    </div>
+                  {% endfor %}
+                </div>
+              </form>
+
+              <div class="user-actions" style="margin-top:12px">
+                <form method="post" action="/admin/users/{{ u.id }}/reset-password" class="user-reset" onsubmit="return confirm('Сбросить пароль пользователю {{ u.username }}?')">
+                  <input name="new_password" type="password" placeholder="Новый пароль" required />
+                  <button class="btn ok" type="submit">Сохранить</button>
+                </form>
+                <form method="post" action="/admin/users/{{ u.id }}/delete" onsubmit="return confirm('Удалить пользователя {{ u.username }}?')">
+                  <button class="btn danger" type="submit">Удалить</button>
+                </form>
+              </div>
+            </div>
+          </details>
+        {% endfor %}
+
+        {% if not users %}
+          <div class="muted">Пользователей пока нет.</div>
+        {% endif %}
+      </div>
     </div>
   </div>
 {% endblock %}
