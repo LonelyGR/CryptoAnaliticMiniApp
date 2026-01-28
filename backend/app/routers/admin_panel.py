@@ -1,9 +1,12 @@
 import os
 import secrets
+import hmac
+import hashlib
+import time
+import base64
 
 from fastapi import APIRouter, Depends, Form, HTTPException, Request
 from fastapi.responses import RedirectResponse
-from fastapi.security import HTTPBasic, HTTPBasicCredentials
 from starlette.templating import Jinja2Templates
 
 from app.database import SessionLocal
@@ -13,12 +16,14 @@ from app.models.webinar import Webinar
 from app.models.booking import Booking
 from app.models.admin import Admin
 from app.models.user import User
+from app.models.payment import Payment
+from app.models.referral_invite import ReferralInvite
+from app.models.admin_panel_user import AdminPanelUser
 
 # Reuse DB-clear helpers (works for sqlite + postgres)
 from app.routers.admins import _clear_all_tables, _clear_selected_tables  # noqa: F401
 
 router = APIRouter(prefix="/admin", tags=["admin-panel"])
-security = HTTPBasic()
 
 TEMPLATES_DIR = os.path.join(os.path.dirname(__file__), "..", "admin_templates")
 templates = Jinja2Templates(directory=TEMPLATES_DIR)
@@ -32,24 +37,236 @@ def get_db():
         db.close()
 
 
-def require_basic_auth(credentials: HTTPBasicCredentials = Depends(security)) -> None:
-    username = (os.getenv("ADMIN_PANEL_USERNAME") or "").strip()
-    password = (os.getenv("ADMIN_PANEL_PASSWORD") or "").strip()
-    if not username or not password:
-        raise HTTPException(
-            status_code=503,
-            detail="ADMIN_PANEL_USERNAME / ADMIN_PANEL_PASSWORD are not configured",
-        )
+def _admin_secret() -> str:
+    secret = (os.getenv("ADMIN_PANEL_SECRET") or "").strip()
+    if not secret:
+        raise HTTPException(status_code=503, detail="ADMIN_PANEL_SECRET is not configured")
+    return secret
 
-    is_user_ok = secrets.compare_digest(credentials.username or "", username)
-    is_pass_ok = secrets.compare_digest(credentials.password or "", password)
-    if not (is_user_ok and is_pass_ok):
-        # Ensure browser shows login prompt again
-        raise HTTPException(
-            status_code=401,
-            detail="Invalid credentials",
-            headers={"WWW-Authenticate": "Basic"},
-        )
+
+def _session_ttl_seconds() -> int:
+    try:
+        return int(os.getenv("ADMIN_PANEL_SESSION_TTL_SECONDS") or "604800")  # 7 days
+    except Exception:
+        return 604800
+
+
+def _sign(secret: str, payload: str) -> str:
+    return hmac.new(secret.encode("utf-8"), payload.encode("utf-8"), hashlib.sha256).hexdigest()
+
+def _pbkdf2_hash_password(password: str) -> str:
+    # Format: pbkdf2_sha256$iterations$salt_b64$hash_b64
+    iterations = int(os.getenv("ADMIN_PANEL_PBKDF2_ITERS") or "200000")
+    salt = secrets.token_bytes(16)
+    dk = hashlib.pbkdf2_hmac("sha256", password.encode("utf-8"), salt, iterations, dklen=32)
+    return "pbkdf2_sha256$%d$%s$%s" % (
+        iterations,
+        base64.urlsafe_b64encode(salt).decode("ascii").rstrip("="),
+        base64.urlsafe_b64encode(dk).decode("ascii").rstrip("="),
+    )
+
+
+def _pbkdf2_verify(password: str, encoded: str) -> bool:
+    try:
+        algo, iters_s, salt_b64, hash_b64 = encoded.split("$", 3)
+        if algo != "pbkdf2_sha256":
+            return False
+        iterations = int(iters_s)
+        pad = "=" * (-len(salt_b64) % 4)
+        salt = base64.urlsafe_b64decode((salt_b64 + pad).encode("ascii"))
+        pad2 = "=" * (-len(hash_b64) % 4)
+        expected = base64.urlsafe_b64decode((hash_b64 + pad2).encode("ascii"))
+        dk = hashlib.pbkdf2_hmac("sha256", password.encode("utf-8"), salt, iterations, dklen=len(expected))
+        return secrets.compare_digest(dk, expected)
+    except Exception:
+        return False
+
+
+def _normalize_scopes(raw: str | None) -> str | None:
+    if raw is None:
+        return None
+    s = raw.strip()
+    if not s:
+        return None
+    # normalize comma-separated
+    parts = []
+    for p in s.split(","):
+        p = p.strip().lower()
+        if not p:
+            continue
+        parts.append(p)
+    return ",".join(dict.fromkeys(parts))  # stable unique
+
+
+def _role_default_scopes(role: str) -> set[str]:
+    r = (role or "").strip().lower()
+    if r in ("developer", "разработчик", "owner", "владелец"):
+        return {"*"}
+    if r in ("admin", "админ", "администратор"):
+        return {
+            "posts:view", "posts:write", "posts:delete",
+            "webinars:view", "webinars:write", "webinars:delete",
+            "tickets:view", "tickets:respond",
+            "data:view", "data:delete",
+            "admins:manage",
+        }
+    if r in ("support", "поддержка"):
+        return {"tickets:view", "tickets:respond"}
+    if r in ("editor", "редактор"):
+        return {"posts:view", "posts:write", "webinars:view", "webinars:write"}
+    # Unknown roles: no access by default (explicit scopes recommended)
+    return set()
+
+
+def _user_scopes(u: AdminPanelUser) -> set[str]:
+    if u.scopes:
+        return {p.strip().lower() for p in u.scopes.split(",") if p.strip()}
+    return _role_default_scopes(u.role)
+
+
+def _has_scope(u: AdminPanelUser, scope: str) -> bool:
+    scopes = _user_scopes(u)
+    if "*" in scopes:
+        return True
+    s = scope.strip().lower()
+    if s in scopes:
+        return True
+    # Backward-compatible aliases (old coarse scopes)
+    coarse = s.split(":", 1)[0]
+    if coarse in scopes:
+        return True
+    # Wildcards like "posts:*"
+    if ":" in s:
+        prefix = s.split(":", 1)[0]
+        if f"{prefix}:*" in scopes:
+            return True
+    return False
+
+
+ADMIN_PERMS: list[tuple[str, str, str, str]] = [
+    # (group, scope, title, description)
+    ("Посты", "posts:view", "Просмотр постов", "Видеть список постов в панели"),
+    ("Посты", "posts:write", "Создание/редактирование постов", "Создавать новые посты"),
+    ("Посты", "posts:delete", "Удаление постов", "Удалять посты"),
+
+    ("Вебинары", "webinars:view", "Просмотр вебинаров", "Видеть список вебинаров"),
+    ("Вебинары", "webinars:write", "Создание/редактирование вебинаров", "Создавать вебинары"),
+    ("Вебинары", "webinars:delete", "Удаление вебинаров", "Удалять вебинары"),
+
+    ("Тикеты", "tickets:view", "Просмотр тикетов", "Видеть обращения (support/consultation)"),
+    ("Тикеты", "tickets:respond", "Ответы на тикеты", "Отвечать пользователям"),
+
+    ("Данные", "data:view", "Просмотр данных", "Счётчики и последние записи в разделе Данные"),
+    ("Данные", "data:delete", "Удаление данных", "Удалять данные (всё или выборочно)"),
+
+    ("Управление", "admins:manage", "Управление Telegram-админами", "Добавлять/удалять админов приложения"),
+    ("Управление", "users:manage", "Управление пользователями панели", "Создавать аккаунты/роли/права для панели"),
+]
+
+
+def _perms_to_scopes(perms: list[str] | None) -> str | None:
+    if not perms:
+        return None
+    perms_norm = []
+    for p in perms:
+        p = (p or "").strip().lower()
+        if not p:
+            continue
+        perms_norm.append(p)
+    if "*" in perms_norm:
+        return "*"
+    return _normalize_scopes(",".join(perms_norm))
+
+
+def _ensure_bootstrap_user(db) -> None:
+    """
+    Creates first admin panel user from env if table is empty.
+    Env priority:
+    - ADMIN_PANEL_BOOTSTRAP_USERNAME / ADMIN_PANEL_BOOTSTRAP_PASSWORD / ADMIN_PANEL_BOOTSTRAP_ROLE
+    - fallback: ADMIN_PANEL_USERNAME / ADMIN_PANEL_PASSWORD / ADMIN_PANEL_ROLE
+    """
+    if db.query(AdminPanelUser).count() > 0:
+        return
+
+    u = (os.getenv("ADMIN_PANEL_BOOTSTRAP_USERNAME") or os.getenv("ADMIN_PANEL_USERNAME") or "").strip()
+    p = (os.getenv("ADMIN_PANEL_BOOTSTRAP_PASSWORD") or os.getenv("ADMIN_PANEL_PASSWORD") or "").strip()
+    role = (os.getenv("ADMIN_PANEL_BOOTSTRAP_ROLE") or os.getenv("ADMIN_PANEL_ROLE") or "developer").strip()
+    if not u or not p:
+        # no bootstrap configured; allow panel to start but login will show error
+        return
+
+    _admin_secret()  # ensure configured
+    user = AdminPanelUser(
+        username=u,
+        password_hash=_pbkdf2_hash_password(p),
+        role=role,
+        scopes="*",
+        is_active=True,
+        session_version=0,
+    )
+    db.add(user)
+    db.commit()
+
+
+def _make_session_token(user_id: int, session_version: int) -> str:
+    secret = _admin_secret()
+    ts = str(int(time.time()))
+    payload = f"v2|{user_id}|{session_version}|{ts}"
+    sig = _sign(secret, payload)
+    return f"{payload}|{sig}"
+
+
+def _verify_session_token(token: str) -> tuple[int, int] | None:
+    secret = (os.getenv("ADMIN_PANEL_SECRET") or "").strip()
+    if not secret:
+        return None
+    token = (token or "").strip()
+    parts = token.split("|")
+    if len(parts) != 5:
+        return None
+    v, user_id_s, ver_s, ts, sig = parts
+    if v != "v2":
+        return None
+    if not user_id_s.isdigit() or not ver_s.isdigit():
+        return None
+    if not ts.isdigit():
+        return None
+    payload = f"{v}|{user_id_s}|{ver_s}|{ts}"
+    expected = _sign(secret, payload)
+    if not secrets.compare_digest(expected, sig):
+        return None
+    age = int(time.time()) - int(ts)
+    if age < 0:
+        return None
+    if _session_ttl_seconds() > 0 and age > _session_ttl_seconds():
+        return None
+    return int(user_id_s), int(ver_s)
+
+
+def require_admin_session(request: Request, db=Depends(get_db)) -> AdminPanelUser:
+    _ensure_bootstrap_user(db)
+    token_data = _verify_session_token(request.cookies.get("admin_session") or "")
+    if not token_data:
+        # redirect to login with next
+        next_url = request.url.path
+        if request.url.query:
+            next_url = f"{next_url}?{request.url.query}"
+        raise HTTPException(status_code=303, headers={"Location": f"/admin/login?next={next_url}"})
+    user_id, ver = token_data
+    u = db.query(AdminPanelUser).filter(AdminPanelUser.id == user_id).first()
+    if not u or not u.is_active:
+        raise HTTPException(status_code=303, headers={"Location": "/admin/login?flash=Сессия%20недействительна&kind=bad"})
+    if int(u.session_version or 0) != int(ver):
+        raise HTTPException(status_code=303, headers={"Location": "/admin/login?flash=Сессия%20устарела&kind=bad"})
+    return u
+
+
+def require_scope(scope: str):
+    def _dep(user: AdminPanelUser = Depends(require_admin_session)) -> AdminPanelUser:
+        if not _has_scope(user, scope):
+            raise HTTPException(status_code=403, detail="Forbidden")
+        return user
+    return _dep
 
 
 @router.get("/ping")
@@ -69,6 +286,8 @@ def _render(request: Request, name: str, *, section: str, title: str, **ctx):
             "request": request,
             "section": section,
             "title": title,
+            "admin_user": ctx.pop("admin_user", None),
+            "can_manage_users": bool(ctx.pop("can_manage_users", False)),
             "flash": flash,
             "flash_kind": flash_kind,
             "flash_details": flash_details,
@@ -90,19 +309,73 @@ def _redir(url: str, *, flash: str | None = None, kind: str = "ok", details: str
 
 
 @router.get("/")
-def admin_root(_: None = Depends(require_basic_auth)):
+def admin_root(_: AdminPanelUser = Depends(require_admin_session)):
     return _redir("/admin/posts")
+
+@router.get("/login")
+def admin_login_get(request: Request, db=Depends(get_db)):
+    _ensure_bootstrap_user(db)
+    next_url = request.query_params.get("next") or "/admin/posts"
+    flash = request.query_params.get("flash")
+    flash_kind = request.query_params.get("kind")
+    flash_details = request.query_params.get("details")
+    return templates.TemplateResponse(
+        "login.html",
+        {
+            "request": request,
+            "next_url": next_url,
+            "flash": flash,
+            "flash_kind": flash_kind,
+            "flash_details": flash_details,
+        },
+    )
+
+
+@router.post("/login")
+def admin_login_post(
+    username: str = Form(...),
+    password: str = Form(...),
+    next_url: str = Form("/admin/posts"),
+    db=Depends(get_db),
+):
+    _ensure_bootstrap_user(db)
+    _admin_secret()
+    u = db.query(AdminPanelUser).filter(AdminPanelUser.username == username.strip()).first()
+    if not u or not u.is_active:
+        return _redir("/admin/login", flash="Неверный логин или пароль", kind="bad")
+    if not _pbkdf2_verify(password, u.password_hash):
+        return _redir("/admin/login", flash="Неверный логин или пароль", kind="bad")
+
+    token = _make_session_token(u.id, int(u.session_version or 0))
+    resp = _redir(next_url or "/admin/posts", flash="Вход выполнен", kind="ok")
+    resp.set_cookie("admin_session", token, httponly=True, samesite="lax", secure=True, path="/admin")
+    return resp
+
+
+@router.post("/logout")
+def admin_logout():
+    resp = _redir("/admin/login", flash="Вы вышли", kind="ok")
+    resp.delete_cookie("admin_session", path="/admin")
+    return resp
 
 
 @router.get("/posts")
-def admin_posts(request: Request, _: None = Depends(require_basic_auth), db=Depends(get_db)):
+def admin_posts(request: Request, user: AdminPanelUser = Depends(require_scope("posts:view")), db=Depends(get_db)):
     posts = db.query(Post).order_by(Post.created_at.desc()).limit(200).all()
-    return _render(request, "posts.html", section="posts", title="Admin · Посты", posts=posts)
+    return _render(
+        request,
+        "posts.html",
+        section="posts",
+        title="Admin · Посты",
+        posts=posts,
+        admin_user=f"{user.username} · {user.role}",
+        can_manage_users=_has_scope(user, "users"),
+    )
 
 
 @router.post("/posts/create")
 def admin_posts_create(
-    _: None = Depends(require_basic_auth),
+    _: AdminPanelUser = Depends(require_scope("posts:write")),
     db=Depends(get_db),
     title: str = Form(...),
     content: str = Form(...),
@@ -114,7 +387,7 @@ def admin_posts_create(
 
 
 @router.post("/posts/{post_id}/delete")
-def admin_posts_delete(post_id: int, _: None = Depends(require_basic_auth), db=Depends(get_db)):
+def admin_posts_delete(post_id: int, _: AdminPanelUser = Depends(require_scope("posts:delete")), db=Depends(get_db)):
     p = db.query(Post).filter(Post.id == post_id).first()
     if not p:
         return _redir("/admin/posts", flash="Пост не найден", kind="bad")
@@ -124,14 +397,22 @@ def admin_posts_delete(post_id: int, _: None = Depends(require_basic_auth), db=D
 
 
 @router.get("/webinars")
-def admin_webinars(request: Request, _: None = Depends(require_basic_auth), db=Depends(get_db)):
+def admin_webinars(request: Request, user: AdminPanelUser = Depends(require_scope("webinars:view")), db=Depends(get_db)):
     webinars = db.query(Webinar).order_by(Webinar.id.desc()).limit(200).all()
-    return _render(request, "webinars.html", section="webinars", title="Admin · Вебинары", webinars=webinars)
+    return _render(
+        request,
+        "webinars.html",
+        section="webinars",
+        title="Admin · Вебинары",
+        webinars=webinars,
+        admin_user=f"{user.username} · {user.role}",
+        can_manage_users=_has_scope(user, "users"),
+    )
 
 
 @router.post("/webinars/create")
 def admin_webinars_create(
-    _: None = Depends(require_basic_auth),
+    _: AdminPanelUser = Depends(require_scope("webinars:write")),
     db=Depends(get_db),
     title: str = Form(...),
     date_: str = Form(..., alias="date"),
@@ -164,7 +445,7 @@ def admin_webinars_create(
 
 
 @router.post("/webinars/{webinar_id}/delete")
-def admin_webinars_delete(webinar_id: int, _: None = Depends(require_basic_auth), db=Depends(get_db)):
+def admin_webinars_delete(webinar_id: int, _: AdminPanelUser = Depends(require_scope("webinars:delete")), db=Depends(get_db)):
     w = db.query(Webinar).filter(Webinar.id == webinar_id).first()
     if not w:
         return _redir("/admin/webinars", flash="Вебинар не найден", kind="bad")
@@ -174,7 +455,7 @@ def admin_webinars_delete(webinar_id: int, _: None = Depends(require_basic_auth)
 
 
 @router.get("/tickets")
-def admin_tickets(request: Request, _: None = Depends(require_basic_auth), db=Depends(get_db)):
+def admin_tickets(request: Request, user: AdminPanelUser = Depends(require_scope("tickets:view")), db=Depends(get_db)):
     support = (
         db.query(Booking)
         .filter(Booking.type == "support")
@@ -214,13 +495,15 @@ def admin_tickets(request: Request, _: None = Depends(require_basic_auth), db=De
         title="Admin · Тикеты",
         support=support_ctx,
         consultations=consult_ctx,
+        admin_user=f"{user.username} · {user.role}",
+        can_manage_users=_has_scope(user, "users"),
     )
 
 
 @router.post("/tickets/{ticket_id}/respond")
 def admin_ticket_respond(
     ticket_id: int,
-    _: None = Depends(require_basic_auth),
+    _: AdminPanelUser = Depends(require_scope("tickets:respond")),
     db=Depends(get_db),
     admin_response: str = Form(...),
 ):
@@ -236,14 +519,22 @@ def admin_ticket_respond(
 
 
 @router.get("/admins")
-def admin_admins(request: Request, _: None = Depends(require_basic_auth), db=Depends(get_db)):
+def admin_admins(request: Request, user: AdminPanelUser = Depends(require_scope("admins:manage")), db=Depends(get_db)):
     admins = db.query(Admin).order_by(Admin.id.asc()).all()
-    return _render(request, "admins.html", section="admins", title="Admin · Админы", admins=admins)
+    return _render(
+        request,
+        "admins.html",
+        section="admins",
+        title="Admin · Админы",
+        admins=admins,
+        admin_user=f"{user.username} · {user.role}",
+        can_manage_users=_has_scope(user, "users"),
+    )
 
 
 @router.post("/admins/create")
 def admin_admins_create(
-    _: None = Depends(require_basic_auth),
+    _: AdminPanelUser = Depends(require_scope("admins:manage")),
     db=Depends(get_db),
     telegram_id: int = Form(...),
     role: str = Form("Администратор"),
@@ -262,7 +553,7 @@ def admin_admins_create(
 @router.post("/admins/{admin_id}/update")
 def admin_admins_update(
     admin_id: int,
-    _: None = Depends(require_basic_auth),
+    _: AdminPanelUser = Depends(require_scope("admins:manage")),
     db=Depends(get_db),
     role: str = Form(...),
 ):
@@ -275,7 +566,7 @@ def admin_admins_update(
 
 
 @router.post("/admins/{admin_id}/delete")
-def admin_admins_delete(admin_id: int, _: None = Depends(require_basic_auth), db=Depends(get_db)):
+def admin_admins_delete(admin_id: int, _: AdminPanelUser = Depends(require_scope("admins:manage")), db=Depends(get_db)):
     a = db.query(Admin).filter(Admin.id == admin_id).first()
     if not a:
         return _redir("/admin/admins", flash="Админ не найден", kind="bad")
@@ -285,13 +576,47 @@ def admin_admins_delete(admin_id: int, _: None = Depends(require_basic_auth), db
 
 
 @router.get("/data")
-def admin_data(request: Request, _: None = Depends(require_basic_auth), db=Depends(get_db)):
+def admin_data(request: Request, user: AdminPanelUser = Depends(require_scope("data:view")), db=Depends(get_db)):
     tables = [t.name for t in Base.metadata.sorted_tables]
-    return _render(request, "data.html", section="data", title="Admin · Данные", tables=tables)
+
+    # High-signal counts + recent rows (so you can see what exists)
+    counts = {
+        "users": db.query(User).count(),
+        "admins": db.query(Admin).count(),
+        "posts": db.query(Post).count(),
+        "webinars": db.query(Webinar).count(),
+        "bookings": db.query(Booking).count(),
+        "payments": db.query(Payment).count(),
+        "referrals": db.query(ReferralInvite).count(),
+    }
+
+    recent_users = db.query(User).order_by(User.id.desc()).limit(20).all()
+    recent_posts = db.query(Post).order_by(Post.id.desc()).limit(20).all()
+    recent_webinars = db.query(Webinar).order_by(Webinar.id.desc()).limit(20).all()
+    recent_bookings = db.query(Booking).order_by(Booking.id.desc()).limit(20).all()
+    recent_payments = db.query(Payment).order_by(Payment.id.desc()).limit(20).all()
+    recent_referrals = db.query(ReferralInvite).order_by(ReferralInvite.id.desc()).limit(20).all()
+
+    return _render(
+        request,
+        "data.html",
+        section="data",
+        title="Admin · Данные",
+        tables=tables,
+        counts=counts,
+        recent_users=recent_users,
+        recent_posts=recent_posts,
+        recent_webinars=recent_webinars,
+        recent_bookings=recent_bookings,
+        recent_payments=recent_payments,
+        recent_referrals=recent_referrals,
+        admin_user=f"{user.username} · {user.role}",
+        can_manage_users=_has_scope(user, "users"),
+    )
 
 
 @router.post("/data/clear-db")
-def admin_clear_db(_: None = Depends(require_basic_auth), db=Depends(get_db)):
+def admin_clear_db(_: AdminPanelUser = Depends(require_scope("data:delete")), db=Depends(get_db)):
     deleted = _clear_all_tables(db)
     db.commit()
     return _redir("/admin/data", flash="База очищена", kind="ok", details=f"deleted_rows={deleted}")
@@ -299,7 +624,7 @@ def admin_clear_db(_: None = Depends(require_basic_auth), db=Depends(get_db)):
 
 @router.post("/data/clear-selected")
 def admin_clear_selected(
-    _: None = Depends(require_basic_auth),
+    _: AdminPanelUser = Depends(require_scope("data:delete")),
     db=Depends(get_db),
     targets: list[str] = Form(...),
 ):
@@ -307,4 +632,107 @@ def admin_clear_selected(
     deleted, details = _clear_selected_tables(db, targets_set)
     db.commit()
     return _redir("/admin/data", flash="Выбранные данные удалены", kind="ok", details=f"deleted_rows={deleted}")
+
+
+@router.get("/users")
+def admin_panel_users(
+    request: Request,
+    user: AdminPanelUser = Depends(require_scope("users:manage")),
+    db=Depends(get_db),
+):
+    users = db.query(AdminPanelUser).order_by(AdminPanelUser.id.asc()).all()
+    user_scopes = {u.id: _user_scopes(u) for u in users}
+    return _render(
+        request,
+        "users.html",
+        section="users",
+        title="Admin · Пользователи панели",
+        users=users,
+        perms=ADMIN_PERMS,
+        user_scopes=user_scopes,
+        admin_user=f"{user.username} · {user.role}",
+        can_manage_users=True,
+    )
+
+
+@router.post("/users/create")
+def admin_panel_users_create(
+    user: AdminPanelUser = Depends(require_scope("users:manage")),
+    db=Depends(get_db),
+    username: str = Form(...),
+    password: str = Form(...),
+    role: str = Form("admin"),
+    scopes: str = Form(""),
+    perms: list[str] | None = Form(None),
+):
+    username = username.strip()
+    if not username:
+        return _redir("/admin/users", flash="Пустой username", kind="bad")
+    if db.query(AdminPanelUser).filter(AdminPanelUser.username == username).first():
+        return _redir("/admin/users", flash="Такой username уже есть", kind="bad")
+
+    u = AdminPanelUser(
+        username=username,
+        password_hash=_pbkdf2_hash_password(password),
+        role=(role or "admin").strip(),
+        scopes=_perms_to_scopes(perms) or _normalize_scopes(scopes),
+        is_active=True,
+        session_version=0,
+    )
+    db.add(u)
+    db.commit()
+    return _redir("/admin/users", flash="Пользователь создан", kind="ok")
+
+
+@router.post("/users/{user_id}/update")
+def admin_panel_users_update(
+    user_id: int,
+    _: AdminPanelUser = Depends(require_scope("users:manage")),
+    db=Depends(get_db),
+    role: str = Form("admin"),
+    scopes: str = Form(""),
+    perms: list[str] | None = Form(None),
+    is_active: str | None = Form(None),
+):
+    target = db.query(AdminPanelUser).filter(AdminPanelUser.id == user_id).first()
+    if not target:
+        return _redir("/admin/users", flash="Пользователь не найден", kind="bad")
+
+    target.role = (role or "admin").strip()
+    target.scopes = _perms_to_scopes(perms) or _normalize_scopes(scopes)
+    target.is_active = bool(is_active)
+    db.commit()
+    return _redir("/admin/users", flash="Сохранено", kind="ok")
+
+
+@router.post("/users/{user_id}/reset-password")
+def admin_panel_users_reset_password(
+    user_id: int,
+    _: AdminPanelUser = Depends(require_scope("users:manage")),
+    db=Depends(get_db),
+    new_password: str = Form(...),
+):
+    target = db.query(AdminPanelUser).filter(AdminPanelUser.id == user_id).first()
+    if not target:
+        return _redir("/admin/users", flash="Пользователь не найден", kind="bad")
+    target.password_hash = _pbkdf2_hash_password(new_password)
+    target.session_version = int(target.session_version or 0) + 1
+    db.commit()
+    return _redir("/admin/users", flash="Пароль обновлён (сессии сброшены)", kind="ok")
+
+
+@router.post("/users/{user_id}/delete")
+def admin_panel_users_delete(
+    user_id: int,
+    acting: AdminPanelUser = Depends(require_scope("users:manage")),
+    db=Depends(get_db),
+):
+    target = db.query(AdminPanelUser).filter(AdminPanelUser.id == user_id).first()
+    if not target:
+        return _redir("/admin/users", flash="Пользователь не найден", kind="bad")
+    if target.id == acting.id:
+        return _redir("/admin/users", flash="Нельзя удалить самого себя", kind="bad")
+    db.delete(target)
+    db.commit()
+    return _redir("/admin/users", flash="Пользователь удалён", kind="ok")
 
