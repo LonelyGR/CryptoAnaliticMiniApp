@@ -12,6 +12,86 @@ from app.utils.telegram_webapp import resolve_admin_telegram_id
 
 router = APIRouter(prefix="/admins", tags=["admins"])
 
+def _dialect_name(db: Session) -> str:
+    try:
+        return (db.get_bind().dialect.name or "").lower()
+    except Exception:
+        return ""
+
+
+def _quoted_table_name(table) -> str:
+    # Safe-ish quoting for Postgres TRUNCATE.
+    schema = getattr(table, "schema", None)
+    name = getattr(table, "name", "")
+    if schema:
+        return f"\"{schema}\".\"{name}\""
+    return f"\"{name}\""
+
+
+def _clear_all_tables(db: Session) -> int:
+    """
+    Clears all tables in DB.
+    Returns total deleted rows (best-effort).
+    - SQLite: PRAGMA foreign_keys OFF + DELETE in reverse topo order.
+    - Postgres: TRUNCATE ... RESTART IDENTITY CASCADE.
+    - Others: DELETE in reverse topo order.
+    """
+    dialect = _dialect_name(db)
+
+    if dialect in ("postgresql", "postgres"):
+        tables = list(Base.metadata.sorted_tables)
+        if not tables:
+            return 0
+        # TRUNCATE can't reliably return rowcounts across all drivers; return 0.
+        table_list = ", ".join(_quoted_table_name(t) for t in tables)
+        db.execute(text(f"TRUNCATE TABLE {table_list} RESTART IDENTITY CASCADE"))
+        return 0
+
+    total_deleted = 0
+    if dialect == "sqlite":
+        db.execute(text("PRAGMA foreign_keys=OFF"))
+    for table in reversed(Base.metadata.sorted_tables):
+        result = db.execute(table.delete())
+        deleted = result.rowcount if result.rowcount is not None else 0
+        total_deleted += deleted
+    if dialect == "sqlite":
+        db.execute(text("PRAGMA foreign_keys=ON"))
+    return total_deleted
+
+
+def _clear_selected_tables(db: Session, targets_set: set[str]) -> tuple[int, list[dict]]:
+    """
+    Clears selected tables.
+    Returns (total_deleted, details).
+    - SQLite: PRAGMA foreign_keys OFF + DELETE for selected tables.
+    - Postgres: TRUNCATE selected ... RESTART IDENTITY CASCADE.
+    - Others: DELETE in reverse topo order.
+    """
+    dialect = _dialect_name(db)
+
+    if dialect in ("postgresql", "postgres"):
+        tables = [t for t in Base.metadata.sorted_tables if t.name in targets_set]
+        if not tables:
+            return 0, []
+        table_list = ", ".join(_quoted_table_name(t) for t in tables)
+        db.execute(text(f"TRUNCATE TABLE {table_list} RESTART IDENTITY CASCADE"))
+        return 0, [{"table": t.name, "deleted": 0} for t in tables]
+
+    if dialect == "sqlite":
+        db.execute(text("PRAGMA foreign_keys=OFF"))
+    total_deleted = 0
+    details: list[dict] = []
+    for table in reversed(Base.metadata.sorted_tables):
+        if table.name not in targets_set:
+            continue
+        result = db.execute(table.delete())
+        deleted = result.rowcount if result.rowcount is not None else 0
+        total_deleted += deleted
+        details.append({"table": table.name, "deleted": deleted})
+    if dialect == "sqlite":
+        db.execute(text("PRAGMA foreign_keys=ON"))
+    return total_deleted, details
+
 
 def get_db():
     db = SessionLocal()
@@ -148,16 +228,9 @@ def clear_database(
     """Полная очистка базы данных (только для разработчика)"""
     requester_id = resolve_admin_telegram_id(request, admin_telegram_id)
     check_developer(requester_id, db)
-
-    db.execute(text("PRAGMA foreign_keys=OFF"))
-    total_deleted = 0
-    for table in reversed(Base.metadata.sorted_tables):
-        result = db.execute(table.delete())
-        deleted = result.rowcount if result.rowcount is not None else 0
-        total_deleted += deleted
+    total_deleted = _clear_all_tables(db)
     db.commit()
-    db.execute(text("PRAGMA foreign_keys=ON"))
-    return {"message": "Database cleared", "deleted_rows": total_deleted}
+    return {"message": "Database cleared", "deleted_rows": total_deleted, "dialect": _dialect_name(db)}
 
 
 @router.post("/clear-data")
@@ -183,16 +256,11 @@ def clear_selected_data(
             detail=f"Неизвестные таблицы для удаления: {', '.join(unknown_targets)}"
         )
 
-    db.execute(text("PRAGMA foreign_keys=OFF"))
-    total_deleted = 0
-    details = []
-    for table in reversed(Base.metadata.sorted_tables):
-        if table.name not in targets_set:
-            continue
-        result = db.execute(table.delete())
-        deleted = result.rowcount if result.rowcount is not None else 0
-        total_deleted += deleted
-        details.append({"table": table.name, "deleted": deleted})
+    total_deleted, details = _clear_selected_tables(db, targets_set)
     db.commit()
-    db.execute(text("PRAGMA foreign_keys=ON"))
-    return {"message": "Selected data cleared", "deleted_rows": total_deleted, "details": details}
+    return {
+        "message": "Selected data cleared",
+        "deleted_rows": total_deleted,
+        "details": details,
+        "dialect": _dialect_name(db),
+    }
