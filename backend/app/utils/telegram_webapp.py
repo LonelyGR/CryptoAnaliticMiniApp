@@ -104,6 +104,10 @@ def resolve_admin_telegram_id(
             return int(fallback_admin_telegram_id)
 
     if os.getenv("REQUIRE_TELEGRAM_AUTH") == "1":
+        # Optional legacy fallback for admin panels outside Telegram.
+        # Enable explicitly via env to avoid weakening security by default.
+        if fallback_admin_telegram_id is not None and os.getenv("ALLOW_LEGACY_ADMIN_TELEGRAM_ID") == "1":
+            return int(fallback_admin_telegram_id)
         raise HTTPException(status_code=401, detail="Telegram auth required")
 
     if fallback_admin_telegram_id is None:

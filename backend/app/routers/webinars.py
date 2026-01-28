@@ -73,7 +73,8 @@ def create_webinar(
         f"⏰ Время: <b>{db_webinar.time}</b>\n"
         f"💳 Цена: <b>${db_webinar.price_usd:.2f}</b>"
     )
-    send_telegram_message(admin_telegram_id, admin_message)
+    # Use resolved admin id (works with Telegram initData auth)
+    send_telegram_message(admin.telegram_id, admin_message)
 
     # Уведомление всем пользователям (в бот): новый вебинар
     users = db.query(User).filter(

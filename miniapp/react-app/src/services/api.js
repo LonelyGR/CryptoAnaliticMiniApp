@@ -351,14 +351,13 @@ export async function updateUserBlocked(userId, adminTelegramId, isBlocked) {
   try {
     const response = await fetch(`${API_BASE_URL}/users/${userId}/block?admin_telegram_id=${adminTelegramId}`, {
       method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers: buildHeaders(),
       body: JSON.stringify({ is_blocked: isBlocked }),
     });
 
     if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
+      const errorText = await response.text();
+      throw new Error(`HTTP error! status: ${response.status}, body: ${errorText}`);
     }
 
     return await response.json();
