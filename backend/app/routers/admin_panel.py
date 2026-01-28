@@ -36,12 +36,26 @@ def require_basic_auth(credentials: HTTPBasicCredentials = Depends(security)) ->
     username = (os.getenv("ADMIN_PANEL_USERNAME") or "").strip()
     password = (os.getenv("ADMIN_PANEL_PASSWORD") or "").strip()
     if not username or not password:
-        raise HTTPException(status_code=503, detail="ADMIN_PANEL_USERNAME / ADMIN_PANEL_PASSWORD are not configured")
+        raise HTTPException(
+            status_code=503,
+            detail="ADMIN_PANEL_USERNAME / ADMIN_PANEL_PASSWORD are not configured",
+        )
 
     is_user_ok = secrets.compare_digest(credentials.username or "", username)
     is_pass_ok = secrets.compare_digest(credentials.password or "", password)
     if not (is_user_ok and is_pass_ok):
-        raise HTTPException(status_code=401, detail="Invalid credentials")
+        # Ensure browser shows login prompt again
+        raise HTTPException(
+            status_code=401,
+            detail="Invalid credentials",
+            headers={"WWW-Authenticate": "Basic"},
+        )
+
+
+@router.get("/ping")
+def admin_ping():
+    # No auth on purpose: helps diagnose routing (/admin should reach backend, not React)
+    return {"ok": True, "service": "admin-panel"}
 
 
 def _render(request: Request, name: str, *, section: str, title: str, **ctx):
