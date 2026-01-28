@@ -10,6 +10,12 @@
     reverse_proxy backend:8000
   }
 
+  # Backend Admin Panel (must NOT be handled by frontend SPA)
+  # IMPORTANT: use "handle" (not handle_path) so /admin prefix is preserved
+  handle /admin* {
+    reverse_proxy backend:8000
+  }
+
   # Everything else -> frontend (nginx static)
   handle {
     reverse_proxy frontend:80
