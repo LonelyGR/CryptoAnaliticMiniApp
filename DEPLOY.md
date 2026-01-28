@@ -7,6 +7,8 @@
 - **bot**: long-polling Telegram bot (без портов)
 - **reminders-worker**: loop-воркер, который вызывает `/reminders/check-and-send`
 
+
+
 ### 0) Требования
 - Docker + Docker Compose на сервере
 

@@ -131,6 +131,30 @@ export async function getReferralInfo(telegramId) {
 }
 
 /**
+ * Зафиксировать реферальный переход (создаёт invite на бэкенде)
+ */
+export async function trackReferral(referralCode, referredUser) {
+  try {
+    if (!referralCode) return null;
+    const telegramId = referredUser?.telegram_id || referredUser?.id || null;
+
+    return await apiRequest('/referrals/track', {
+      method: 'POST',
+      body: JSON.stringify({
+        referral_code: referralCode,
+        referred_telegram_id: telegramId,
+        referred_username: referredUser?.username || null,
+        referred_first_name: referredUser?.first_name || null,
+        referred_last_name: referredUser?.last_name || null,
+      }),
+    });
+  } catch (error) {
+    console.error('Failed to track referral:', error);
+    return null;
+  }
+}
+
+/**
  * Создать запись на вебинар или консультацию
  */
 export async function createBooking(bookingData) {

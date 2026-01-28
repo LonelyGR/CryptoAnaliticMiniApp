@@ -7,7 +7,7 @@ import Profile from "./screens/Profile";
 import AdminWebinars from "./screens/AdminWebinars";
 import AdminTickets from "./screens/AdminTickets";
 import UsersManagement from "./screens/UsersManagement";
-import { getUserByTelegramId, createOrUpdateUser, checkApiHealth } from "./services/api";
+import { getUserByTelegramId, createOrUpdateUser, checkApiHealth, trackReferral } from "./services/api";
 
 function App() {
   const [activeTab, setActiveTab] = useState("home");
@@ -76,6 +76,19 @@ function App() {
           if (userFromDb) {
             console.log('Пользователь загружен из БД:', userFromDb);
             setDbUser(userFromDb);
+
+            // Referral tracking: if webapp opened with ?ref=<code>, notify backend once
+            try {
+              const params = new URLSearchParams(window.location.search || "");
+              const ref = (params.get("ref") || "").trim();
+              if (ref) {
+                await trackReferral(ref, telegramUser);
+                // remove ref param to avoid repeated tracking on refresh
+                window.history.replaceState({}, document.title, window.location.pathname);
+              }
+            } catch (e) {
+              console.warn("Referral tracking skipped:", e);
+            }
           } else {
             console.error('Не удалось создать/обновить пользователя в БД');
           }
