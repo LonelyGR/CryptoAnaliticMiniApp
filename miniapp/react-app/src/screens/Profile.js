@@ -286,20 +286,20 @@ export default function Profile({ user, apiConnected, onNavigate, username }) {
         }
     };
 
-    const botUsername = (process.env.REACT_APP_BOT_USERNAME || '').replace('@', '').trim();
     const referralCode = referralInfo?.referral_code;
-    const referralLink = botUsername && referralCode
+    // В проде берём ссылку с бэкенда (он знает TELEGRAM_BOT_USERNAME).
+    // REACT_APP_BOT_USERNAME оставляем только как локальный fallback.
+    const botUsername = (process.env.REACT_APP_BOT_USERNAME || '').replace('@', '').trim();
+    const referralLink = (referralInfo?.referral_link || (botUsername && referralCode
         ? `https://t.me/${botUsername}?start=ref_${referralCode}`
-        : (referralInfo?.referral_link || '');
+        : ''));
     const referralHint = !apiConnected
         ? 'Подключи сервер, чтобы получить реферальную ссылку.'
-        : (!botUsername
-            ? 'Укажи REACT_APP_BOT_USERNAME, чтобы сформировать ссылку.'
-            : (loadingReferral
-                ? 'Генерируем вашу ссылку…'
-                : (referralLink
-                    ? 'Нажми “Отправить” — бот пришлет сообщение, его можно переслать друзьям.'
-                    : 'Не удалось получить ссылку. Проверь подключение к серверу.')));
+        : (loadingReferral
+            ? 'Генерируем вашу ссылку…'
+            : (referralLink
+                ? 'Нажми “Отправить” — бот пришлет сообщение, его можно переслать друзьям.'
+                : 'Не удалось получить ссылку. Проверь TELEGRAM_BOT_USERNAME на сервере.'));
 
     const referralShareText = referralLink
         ? `🚀 Crypto Sensei — трейдинг по логике маркет-мейкеров.\n\nБот зарабатывает на пампах и дампах, не завися от направления рынка.\nВебинары и персональные консультации включены.\n\nКликай по ссылке и начни зарабатывать!`
