@@ -23,11 +23,12 @@ export default function AdminTickets({ user, apiConnected }) {
     const [filter, setFilter] = useState('all'); // all, active, answered
 
     const loadConsultations = useCallback(async () => {
-        if (!apiConnected || !user?.telegram_id) return;
+        const adminTelegramId = user?.telegram_id || user?.id;
+        if (!apiConnected || !adminTelegramId) return;
         
         setLoading(true);
         try {
-            const data = await getConsultations(user.telegram_id);
+            const data = await getConsultations(adminTelegramId);
             let filtered = data || [];
             
             if (filter === 'active') {
@@ -46,11 +47,12 @@ export default function AdminTickets({ user, apiConnected }) {
     }, [apiConnected, user?.telegram_id, filter]);
 
     const loadSupportTickets = useCallback(async () => {
-        if (!apiConnected || !user?.telegram_id) return;
+        const adminTelegramId = user?.telegram_id || user?.id;
+        if (!apiConnected || !adminTelegramId) return;
         
         setLoading(true);
         try {
-            const data = await getSupportTickets(user.telegram_id);
+            const data = await getSupportTickets(adminTelegramId);
             let filtered = data || [];
             
             if (filter === 'active') {
@@ -69,14 +71,15 @@ export default function AdminTickets({ user, apiConnected }) {
     }, [apiConnected, user?.telegram_id, filter]);
 
     useEffect(() => {
-        if (apiConnected && user?.telegram_id) {
+        const adminTelegramId = user?.telegram_id || user?.id;
+        if (apiConnected && adminTelegramId) {
             if (activeTab === 'consultations') {
                 loadConsultations();
             } else {
                 loadSupportTickets();
             }
         }
-    }, [apiConnected, user?.telegram_id, filter, activeTab, loadConsultations, loadSupportTickets]);
+    }, [apiConnected, user?.telegram_id, user?.id, filter, activeTab, loadConsultations, loadSupportTickets]);
 
     const handleRespond = async (ticketId) => {
         if (!responseText.trim()) {
@@ -86,7 +89,8 @@ export default function AdminTickets({ user, apiConnected }) {
 
         setSubmitting(true);
         try {
-            await respondToConsultation(ticketId, user.telegram_id, responseText);
+            const adminTelegramId = user?.telegram_id || user?.id;
+            await respondToConsultation(ticketId, adminTelegramId, responseText);
             alert('Ответ отправлен!');
             setResponseText('');
             setSelectedTicket(null);

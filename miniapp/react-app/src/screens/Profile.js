@@ -102,7 +102,8 @@ export default function Profile({ user, apiConnected, onNavigate, username }) {
             if (isAdminUser && apiConnected) {
                 setLoadingAdmins(true);
                 try {
-                    const adminsList = await getAdmins();
+                    const requesterTg = user?.telegram_id || user?.id;
+                    const adminsList = await getAdmins(requesterTg);
 
                     // Подтягиваем username для отображения (admins endpoint хранит только telegram_id + role)
                     const enriched = await Promise.all((adminsList || []).map(async (admin) => {
@@ -158,10 +159,11 @@ export default function Profile({ user, apiConnected, onNavigate, username }) {
 
         setSubmittingAdmin(true);
         try {
+            const requesterTg = user?.telegram_id || user?.id;
             await createAdmin({
                 telegram_id: telegramId,
                 role: adminFormData.role
-            });
+            }, requesterTg);
             alert('Администратор успешно добавлен!');
             setAdminFormData({
                 telegram_id: '',
@@ -169,7 +171,8 @@ export default function Profile({ user, apiConnected, onNavigate, username }) {
             });
             setShowAddAdminForm(false);
             // Перезагружаем список админов
-            const adminsList = await getAdmins();
+            const requesterTg2 = user?.telegram_id || user?.id;
+            const adminsList = await getAdmins(requesterTg2);
             setAdmins(adminsList || []);
         } catch (error) {
             console.error('Failed to create admin:', error);
@@ -181,11 +184,12 @@ export default function Profile({ user, apiConnected, onNavigate, username }) {
 
     const handleUpdateAdmin = async (adminId, newRole) => {
         try {
+            const requesterTg = user?.telegram_id || user?.id;
             await updateAdmin(adminId, {
                 role: newRole
-            });
+            }, requesterTg);
             alert('Роль администратора обновлена!');
-            const adminsList = await getAdmins();
+            const adminsList = await getAdmins(requesterTg);
             setAdmins(adminsList || []);
             setEditingAdmin(null);
         } catch (error) {
@@ -200,9 +204,10 @@ export default function Profile({ user, apiConnected, onNavigate, username }) {
         }
 
         try {
-            await deleteAdmin(adminId);
+            const requesterTg = user?.telegram_id || user?.id;
+            await deleteAdmin(adminId, requesterTg);
             alert('Администратор удален!');
-            const adminsList = await getAdmins();
+            const adminsList = await getAdmins(requesterTg);
             setAdmins(adminsList || []);
         } catch (error) {
             console.error('Failed to delete admin:', error);

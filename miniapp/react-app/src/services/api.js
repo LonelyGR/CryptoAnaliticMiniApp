@@ -323,9 +323,10 @@ export async function deleteWebinar(webinarId, adminTelegramId) {
 /**
  * Получить список всех админов
  */
-export async function getAdmins() {
+export async function getAdmins(adminTelegramId = null) {
   try {
-    return await apiRequest('/admins/');
+    const q = adminTelegramId ? `?admin_telegram_id=${encodeURIComponent(adminTelegramId)}` : '';
+    return await apiRequest(`/admins/${q}`);
   } catch (error) {
     console.error('Failed to get admins:', error);
     return [];
@@ -370,16 +371,18 @@ export async function updateUserBlocked(userId, adminTelegramId, isBlocked) {
 /**
  * Создать админа (только для разработчика)
  */
-export async function createAdmin(adminData) {
+export async function createAdmin(adminData, adminTelegramId = null) {
   try {
-    const response = await fetch(`${API_BASE_URL}/admins/`, {
+    const q = adminTelegramId ? `?admin_telegram_id=${encodeURIComponent(adminTelegramId)}` : '';
+    const response = await fetch(`${API_BASE_URL}/admins/${q}`, {
       method: 'POST',
       headers: buildHeaders(),
       body: JSON.stringify(adminData),
     });
 
     if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
+      const errorText = await response.text();
+      throw new Error(`HTTP error! status: ${response.status}, body: ${errorText}`);
     }
 
     return await response.json();
@@ -392,9 +395,10 @@ export async function createAdmin(adminData) {
 /**
  * Обновить админа (изменить роль)
  */
-export async function updateAdmin(adminId, adminData) {
+export async function updateAdmin(adminId, adminData, adminTelegramId = null) {
   try {
-    const response = await fetch(`${API_BASE_URL}/admins/${adminId}`, {
+    const q = adminTelegramId ? `?admin_telegram_id=${encodeURIComponent(adminTelegramId)}` : '';
+    const response = await fetch(`${API_BASE_URL}/admins/${adminId}${q}`, {
       method: 'PUT',
       headers: buildHeaders(),
       body: JSON.stringify({
@@ -403,7 +407,8 @@ export async function updateAdmin(adminId, adminData) {
     });
 
     if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
+      const errorText = await response.text();
+      throw new Error(`HTTP error! status: ${response.status}, body: ${errorText}`);
     }
 
     return await response.json();
@@ -416,15 +421,17 @@ export async function updateAdmin(adminId, adminData) {
 /**
  * Удалить админа
  */
-export async function deleteAdmin(adminId) {
+export async function deleteAdmin(adminId, adminTelegramId = null) {
   try {
-    const response = await fetch(`${API_BASE_URL}/admins/${adminId}`, {
+    const q = adminTelegramId ? `?admin_telegram_id=${encodeURIComponent(adminTelegramId)}` : '';
+    const response = await fetch(`${API_BASE_URL}/admins/${adminId}${q}`, {
       method: 'DELETE',
       headers: buildHeaders(),
     });
 
     if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
+      const errorText = await response.text();
+      throw new Error(`HTTP error! status: ${response.status}, body: ${errorText}`);
     }
 
     return await response.json();

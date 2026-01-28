@@ -38,7 +38,8 @@ export default function AdminWebinars({ user, apiConnected }) {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        if (!apiConnected || !user?.telegram_id) {
+        const adminTelegramId = user?.telegram_id || user?.id;
+        if (!apiConnected || !adminTelegramId) {
             alert('Ошибка: пользователь не найден');
             return;
         }
@@ -53,10 +54,10 @@ export default function AdminWebinars({ user, apiConnected }) {
 
         try {
             if (editingWebinar) {
-                await updateWebinar(editingWebinar.id, user.telegram_id, submitData);
+                await updateWebinar(editingWebinar.id, adminTelegramId, submitData);
                 alert('Вебинар обновлен!');
             } else {
-                await createWebinar(user.telegram_id, submitData);
+                await createWebinar(adminTelegramId, submitData);
                 alert('Вебинар создан!');
             }
             setShowCreateForm(false);
@@ -109,7 +110,8 @@ export default function AdminWebinars({ user, apiConnected }) {
         }
 
         try {
-            await deleteWebinar(webinarId, user.telegram_id);
+            const adminTelegramId = user?.telegram_id || user?.id;
+            await deleteWebinar(webinarId, adminTelegramId);
             alert('Вебинар удален!');
             loadWebinars();
         } catch (error) {
