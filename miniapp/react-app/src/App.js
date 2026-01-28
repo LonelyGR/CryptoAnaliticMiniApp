@@ -109,28 +109,6 @@ function App() {
   // Используем данные из БД если доступны, иначе данные из Telegram
   const displayUser = dbUser || user;
 
-  // If opened in regular browser — show a friendly screen instead of "grey nothing"
-  if (!isInTelegram) {
-    const botUsername = (process.env.REACT_APP_BOT_USERNAME || '').replace('@', '').trim();
-    const botLink = botUsername ? `https://t.me/${botUsername}` : null;
-    return (
-      <div className="app">
-        <div className="blocked-screen">
-          <div className="blocked-card">
-            <div className="blocked-icon">ℹ️</div>
-            <h1>Откройте Mini App в Telegram</h1>
-            <p>Это приложение работает внутри Telegram (WebApp). В обычном браузере функции недоступны.</p>
-            {botLink && (
-              <a className="btn-primary" href={botLink} target="_blank" rel="noreferrer" style={{ display: 'inline-block' }}>
-                Открыть бота
-              </a>
-            )}
-          </div>
-        </div>
-      </div>
-    );
-  }
-
   // Обновляем позицию индикатора при изменении активной вкладки
   useEffect(() => {
     const updateIndicatorPosition = () => {
@@ -162,6 +140,28 @@ function App() {
     
     return () => window.removeEventListener('resize', updateIndicatorPosition);
   }, [activeTab, displayUser?.is_admin]);
+
+  // If opened in regular browser — show a friendly screen instead of "grey nothing"
+  if (!isInTelegram) {
+    const botUsername = (process.env.REACT_APP_BOT_USERNAME || '').replace('@', '').trim();
+    const botLink = botUsername ? `https://t.me/${botUsername}` : null;
+    return (
+      <div className="app">
+        <div className="blocked-screen">
+          <div className="blocked-card">
+            <div className="blocked-icon">ℹ️</div>
+            <h1>Откройте Mini App в Telegram</h1>
+            <p>Это приложение работает внутри Telegram (WebApp). В обычном браузере функции недоступны.</p>
+            {botLink && (
+              <a className="btn-primary" href={botLink} target="_blank" rel="noreferrer" style={{ display: 'inline-block' }}>
+                Открыть бота
+              </a>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   if (displayUser?.is_blocked) {
     return (
