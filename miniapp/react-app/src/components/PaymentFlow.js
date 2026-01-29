@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 
 const SUCCESS_STATUSES = new Set(['confirmed', 'finished']);
 const FAILURE_STATUSES = new Set(['failed', 'expired', 'refunded']);
+const REQUEST_TIMEOUT_MS = 25000;
 
 function formatAmount5(value) {
   if (value === null || value === undefined || Number.isNaN(Number(value))) return '—';
@@ -133,7 +134,10 @@ export default function PaymentFlow({
       setLoadingExisting(true);
       setError(null);
       try {
-        const resp = await fetch(`${apiBase}/payments/payment/${paymentId}`, { headers });
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+        const resp = await fetch(`${apiBase}/payments/payment/${paymentId}`, { headers, signal: controller.signal });
+        clearTimeout(timeoutId);
         if (!resp.ok) throw new Error('Не удалось получить платеж');
         const data = await resp.json();
         if (!mounted) return;
@@ -145,7 +149,12 @@ export default function PaymentFlow({
           setExpiresAt(Math.floor(Date.now() / 1000) + 15 * 60);
         }
       } catch (e) {
-        if (mounted) setError(e instanceof Error ? e.message : 'Ошибка загрузки платежа');
+        if (mounted) {
+          const msg = e && e.name === 'AbortError'
+            ? 'Сервер не ответил вовремя. Попробуйте ещё раз.'
+            : (e instanceof Error ? e.message : 'Ошибка загрузки платежа');
+          setError(msg);
+        }
       } finally {
         if (mounted) setLoadingExisting(false);
       }
@@ -166,9 +175,12 @@ export default function PaymentFlow({
       setCreating(true);
       setError(null);
       try {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
         const resp = await fetch(`${apiBase}/payments/create`, {
           method: 'POST',
           headers,
+          signal: controller.signal,
           body: JSON.stringify({
             amount,
             price_currency: priceCurrency,
@@ -177,6 +189,7 @@ export default function PaymentFlow({
             order_description: orderDescription || title || webinarTitle || `Order ${orderId}`
           })
         });
+        clearTimeout(timeoutId);
         const data = await resp.json().catch(() => ({}));
         if (!resp.ok) {
           const detail = data?.detail || data?.message;
@@ -191,7 +204,12 @@ export default function PaymentFlow({
           setExpiresAt(Math.floor(Date.now() / 1000) + 15 * 60);
         }
       } catch (e) {
-        if (mounted) setError(e instanceof Error ? e.message : 'Ошибка создания платежа');
+        if (mounted) {
+          const msg = e && e.name === 'AbortError'
+            ? 'Сервер не ответил вовремя. Попробуйте ещё раз.'
+            : (e instanceof Error ? e.message : 'Ошибка создания платежа');
+          setError(msg);
+        }
       } finally {
         if (mounted) setCreating(false);
       }
@@ -271,6 +289,17 @@ export default function PaymentFlow({
       </div>
 
       {error && <div className="error-banner">{error}</div>}
+
+      {error && !payment && (
+        <button
+          type="button"
+          className="pay-modern__btn pay-modern__btn--primary"
+          onClick={() => window.location.reload()}
+          style={{ width: '100%' }}
+        >
+          Повторить
+        </button>
+      )}
 
       {(creating || loadingExisting) && !payment && (
         <div className="pay-modern__loading">

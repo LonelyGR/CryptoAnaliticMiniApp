@@ -660,12 +660,20 @@ def admin_panel_users(
 ):
     users = db.query(AdminPanelUser).order_by(AdminPanelUser.id.asc()).all()
     user_scopes = {u.id: _user_scopes(u) for u in users}
+    selected_id_raw = (request.query_params.get("u") or "").strip()
+    selected_id = int(selected_id_raw) if selected_id_raw.isdigit() else None
+    selected_user = None
+    if selected_id is not None:
+        selected_user = next((x for x in users if x.id == selected_id), None)
+    if selected_user is None and users:
+        selected_user = users[0]
     return _render(
         request,
         "users.html",
         section="users",
         title="Admin · Пользователи панели",
         users=users,
+        selected_user=selected_user,
         perms=ADMIN_PERMS,
         user_scopes=user_scopes,
         admin_user=f"{user.username} · {user.role}",

@@ -1,145 +1,134 @@
 {% extends "base.html" %}
 {% block content %}
-  <div class="grid">
-    <div class="card">
-      <h2>Создать пользователя панели</h2>
-      <form method="post" action="/admin/users/create">
-        <div class="field">
-          <label>Логин</label>
-          <input name="username" required />
-        </div>
-        <div class="field">
-          <label>Пароль</label>
-          <input name="password" type="password" required />
-        </div>
-        <div class="field">
-          <label>Роль (свободный текст)</label>
-          <input name="role" value="admin" list="roleOptions" />
-          <datalist id="roleOptions">
-            <option value="developer"></option>
-            <option value="admin"></option>
-            <option value="support"></option>
-            <option value="editor"></option>
-            <option value="разработчик"></option>
-            <option value="админ"></option>
-            <option value="поддержка"></option>
-            <option value="редактор"></option>
-          </datalist>
-        </div>
-        <div class="field">
-          <label>Права доступа (переключатели)</label>
-          <div class="perm-actions">
-            <label class="btn"><input type="checkbox" name="perms" value="*" /> полный доступ (*)</label>
-          </div>
-          <div class="perm-grid">
-            {% for group, scope, title, desc in perms %}
-              <div class="perm">
-                <div class="perm__head">
-                  <div>
-                    <div class="perm__title">{{ title }}</div>
-                    <div class="muted perm__desc">{{ group }} · {{ desc }}</div>
-                  </div>
-                  <label class="switch">
-                    <input type="checkbox" name="perms" value="{{ scope }}" />
-                  </label>
-                </div>
-              </div>
-            {% endfor %}
-          </div>
-          <div class="muted small" style="margin-top:10px">
-            Если нужен ручной режим — можно указать scopes строкой ниже (опционально).
-          </div>
-        </div>
-        <div class="field">
-          <label>Права (ручной ввод, опционально)</label>
-          <input name="scopes" placeholder="posts:view,posts:write, ... или *" />
-        </div>
-        <button class="btn primary" type="submit">Создать</button>
-      </form>
-    </div>
+  <datalist id="roleOptions">
+    <option value="developer"></option>
+    <option value="admin"></option>
+    <option value="support"></option>
+    <option value="editor"></option>
+    <option value="разработчик"></option>
+    <option value="админ"></option>
+    <option value="поддержка"></option>
+    <option value="редактор"></option>
+  </datalist>
 
-    <div class="card">
-      <h2>Пользователи</h2>
-      <div class="field" style="margin-top: 12px">
-        <label>Поиск</label>
-        <input id="userSearch" placeholder="Логин, роль, scopes…" />
+  <div class="admin-users-v2">
+    <div class="admin-users-v2__panel">
+      <h2 class="admin-users-v2__title">Пользователи панели</h2>
+
+      <div class="admin-users-v2__search">
+        <input id="userSearch" placeholder="Search" />
       </div>
-      <div class="user-list">
+
+      <div class="admin-users-v2__list" id="userList">
         {% for u in users %}
-          <details
-            class="card"
+          <a
+            class="user-mini {% if selected_user and selected_user.id == u.id %}is-active{% endif %}"
+            href="/admin/users?u={{ u.id }}"
             data-search="{{ (u.username ~ ' ' ~ u.role ~ ' ' ~ (u.scopes or '')) | lower }}"
-            {% if loop.first %}open{% endif %}
           >
-            <summary class="user-summary">
-              <div class="user-summary__left">
-                <span class="pill">#{{ u.id }}</span>
-                <span class="pill">{{ u.username }}</span>
-                <span class="pill">{{ u.role }}</span>
-                <span class="pill">{{ 'активен' if u.is_active else 'выключен' }}</span>
-              </div>
-              <div class="user-summary__right muted">
-                {{ u.scopes or '— (по роли)' }}
-              </div>
-            </summary>
-            <div class="details__body">
-              <form method="post" action="/admin/users/{{ u.id }}/update" class="user-form">
-                <div class="user-form__row">
-                  <div class="field">
-                    <label>Роль</label>
-                    <input name="role" value="{{ u.role }}" list="roleOptions" />
-                  </div>
-                  <div class="field">
-                    <label>Права (ручной ввод, опционально)</label>
-                    <input name="scopes" value="{{ u.scopes or '' }}" placeholder="posts:view,posts:write, ... или *" />
-                  </div>
-                </div>
-
-                <div class="perm-actions">
-                  <label class="btn"><input type="checkbox" name="perms" value="*" {% if '*' in user_scopes[u.id] %}checked{% endif %} /> полный доступ (*)</label>
-                  <label class="toggle"><input type="checkbox" name="is_active" value="1" {% if u.is_active %}checked{% endif %} /> <strong>активен</strong></label>
-                  <button class="btn" type="submit">Сохранить</button>
-                </div>
-
-                <div class="perm-grid">
-                  {% for group, scope, title, desc in perms %}
-                    <div class="perm">
-                      <div class="perm__head">
-                        <div>
-                          <div class="perm__title">{{ title }}</div>
-                          <div class="muted perm__desc">{{ group }} · {{ desc }}</div>
-                        </div>
-                        <label class="switch">
-                          <input
-                            type="checkbox"
-                            name="perms"
-                            value="{{ scope }}"
-                            {% if (scope in user_scopes[u.id]) or (scope.split(':')[0] in user_scopes[u.id]) or ('*' in user_scopes[u.id]) %}checked{% endif %}
-                          />
-                        </label>
-                      </div>
-                    </div>
-                  {% endfor %}
-                </div>
-              </form>
-
-              <div class="user-actions" style="margin-top:12px">
-                <form method="post" action="/admin/users/{{ u.id }}/reset-password" class="user-reset" onsubmit="return confirm('Сбросить пароль пользователю {{ u.username }}?')">
-                  <input name="new_password" type="password" placeholder="Новый пароль" required />
-                  <button class="btn ok" type="submit">Сохранить</button>
-                </form>
-                <form method="post" action="/admin/users/{{ u.id }}/delete" onsubmit="return confirm('Удалить пользователя {{ u.username }}?')">
-                  <button class="btn danger" type="submit">Удалить</button>
-                </form>
+            <div class="user-mini__left">
+              <div class="user-mini__avatar">{{ (u.username[:1] if u.username else 'U')|upper }}</div>
+              <div style="min-width:0">
+                <div class="user-mini__name">{{ u.username }}</div>
+                <div class="user-mini__meta">{{ u.role }} · {{ 'active' if u.is_active else 'inactive' }}</div>
               </div>
             </div>
-          </details>
+            <div class="user-mini__right">
+              <span class="pill">#{{ u.id }}</span>
+            </div>
+          </a>
         {% endfor %}
 
         {% if not users %}
           <div class="muted">Пользователей пока нет.</div>
         {% endif %}
       </div>
+
+      <div class="card" style="margin-top: 14px">
+        <h2 class="admin-users-v2__title">Создать пользователя</h2>
+        <form method="post" action="/admin/users/create">
+          <div class="field">
+            <label>Логин</label>
+            <input name="username" required />
+          </div>
+          <div class="field">
+            <label>Пароль</label>
+            <input name="password" type="password" required />
+          </div>
+          <div class="field">
+            <label>Роль</label>
+            <input name="role" value="admin" list="roleOptions" />
+          </div>
+          <div class="perm-actions">
+            <label class="btn"><input type="checkbox" name="perms" value="*" /> полный доступ (*)</label>
+            <button class="btn primary" type="submit">Создать</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <div class="admin-users-v2__panel">
+      {% if selected_user %}
+        <div class="admin-users-v2__detailHeader">
+          <div>
+            <h2 class="admin-users-v2__detailTitle">{{ selected_user.username }}</h2>
+            <div class="admin-users-v2__detailSub">Роль: <strong>{{ selected_user.role }}</strong> · ID: <strong>#{{ selected_user.id }}</strong></div>
+          </div>
+          <span class="pill">{{ 'active' if selected_user.is_active else 'inactive' }}</span>
+        </div>
+
+        <form method="post" action="/admin/users/{{ selected_user.id }}/update">
+          <div class="row" style="align-items:flex-end">
+            <div class="field" style="flex:1">
+              <label>Роль</label>
+              <input name="role" value="{{ selected_user.role }}" list="roleOptions" />
+            </div>
+            <div class="field" style="flex:2">
+              <label>Scopes (опционально)</label>
+              <input name="scopes" value="{{ selected_user.scopes or '' }}" placeholder="posts:view,posts:write или *" />
+            </div>
+          </div>
+
+          <div class="perm-actions">
+            <label class="btn"><input type="checkbox" name="perms" value="*" {% if '*' in user_scopes[selected_user.id] %}checked{% endif %} /> полный доступ (*)</label>
+            <label class="toggle"><input type="checkbox" name="is_active" value="1" {% if selected_user.is_active %}checked{% endif %} /> <strong>active</strong></label>
+            <button class="btn" type="submit">Сохранить</button>
+          </div>
+
+          <div class="perm-grid-v2">
+            {% for group, scope, title, desc in perms %}
+              <div class="perm-tile">
+                <div class="perm-tile__top">
+                  <div style="min-width:0">
+                    <div class="perm-tile__title">{{ title }}</div>
+                    <div class="perm-tile__desc">{{ group }} · {{ desc }}</div>
+                  </div>
+                  <label class="switch">
+                    <input
+                      type="checkbox"
+                      name="perms"
+                      value="{{ scope }}"
+                      {% if (scope in user_scopes[selected_user.id]) or (scope.split(':')[0] in user_scopes[selected_user.id]) or ('*' in user_scopes[selected_user.id]) %}checked{% endif %}
+                    />
+                  </label>
+                </div>
+              </div>
+            {% endfor %}
+          </div>
+        </form>
+
+        <div class="user-actions" style="margin-top:14px">
+          <form method="post" action="/admin/users/{{ selected_user.id }}/reset-password" class="user-reset" onsubmit="return confirm('Сбросить пароль пользователю {{ selected_user.username }}?')">
+            <input name="new_password" type="password" placeholder="Новый пароль" required />
+            <button class="btn ok" type="submit">Сохранить</button>
+          </form>
+          <form method="post" action="/admin/users/{{ selected_user.id }}/delete" onsubmit="return confirm('Удалить пользователя {{ selected_user.username }}?')">
+            <button class="btn danger" type="submit">Удалить</button>
+          </form>
+        </div>
+      {% else %}
+        <div class="muted">Пользователей пока нет.</div>
+      {% endif %}
     </div>
   </div>
 
@@ -149,7 +138,7 @@
       if (!input) return;
       input.addEventListener('input', function () {
         var q = (input.value || '').trim().toLowerCase();
-        var items = document.querySelectorAll('.user-list details[data-search]');
+        var items = document.querySelectorAll('#userList [data-search]');
         items.forEach(function (el) {
           var hay = (el.getAttribute('data-search') || '');
           var ok = !q || hay.indexOf(q) !== -1;
