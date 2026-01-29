@@ -263,6 +263,22 @@ export default function Home({ user, apiConnected, dbUser }) {
                             <p className="neo-subtitle">
                                 Умная панель управления активами с прозрачной аналитикой и защитой капитала.
                             </p>
+                            <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginTop: 14 }}>
+                                <button
+                                    type="button"
+                                    className="btn-meeting-link"
+                                    onClick={handlePay}
+                                >
+                                    Pay · 590 USDT (TRC20)
+                                </button>
+                                <button
+                                    type="button"
+                                    className="btn-secondary"
+                                    onClick={handleContactManager}
+                                >
+                                    Contact Manager
+                                </button>
+                            </div>
                         </div>
 
                         <div className="neo-grid">
@@ -331,25 +347,6 @@ export default function Home({ user, apiConnected, dbUser }) {
                                             </ul>
                                         </div>
 
-                                        <div className="neo-modal-section">
-                                            <h3>Действия</h3>
-                                            <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
-                                                <button
-                                                    type="button"
-                                                    className="neo-card-cta"
-                                                    onClick={handlePay}
-                                                >
-                                                    Pay · 590 USDT (TRC20)
-                                                </button>
-                                                <button
-                                                    type="button"
-                                                    className="neo-card-cta"
-                                                    onClick={handleContactManager}
-                                                >
-                                                    Contact Manager
-                                                </button>
-                                            </div>
-                                        </div>
                                     </div>
                                 </div>
                             </div>
