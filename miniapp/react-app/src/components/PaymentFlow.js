@@ -49,6 +49,27 @@ async function copyToClipboard(text) {
   }
 }
 
+async function fetchWithTimeout(url, options = {}, timeoutMs = REQUEST_TIMEOUT_MS) {
+  const hasAbort = typeof AbortController !== 'undefined';
+  if (hasAbort) {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+    try {
+      const resp = await fetch(url, { ...options, signal: controller.signal });
+      return resp;
+    } finally {
+      clearTimeout(timeoutId);
+    }
+  }
+
+  // Fallback for environments without AbortController (some embedded WebViews):
+  // can't cancel fetch, but we can stop waiting.
+  return await Promise.race([
+    fetch(url, options),
+    new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), timeoutMs)),
+  ]);
+}
+
 export default function PaymentFlow({
   orderId,
   amount,
@@ -134,10 +155,7 @@ export default function PaymentFlow({
       setLoadingExisting(true);
       setError(null);
       try {
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
-        const resp = await fetch(`${apiBase}/payments/payment/${paymentId}`, { headers, signal: controller.signal });
-        clearTimeout(timeoutId);
+        const resp = await fetchWithTimeout(`${apiBase}/payments/payment/${paymentId}`, { headers });
         if (!resp.ok) throw new Error('Не удалось получить платеж');
         const data = await resp.json();
         if (!mounted) return;
@@ -150,7 +168,7 @@ export default function PaymentFlow({
         }
       } catch (e) {
         if (mounted) {
-          const msg = e && e.name === 'AbortError'
+          const msg = (e && (e.name === 'AbortError' || e.message === 'timeout'))
             ? 'Сервер не ответил вовремя. Попробуйте ещё раз.'
             : (e instanceof Error ? e.message : 'Ошибка загрузки платежа');
           setError(msg);
@@ -175,12 +193,9 @@ export default function PaymentFlow({
       setCreating(true);
       setError(null);
       try {
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
-        const resp = await fetch(`${apiBase}/payments/create`, {
+        const resp = await fetchWithTimeout(`${apiBase}/payments/create`, {
           method: 'POST',
           headers,
-          signal: controller.signal,
           body: JSON.stringify({
             amount,
             price_currency: priceCurrency,
@@ -189,7 +204,6 @@ export default function PaymentFlow({
             order_description: orderDescription || title || webinarTitle || `Order ${orderId}`
           })
         });
-        clearTimeout(timeoutId);
         const data = await resp.json().catch(() => ({}));
         if (!resp.ok) {
           const detail = data?.detail || data?.message;
@@ -205,7 +219,7 @@ export default function PaymentFlow({
         }
       } catch (e) {
         if (mounted) {
-          const msg = e && e.name === 'AbortError'
+          const msg = (e && (e.name === 'AbortError' || e.message === 'timeout'))
             ? 'Сервер не ответил вовремя. Попробуйте ещё раз.'
             : (e instanceof Error ? e.message : 'Ошибка создания платежа');
           setError(msg);

@@ -12,7 +12,9 @@ DATABASE_URL = os.getenv("DATABASE_URL") or f"sqlite:///{os.path.join(BASE_DIR, 
 
 connect_args = {}
 if DATABASE_URL.startswith("sqlite"):
-    connect_args = {"check_same_thread": False}
+    # Avoid long blocking on "database is locked" and improve stability on low-end VPS.
+    # SQLite is safe with a single app worker (see docker-compose.prod.yml).
+    connect_args = {"check_same_thread": False, "timeout": float(os.getenv("SQLITE_BUSY_TIMEOUT", "10"))}
 
 engine = create_engine(
     DATABASE_URL,

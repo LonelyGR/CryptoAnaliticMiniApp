@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 import logging
 import os
+import time
 from datetime import datetime
 from typing import Optional
 
@@ -258,6 +259,7 @@ def currencies():
 
 @router.post("/create", response_model=CreatePaymentResponse)
 def create_payment(payload: CreatePaymentRequest, db: Session = Depends(get_db)):
+    started = time.monotonic()
     ipn_callback_url = os.getenv("NOWPAYMENTS_IPN_CALLBACK_URL")
     if not ipn_callback_url:
         raise HTTPException(status_code=500, detail="NOWPAYMENTS_IPN_CALLBACK_URL is not configured")
@@ -278,7 +280,9 @@ def create_payment(payload: CreatePaymentRequest, db: Session = Depends(get_db))
         "ipn_callback_url": ipn_callback_url,
     }
     request_payload = {key: value for key, value in request_payload.items() if value is not None}
+    logger.info("nowpayments.create start order_id=%s amount=%s pay_currency=%s", payload.order_id, payload.amount, payload.pay_currency)
     data = nowpayments_request("POST", "/payment", json=request_payload)
+    logger.info("nowpayments.create ok order_id=%s payment_id=%s took_ms=%s", payload.order_id, data.get("payment_id"), int((time.monotonic() - started) * 1000))
 
     response = CreatePaymentResponse(
         payment_id=data["payment_id"],
