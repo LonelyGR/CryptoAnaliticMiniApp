@@ -3610,6 +3610,14 @@ a:hover {
   margin: 24px 16px;
 }
 
+.build-stamp {
+  text-align: center;
+  opacity: 0.35;
+  font-size: 11px;
+  padding: 10px 0 0;
+  letter-spacing: 0.3px;
+}
+
 .posts-list {
   display: flex;
   flex-direction: column;

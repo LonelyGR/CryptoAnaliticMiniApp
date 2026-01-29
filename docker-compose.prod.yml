@@ -24,6 +24,7 @@ services:
         # Optional: used for referral link fallback and manager contact
         REACT_APP_BOT_USERNAME: ${REACT_APP_BOT_USERNAME}
         REACT_APP_MANAGER_TELEGRAM: ${REACT_APP_MANAGER_TELEGRAM}
+        REACT_APP_BUILD_ID: ${REACT_APP_BUILD_ID:-prod}
     restart: unless-stopped
     expose:
       - "80"
@@ -36,7 +37,7 @@ services:
     restart: unless-stopped
     # SQLite + multiple gunicorn workers can deadlock/lock DB.
     # If you use Postgres, you can increase workers safely.
-    command: ["gunicorn", "-k", "uvicorn.workers.UvicornWorker", "app.main:app", "--bind", "0.0.0.0:8000", "--workers", "1", "--timeout", "60"]
+    command: ["gunicorn", "-k", "uvicorn.workers.UvicornWorker", "app.main:app", "--bind", "0.0.0.0:8000", "--workers", "1", "--timeout", "60", "--access-logfile", "-", "--error-logfile", "-", "--log-level", "info"]
     env_file:
       - .env
     environment:

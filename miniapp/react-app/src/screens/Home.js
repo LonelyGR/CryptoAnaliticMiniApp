@@ -475,6 +475,10 @@ export default function Home({ user, apiConnected, dbUser }) {
                         </div>
                     )}
                 </section>
+
+                {process.env.REACT_APP_BUILD_ID ? (
+                    <div className="build-stamp">build {process.env.REACT_APP_BUILD_ID}</div>
+                ) : null}
             </div>
 
             {paymentContext && (
