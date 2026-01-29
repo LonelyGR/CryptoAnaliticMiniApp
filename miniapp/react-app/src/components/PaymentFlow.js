@@ -81,7 +81,8 @@ export default function PaymentFlow({
   onComplete,
   title,
   orderDescription,
-  webinarTitle
+  webinarTitle,
+  hideHeader = false,
 }) {
   const apiBase = backendUrl || process.env.REACT_APP_API_URL || '/api';
   const [payment, setPayment] = useState(null);
@@ -293,17 +294,19 @@ export default function PaymentFlow({
 
   return (
     <div className="pay-modern">
-      <div className="pay-modern__header">
-        <div>
-          <div className="pay-modern__title">{titleLine}</div>
-          <div className="pay-modern__price">{priceLine}</div>
+      {!hideHeader && (
+        <div className="pay-modern__header">
+          <div>
+            <div className="pay-modern__title">{titleLine}</div>
+            <div className="pay-modern__price">{priceLine}</div>
+          </div>
+          {onClose && (
+            <button type="button" className="pay-modern__close" onClick={onClose} aria-label="Закрыть">
+              ×
+            </button>
+          )}
         </div>
-        {onClose && (
-          <button type="button" className="pay-modern__close" onClick={onClose} aria-label="Закрыть">
-            ×
-          </button>
-        )}
-      </div>
+      )}
 
       {error && <div className="error-banner">{error}</div>}
 

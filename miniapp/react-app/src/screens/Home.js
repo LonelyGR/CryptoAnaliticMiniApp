@@ -500,7 +500,7 @@ export default function Home({ user, apiConnected, dbUser }) {
                                 paymentId={paymentContext.paymentId}
                                 title={paymentContext.title}
                                 orderDescription={paymentContext.orderDescription}
-                                onClose={() => setPaymentContext(null)}
+                                hideHeader={true}
                             />
                         </div>
                     </div>

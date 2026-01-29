@@ -271,9 +271,17 @@ def create_payment(payload: CreatePaymentRequest, db: Session = Depends(get_db))
         if booking and (booking.type or "").lower() == "webinar":
             raise HTTPException(status_code=400, detail="Вебинары бесплатные — оплата не требуется")
 
+    # NOWPayments expects fiat-like price_currency (usd/eur). Some clients may send "usdt" by mistake.
+    # To keep backward compatibility and avoid "Can not get estimate from USDT to USDTTRC20",
+    # normalize USDT price_currency -> USD when paying in USDT TRC20.
+    price_currency = (payload.price_currency or "").strip().lower()
+    pay_currency = (payload.pay_currency or "").strip().lower()
+    if price_currency in {"usdt", "usdttrc20"} and pay_currency.startswith("usdt"):
+        price_currency = "usd"
+
     request_payload = {
         "price_amount": payload.amount,
-        "price_currency": payload.price_currency,
+        "price_currency": price_currency,
         "pay_currency": payload.pay_currency,
         "order_id": payload.order_id,
         "order_description": payload.order_description,
