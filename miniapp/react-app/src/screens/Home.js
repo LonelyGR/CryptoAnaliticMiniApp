@@ -481,7 +481,12 @@ export default function Home({ user, apiConnected, dbUser }) {
                 <div className="modal-overlay" onClick={() => setPaymentContext(null)}>
                     <div className="modal-content" onClick={(event) => event.stopPropagation()}>
                         <div className="modal-header">
-                            <h2>Приобрести продукт</h2>
+                            <div>
+                                <h2 style={{ margin: 0 }}>Приобрести продукт</h2>
+                                <div style={{ marginTop: 6, fontSize: 13, opacity: 0.75 }}>
+                                    590 USDT (TRC20)
+                                </div>
+                            </div>
                             <button
                                 className="modal-close"
                                 type="button"
