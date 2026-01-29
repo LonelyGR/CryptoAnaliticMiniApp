@@ -238,7 +238,9 @@ export default function Home({ user, apiConnected, dbUser }) {
             setPaymentContext({
                 orderId: `booking-${booking.id}`,
                 amount: 590,
-                priceCurrency: 'usdt',
+                // NOWPayments: price_currency должен быть фиатом (usd/eur), pay_currency — крипта (usdttrc20)
+                // Сумму в USDT покажем в UI (pay_amount придёт от NOWPayments).
+                priceCurrency: 'usd',
                 title: 'Приобрести продукт',
                 orderDescription: 'Crypto Sensei · Приобрести продукт · 590 USDT (TRC20)',
                 paymentId: booking?.payment_id || null,

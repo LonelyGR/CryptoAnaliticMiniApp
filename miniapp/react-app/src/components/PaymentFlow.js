@@ -284,9 +284,12 @@ export default function PaymentFlow({
   const currency = (priceCurrency || '').toLowerCase();
   const numericAmount = typeof amount === 'number' ? amount : Number(amount || 0);
   const currencyLabel = currency ? currency.toUpperCase() : 'USD';
-  const priceLine = currency === 'usd'
-    ? `$${numericAmount}`
-    : (currency === 'eur' ? `€${numericAmount}` : `${numericAmount} ${currencyLabel}`);
+  const payCurLower = (fixedPayCurrency || '').toLowerCase();
+  const priceLine = payCurLower.includes('usdt')
+    ? `${numericAmount} USDT`
+    : (currency === 'usd'
+      ? `$${numericAmount}`
+      : (currency === 'eur' ? `€${numericAmount}` : `${numericAmount} ${currencyLabel}`));
 
   return (
     <div className="pay-modern">
