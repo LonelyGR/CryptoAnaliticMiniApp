@@ -57,6 +57,8 @@ export default function PaymentFlow({
   paymentId,
   onClose,
   onComplete,
+  title,
+  orderDescription,
   webinarTitle
 }) {
   const apiBase = backendUrl || process.env.REACT_APP_API_URL || '/api';
@@ -172,7 +174,7 @@ export default function PaymentFlow({
             price_currency: priceCurrency,
             pay_currency: fixedPayCurrency,
             order_id: orderId,
-            order_description: webinarTitle ? `Webinar: ${webinarTitle}` : `Order ${orderId}`
+            order_description: orderDescription || title || webinarTitle || `Order ${orderId}`
           })
         });
         const data = await resp.json().catch(() => ({}));
@@ -199,7 +201,7 @@ export default function PaymentFlow({
     return () => {
       mounted = false;
     };
-  }, [apiBase, amount, creating, fixedPayCurrency, headers, orderId, payment, paymentId, priceCurrency, webinarTitle]);
+  }, [apiBase, amount, creating, fixedPayCurrency, headers, orderDescription, orderId, payment, paymentId, priceCurrency, title, webinarTitle]);
 
   // 3) авто-обновление статуса
   useEffect(() => {
@@ -245,8 +247,14 @@ export default function PaymentFlow({
     }
   };
 
-  const titleLine = webinarTitle ? `Вебинар «${webinarTitle}»` : `Заказ ${orderId}`;
-  const priceLine = typeof amount === 'number' ? `$${amount}` : `$${Number(amount || 0)}`;
+  const displayTitle = title || webinarTitle || '';
+  const titleLine = displayTitle ? displayTitle : `Заказ ${orderId}`;
+  const currency = (priceCurrency || '').toLowerCase();
+  const numericAmount = typeof amount === 'number' ? amount : Number(amount || 0);
+  const currencyLabel = currency ? currency.toUpperCase() : 'USD';
+  const priceLine = currency === 'usd'
+    ? `$${numericAmount}`
+    : (currency === 'eur' ? `€${numericAmount}` : `${numericAmount} ${currencyLabel}`);
 
   return (
     <div className="pay-modern">

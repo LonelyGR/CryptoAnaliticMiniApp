@@ -238,8 +238,9 @@ export default function Home({ user, apiConnected, dbUser }) {
             setPaymentContext({
                 orderId: `booking-${booking.id}`,
                 amount: 590,
-                priceCurrency: 'usd',
-                webinarTitle: 'Оплата',
+                priceCurrency: 'usdt',
+                title: 'Приобрести продукт',
+                orderDescription: 'Crypto Sensei · Приобрести продукт · 590 USDT (TRC20)',
                 paymentId: booking?.payment_id || null,
             });
         } catch (e) {
@@ -263,22 +264,6 @@ export default function Home({ user, apiConnected, dbUser }) {
                             <p className="neo-subtitle">
                                 Умная панель управления активами с прозрачной аналитикой и защитой капитала.
                             </p>
-                            <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginTop: 14 }}>
-                                <button
-                                    type="button"
-                                    className="btn-meeting-link"
-                                    onClick={handlePay}
-                                >
-                                    Pay · 590 USDT (TRC20)
-                                </button>
-                                <button
-                                    type="button"
-                                    className="btn-secondary"
-                                    onClick={handleContactManager}
-                                >
-                                    Contact Manager
-                                </button>
-                            </div>
                         </div>
 
                         <div className="neo-grid">
@@ -292,7 +277,24 @@ export default function Home({ user, apiConnected, dbUser }) {
                                 <div className="neo-card-cta">Открыть описание</div>
                                 <div className="neo-card-glow" />
                             </button>
-                    </div>
+                        </div>
+
+                        <div className="neo-platform-actions">
+                            <button
+                                type="button"
+                                className="neo-platform-btn neo-platform-btn--primary"
+                                onClick={handlePay}
+                            >
+                                Pay · 590 USDT (TRC20)
+                            </button>
+                            <button
+                                type="button"
+                                className="neo-platform-btn neo-platform-btn--secondary"
+                                onClick={handleContactManager}
+                            >
+                                Contact Manager
+                            </button>
+                        </div>
 
 
                         {aboutModalOpen && (
@@ -314,39 +316,80 @@ export default function Home({ user, apiConnected, dbUser }) {
                                     </button>
                                     <br />
                                     <div className="neo-modal-body">
-                                        <h2 className="neo-modal-title">Кто мы</h2>
+                                        <h2 className="neo-modal-title">Концепция торгового бота</h2>
                                         <p className="neo-modal-lead">
-                                            Мы создаем интеллектуальную экосистему для управления криптопортфелем и автоматизации
-                                            сделок в режиме реального времени.
+                                            Наш торговый бот не основан на прогнозировании направления цены. Алгоритм построен на реальной
+                                            механике биржи и логике работы маркет‑мейкеров.
                                         </p>
 
                                         <div className="neo-modal-section">
-                                            <h3>Что мы предлагаем</h3>
+                                            <h3>Почему это отличается от классического трейдинга</h3>
+                                            <p style={{ margin: 0, color: 'rgba(230, 250, 255, 0.85)', fontSize: 14, lineHeight: 1.6 }}>
+                                                В классическом трейдинге результат часто зависит от угадывания движения рынка. Наш бот зарабатывает на
+                                                ценовых импульсах, ликвидности и возвратах, которые рынок создаёт постоянно.
+                                            </p>
+                                        </div>
+
+                                        <div className="neo-modal-section">
+                                            <h3>Как формируется движение цены</h3>
                                             <ul>
-                                                <li>Гибкую стратегию распределения активов с динамической защитой капитала.</li>
-                                                <li>Синхронизацию DeFi-инструментов и торговых ботов в единой панели.</li>
-                                                <li>Прозрачную аналитику рисков и скоростную обработку сигналов.</li>
+                                                <li>Бирже и маркет‑мейкерам важны оборот и активность, а не “направление”.</li>
+                                                <li>Когда падает ликвидность и активность ордеров — создаётся искусственное движение: добавляется объём и цена ускоряется.</li>
+                                                <li>Так формируются пампы, дампы и резкие импульсы — часть нормальной рыночной механики.</li>
                                             </ul>
                                         </div>
 
                                         <div className="neo-modal-section">
-                                            <h3>Почему это работает</h3>
+                                            <h3>Стратегия бота</h3>
                                             <ul>
-                                                <li>Мы используем матричный подход к контролю волатильности.</li>
-                                                <li>Автоматизация снижает эмоциональные решения и усиливает дисциплину.</li>
-                                                <li>Глубокая фильтрация данных дает преимущество в быстрых циклах рынка.</li>
+                                                <li>Прибыль формируется как на лонг‑, так и на шорт‑позициях.</li>
+                                                <li>Лонг используется как базовая позиция стратегии.</li>
+                                                <li>Шорты применяются для извлечения дохода на импульсах и коррекциях.</li>
+                                                <li>Алгоритм не требует точного определения «верха» или «низа».</li>
                                             </ul>
                                         </div>
 
                                         <div className="neo-modal-section">
-                                            <h3>Почему выбирают нас</h3>
+                                            <h3>Алгоритмический подход</h3>
                                             <ul>
-                                                <li>Команда с опытом построения трейдинговых систем и финтех-продуктов.</li>
-                                                <li>Детализированные отчеты и поддержка 24/7.</li>
-                                                <li>Фокус на безопасности, прозрачности и росте капитала клиента.</li>
+                                                <li>Используется технический анализ и виртуальные средние.</li>
+                                                <li>Бот одновременно управляет лонг‑ и шорт‑позициями.</li>
+                                                <li>Позиции открываются и закрываются по алгоритму, без эмоций.</li>
+                                                <li>При импульсном движении фиксируется прибыль, часть ордеров закрывается, бот выходит из рынка с результатом.</li>
                                             </ul>
                                         </div>
 
+                                        <div className="neo-modal-section">
+                                            <h3>Управление рисками</h3>
+                                            <ul>
+                                                <li>Алгоритм ориентирован на контроль позиции, а не на агрессивный вход.</li>
+                                                <li>Если позиция временно уходит против движения — бот улучшает среднюю цену входа и перераспределяет объём по заранее заданной логике.</li>
+                                                <li>Это снижает влияние краткосрочной волатильности и сохраняет контроль в нестабильных условиях.</li>
+                                            </ul>
+                                        </div>
+
+                                        <div className="neo-modal-section">
+                                            <h3>Ключевые преимущества</h3>
+                                            <ul>
+                                                <li>Прибыль формируется с обеих сторон рынка.</li>
+                                                <li>Базовая структура стратегии — лонг.</li>
+                                                <li>Алгоритм адаптирован под реальную механику биржи.</li>
+                                                <li>Минимизация эмоционального и субъективного фактора.</li>
+                                            </ul>
+                                        </div>
+
+                                        <div className="neo-modal-section">
+                                            <h3>Почему стратегия Low / Medium Risk</h3>
+                                            <ul>
+                                                <li>Используется базовая лонг‑структура, соответствующая долгосрочной логике рынка.</li>
+                                                <li>Прибыль распределена между лонгами и шортами без односторонней зависимости.</li>
+                                                <li>Нет необходимости угадывать направление рынка.</li>
+                                                <li>Риск снижается за счёт усреднения и перераспределения, а не за счёт увеличения плеча.</li>
+                                            </ul>
+                                            <p style={{ margin: '10px 0 0 0', color: 'rgba(230, 250, 255, 0.75)', fontSize: 13, lineHeight: 1.6 }}>
+                                                Итог: алгоритм ориентирован на стабильную работу в разных рыночных фазах, а не на агрессивную спекуляцию.
+                                            </p>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -436,7 +479,7 @@ export default function Home({ user, apiConnected, dbUser }) {
                 <div className="modal-overlay" onClick={() => setPaymentContext(null)}>
                     <div className="modal-content" onClick={(event) => event.stopPropagation()}>
                         <div className="modal-header">
-                            <h2>Оплата</h2>
+                            <h2>Приобрести продукт</h2>
                             <button
                                 className="modal-close"
                                 type="button"
@@ -453,7 +496,8 @@ export default function Home({ user, apiConnected, dbUser }) {
                                 priceCurrency={paymentContext.priceCurrency}
                                 fixedPayCurrency="usdttrc20"
                                 paymentId={paymentContext.paymentId}
-                                webinarTitle={paymentContext.webinarTitle}
+                                title={paymentContext.title}
+                                orderDescription={paymentContext.orderDescription}
                                 onClose={() => setPaymentContext(null)}
                             />
                         </div>
