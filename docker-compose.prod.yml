@@ -18,6 +18,12 @@ services:
   frontend:
     build:
       context: ./miniapp/react-app
+      args:
+        # Frontend will call /api (Caddy proxy to backend)
+        REACT_APP_API_URL: /api
+        # Optional: used for referral link fallback and manager contact
+        REACT_APP_BOT_USERNAME: ${REACT_APP_BOT_USERNAME}
+        REACT_APP_MANAGER_TELEGRAM: ${REACT_APP_MANAGER_TELEGRAM}
     restart: unless-stopped
     expose:
       - "80"
