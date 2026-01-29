@@ -16,7 +16,6 @@ export default function AdminWebinars({ user, apiConnected }) {
         speaker: '',
         description: '',
         status: 'upcoming',
-        price: 0,
         meeting_link: ''
     });
 
@@ -44,13 +43,12 @@ export default function AdminWebinars({ user, apiConnected }) {
             return;
         }
 
-        // Цена хранится как USDT (TRC20), используем поле price_usd
         const submitData = {
             ...formData,
-            price_usd: formData.price,
-            price_eur: 0
+            // Вебинары бесплатные
+            price_usd: 0,
+            price_eur: 0,
         };
-        delete submitData.price;
 
         try {
             if (editingWebinar) {
@@ -70,7 +68,6 @@ export default function AdminWebinars({ user, apiConnected }) {
                 speaker: '',
                 description: '',
                 status: 'upcoming',
-                price: 0,
                 meeting_link: ''
             });
             loadWebinars();
@@ -82,14 +79,6 @@ export default function AdminWebinars({ user, apiConnected }) {
 
     const handleEdit = (webinar) => {
         setEditingWebinar(webinar);
-        // Определяем цену для редактирования
-        let price = 0;
-        if (webinar.price_usd && webinar.price_usd > 0) {
-            price = webinar.price_usd;
-        } else if (webinar.price_eur && webinar.price_eur > 0) {
-            price = webinar.price_eur;
-        }
-        
         setFormData({
             title: webinar.title || '',
             date: webinar.date || '',
@@ -98,7 +87,6 @@ export default function AdminWebinars({ user, apiConnected }) {
             speaker: webinar.speaker || '',
             description: webinar.description || '',
             status: webinar.status || 'upcoming',
-            price: price,
             meeting_link: webinar.meeting_link || ''
         });
         setShowCreateForm(true);
@@ -149,7 +137,6 @@ export default function AdminWebinars({ user, apiConnected }) {
                                 speaker: '',
                                 description: '',
                                 status: 'upcoming',
-                                price: 0,
                                 meeting_link: ''
                             });
                         }}
@@ -247,20 +234,6 @@ export default function AdminWebinars({ user, apiConnected }) {
                         </div>
 
                         <div className="form-group">
-                            <label>Цена (USDT TRC20) *</label>
-                            <input
-                                type="number"
-                                className="form-input"
-                                value={formData.price}
-                                onChange={(e) => setFormData({...formData, price: parseFloat(e.target.value) || 0})}
-                                min="0"
-                                step="0.01"
-                                placeholder="0.00"
-                                required
-                            />
-                        </div>
-
-                        <div className="form-group">
                             <label>Ссылка на встречу</label>
                             <input
                                 type="url"
@@ -310,12 +283,6 @@ export default function AdminWebinars({ user, apiConnected }) {
                                     <p><strong>Время:</strong> {webinar.time}</p>
                                     {webinar.duration && <p><strong>Продолжительность:</strong> {webinar.duration}</p>}
                                     {webinar.speaker && <p><strong>Спикер:</strong> {webinar.speaker}</p>}
-                                    {((webinar.price_usd && webinar.price_usd > 0) || (webinar.price_eur && webinar.price_eur > 0)) && (
-                                        <p>
-                                            <strong>Цена:</strong> {webinar.price_usd || webinar.price_eur} USDT
-                                            <span style={{ opacity: 0.7 }}> (TRC20)</span>
-                                        </p>
-                                    )}
                                     {webinar.description && <p><strong>Описание:</strong> {webinar.description}</p>}
                                 </div>
 

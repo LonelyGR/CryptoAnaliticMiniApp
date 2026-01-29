@@ -28,6 +28,8 @@ class UserResponse(UserBase):
     id: int
     is_admin: Optional[bool] = False  # Статус администратора
     role: Optional[str] = None  # Должность (если админ)
+    client_role: Optional[str] = None  # Роль/статус пользователя (не админская)
+    has_paid_access: Optional[bool] = False  # Есть ли оплаченный доступ
 
     class Config:
         from_attributes = True

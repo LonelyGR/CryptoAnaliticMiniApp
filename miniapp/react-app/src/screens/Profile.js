@@ -123,7 +123,7 @@ export default function Profile({ user, apiConnected, onNavigate, username }) {
         };
 
         loadAdmins();
-    }, [isAdminUser, apiConnected]);
+    }, [isAdminUser, apiConnected, user?.telegram_id, user?.id]);
 
     // Получаем название вебинара по webinar_id
     const getWebinarTitle = (webinarId) => {
@@ -256,6 +256,10 @@ export default function Profile({ user, apiConnected, onNavigate, username }) {
                             <span className="info-label">Роль:</span>
                             <span className="info-value">{user.role || 'Пользователь'}</span>
                         </div>
+                        <div className="info-row">
+                            <span className="info-label">Доступ:</span>
+                            <span className="info-value">{user?.has_paid_access ? 'Активен' : 'Стандарт'}</span>
+                        </div>
                     </div>
                 </div>
 
@@ -310,7 +314,6 @@ export default function Profile({ user, apiConnected, onNavigate, username }) {
                         <div className="bookings-list">
                             {bookings.webinars.map(booking => {
                                 const webinar = webinars.find(w => w.id === booking.webinar_id);
-                                const isPaid = booking.payment_status === 'paid';
                                 return (
                                     <div key={booking.id} className="user-booking-card">
                                         <div className="booking-header">
@@ -318,14 +321,14 @@ export default function Profile({ user, apiConnected, onNavigate, username }) {
                                                 {getWebinarTitle(booking.webinar_id)}
                                             </h3>
                                             <span className={`booking-status ${booking.status === 'confirmed' || booking.status === 'paid' ? 'confirmed' : ''}`}>
-                                                {isPaid ? '✓ Оплачено' : booking.status === 'confirmed' ? '✓ Подтверждено' : booking.status}
+                                                {booking.status === 'confirmed' ? '✓ Подтверждено' : booking.status}
                                             </span>
                                         </div>
                                         <div className="booking-details">
                                             <span className="booking-date">📅 {formatDate(booking.date)}</span>
                                             {webinar?.time && <span className="booking-time">🕐 {webinar.time}</span>}
                                         </div>
-                                        {webinar?.meeting_link && isPaid && (
+                                        {webinar?.meeting_link && (
                                             <div className="booking-meeting-link">
                                                 <a 
                                                     href={webinar.meeting_link} 
@@ -337,7 +340,7 @@ export default function Profile({ user, apiConnected, onNavigate, username }) {
                                                 </a>
                                             </div>
                                         )}
-                                        {webinar?.recording_link && (isPaid || (!webinar.price_usd && !webinar.price_eur)) && (
+                                        {webinar?.recording_link && (
                                             <div className="booking-recording-link">
                                                 <a 
                                                     href={webinar.recording_link} 
@@ -356,7 +359,7 @@ export default function Profile({ user, apiConnected, onNavigate, username }) {
                     ) : (
                         <div className="empty-state">
                             <p>Вы еще не записаны ни на один вебинар</p>
-                            {apiConnected && <p className="empty-hint">Перейдите во вкладку "Vebinars" чтобы выбрать вебинар</p>}
+                            {apiConnected && <p className="empty-hint">Перейдите во вкладку «Вебинары», чтобы выбрать вебинар</p>}
                         </div>
                     )}
                 </div>

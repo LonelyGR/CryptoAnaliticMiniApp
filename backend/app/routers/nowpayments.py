@@ -15,6 +15,7 @@ from app.models.booking import Booking
 from app.models.nowpayments_ipn_event import NowPaymentsIpnEvent
 from app.models.nowpayments_payment import NowPaymentsPayment
 from app.models.payment import Payment as PaymentModel
+from app.models.user_entitlement import UserEntitlement
 from app.schemas.nowpayments import CreatePaymentRequest, CreatePaymentResponse, PaymentStatusMinimal
 from app.utils.security import verify_nowpayments_signature
 
@@ -22,6 +23,8 @@ from app.utils.security import verify_nowpayments_signature
 logger = logging.getLogger("nowpayments")
 
 router = APIRouter(prefix="/payments", tags=["payments"])
+
+PAID_ACCESS_ENTITLEMENT = "paid_access"
 
 
 def get_db():
@@ -230,6 +233,16 @@ def apply_finished_status(
         if payload.get("price_amount"):
             booking.amount = payload.get("price_amount")
 
+        # Standalone payment (not webinar): выдаём роль/доступ пользователю
+        if (booking.type or "").lower() == "payment":
+            exists = (
+                db.query(UserEntitlement)
+                .filter(UserEntitlement.user_id == booking.user_id, UserEntitlement.code == PAID_ACCESS_ENTITLEMENT)
+                .first()
+            )
+            if not exists:
+                db.add(UserEntitlement(user_id=booking.user_id, code=PAID_ACCESS_ENTITLEMENT))
+
     db.commit()
 
 
@@ -249,6 +262,13 @@ def create_payment(payload: CreatePaymentRequest, db: Session = Depends(get_db))
     if not ipn_callback_url:
         raise HTTPException(status_code=500, detail="NOWPAYMENTS_IPN_CALLBACK_URL is not configured")
 
+    # Вебинары бесплатные — оплата вебинаров отключена
+    booking_id = parse_booking_id(payload.order_id)
+    if booking_id:
+        booking = db.query(Booking).filter(Booking.id == booking_id).first()
+        if booking and (booking.type or "").lower() == "webinar":
+            raise HTTPException(status_code=400, detail="Вебинары бесплатные — оплата не требуется")
+
     request_payload = {
         "price_amount": payload.amount,
         "price_currency": payload.price_currency,
@@ -267,7 +287,6 @@ def create_payment(payload: CreatePaymentRequest, db: Session = Depends(get_db))
         pay_currency=data.get("pay_currency"),
     )
 
-    booking_id = parse_booking_id(payload.order_id)
     if booking_id:
         booking = db.query(Booking).filter(Booking.id == booking_id).first()
         if booking:

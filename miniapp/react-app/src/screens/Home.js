@@ -3,7 +3,8 @@ import CopyTradingHeader from '../components/CopyTradingHeader';
 // import PromoBanner from '../components/PromoBanner';
 import CryptoCard from '../components/CryptoCard';
 import ScreenWrapper from '../components/ScreenWrapper';
-import { getPosts } from '../services/api';
+import PaymentFlow from '../components/PaymentFlow';
+import { createBooking, getPosts, getUserByTelegramId } from '../services/api';
 
 // Popular cryptocurrencies to fetch from Binance
 const BINANCE_SYMBOLS = [
@@ -21,6 +22,7 @@ export default function Home({ user, apiConnected, dbUser }) {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [aboutModalOpen, setAboutModalOpen] = useState(false);
+    const [paymentContext, setPaymentContext] = useState(null);
     const [posts, setPosts] = useState([]);
     // Admin actions were moved to backend admin panel (/admin)
     const touchStartX = useRef(null);
@@ -180,6 +182,72 @@ export default function Home({ user, apiConnected, dbUser }) {
         });
     };
 
+    const resolveManagerLink = () => {
+        const raw = (process.env.REACT_APP_MANAGER_TELEGRAM || '').trim();
+        if (!raw) return '';
+        if (raw.startsWith('http://') || raw.startsWith('https://')) return raw;
+        if (raw.startsWith('@')) return `https://t.me/${raw.slice(1)}`;
+        return `https://t.me/${raw}`;
+    };
+
+    const handleContactManager = () => {
+        const url = resolveManagerLink();
+        if (!url) {
+            alert('Контакт менеджера не настроен (REACT_APP_MANAGER_TELEGRAM)');
+            return;
+        }
+        if (window.Telegram?.WebApp?.openTelegramLink) {
+            window.Telegram.WebApp.openTelegramLink(url);
+        } else if (window.Telegram?.WebApp?.openLink) {
+            window.Telegram.WebApp.openLink(url);
+        } else {
+            window.open(url, '_blank', 'noopener,noreferrer');
+        }
+    };
+
+    const handlePay = async () => {
+        if (!apiConnected) {
+            alert('Сервер недоступен. Оплата временно невозможна.');
+            return;
+        }
+
+        const telegramId = user?.telegram_id || user?.id;
+        if (!telegramId) {
+            alert('Пользователь не найден. Перезагрузите мини‑приложение.');
+            return;
+        }
+
+        try {
+            const ensuredDbUser = dbUser || await getUserByTelegramId(telegramId);
+            if (!ensuredDbUser?.id) {
+                alert('Пользователь не найден в базе данных. Перезагрузите мини‑приложение.');
+                return;
+            }
+
+            const today = new Date().toISOString().slice(0, 10);
+            const booking = await createBooking({
+                user_id: ensuredDbUser.id,
+                type: 'payment',
+                date: today,
+                status: 'pending',
+                topic: 'Оплата',
+                message: 'Оплата 590 USDT (TRC20)',
+            });
+
+            setAboutModalOpen(false);
+            setPaymentContext({
+                orderId: `booking-${booking.id}`,
+                amount: 590,
+                priceCurrency: 'usd',
+                webinarTitle: 'Оплата',
+                paymentId: booking?.payment_id || null,
+            });
+        } catch (e) {
+            console.error('Failed to start payment:', e);
+            alert('Не удалось создать оплату. Попробуйте позже.');
+        }
+    };
+
     return (
         <ScreenWrapper>
             <CopyTradingHeader user={user} username={user?.first_name} onDepositClick={handleDepositClick} />
@@ -261,6 +329,26 @@ export default function Home({ user, apiConnected, dbUser }) {
                                                 <li>Детализированные отчеты и поддержка 24/7.</li>
                                                 <li>Фокус на безопасности, прозрачности и росте капитала клиента.</li>
                                             </ul>
+                                        </div>
+
+                                        <div className="neo-modal-section">
+                                            <h3>Действия</h3>
+                                            <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+                                                <button
+                                                    type="button"
+                                                    className="neo-card-cta"
+                                                    onClick={handlePay}
+                                                >
+                                                    Pay · 590 USDT (TRC20)
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    className="neo-card-cta"
+                                                    onClick={handleContactManager}
+                                                >
+                                                    Contact Manager
+                                                </button>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
@@ -346,6 +434,35 @@ export default function Home({ user, apiConnected, dbUser }) {
                     )}
                 </section>
             </div>
+
+            {paymentContext && (
+                <div className="modal-overlay" onClick={() => setPaymentContext(null)}>
+                    <div className="modal-content" onClick={(event) => event.stopPropagation()}>
+                        <div className="modal-header">
+                            <h2>Оплата</h2>
+                            <button
+                                className="modal-close"
+                                type="button"
+                                onClick={() => setPaymentContext(null)}
+                                aria-label="Закрыть"
+                            >
+                                ×
+                            </button>
+                        </div>
+                        <div className="modal-body">
+                            <PaymentFlow
+                                orderId={paymentContext.orderId}
+                                amount={paymentContext.amount}
+                                priceCurrency={paymentContext.priceCurrency}
+                                fixedPayCurrency="usdttrc20"
+                                paymentId={paymentContext.paymentId}
+                                webinarTitle={paymentContext.webinarTitle}
+                                onClose={() => setPaymentContext(null)}
+                            />
+                        </div>
+                    </div>
+                </div>
+            )}
         </ScreenWrapper>
     );
 }

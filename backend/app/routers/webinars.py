@@ -61,7 +61,11 @@ def create_webinar(
     admin = check_admin_access(request, admin_telegram_id, db)
     
     # Создаем вебинар
-    db_webinar = Webinar(**webinar.model_dump())
+    data = webinar.model_dump()
+    # Вебинары бесплатные — цены игнорируем
+    data["price_usd"] = 0.0
+    data["price_eur"] = 0.0
+    db_webinar = Webinar(**data)
     db.add(db_webinar)
     db.commit()
     db.refresh(db_webinar)
@@ -71,7 +75,7 @@ def create_webinar(
         f"📌 Тема: <b>{db_webinar.title}</b>\n"
         f"🗓 Дата: <b>{db_webinar.date}</b>\n"
         f"⏰ Время: <b>{db_webinar.time}</b>\n"
-        f"💳 Цена: <b>${db_webinar.price_usd:.2f}</b>"
+        f"🆓 Доступ: <b>бесплатно</b>"
     )
     # Use resolved admin id (works with Telegram initData auth)
     send_telegram_message(admin.telegram_id, admin_message)
@@ -114,8 +118,11 @@ def update_webinar(
     if not db_webinar:
         raise HTTPException(status_code=404, detail="Webinar not found")
     
-    # Обновляем данные
-    for key, value in webinar.model_dump().items():
+    # Обновляем данные (вебинары бесплатные — цены игнорируем)
+    data = webinar.model_dump()
+    data["price_usd"] = 0.0
+    data["price_eur"] = 0.0
+    for key, value in data.items():
         setattr(db_webinar, key, value)
     
     db.commit()

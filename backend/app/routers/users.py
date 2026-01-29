@@ -5,10 +5,13 @@ from typing import List, Optional
 from app.database import SessionLocal
 from app.models.user import User
 from app.models.admin import Admin
+from app.models.user_entitlement import UserEntitlement
 from app.schemas.user import UserCreate, UserResponse, UserUpdate
 from app.utils.telegram_webapp import resolve_admin_telegram_id
 
 router = APIRouter(prefix="/users", tags=["users"])
+
+PAID_ACCESS_ENTITLEMENT = "paid_access"
 
 
 def get_db():
@@ -27,6 +30,12 @@ def get_users(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
     result = []
     for user in users:
         admin = db.query(Admin).filter(Admin.telegram_id == user.telegram_id).first()
+        has_paid_access = (
+            db.query(UserEntitlement)
+            .filter(UserEntitlement.user_id == user.id, UserEntitlement.code == PAID_ACCESS_ENTITLEMENT)
+            .first()
+            is not None
+        )
         user_dict = {
             "id": user.id,
             "telegram_id": user.telegram_id,
@@ -38,7 +47,9 @@ def get_users(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
             "referred_by_telegram_id": user.referred_by_telegram_id,
             "is_blocked": user.is_blocked,
             "is_admin": admin is not None,
-            "role": admin.role if admin else None
+            "role": admin.role if admin else None,
+            "client_role": "member" if has_paid_access else None,
+            "has_paid_access": has_paid_access,
         }
         result.append(user_dict)
     return result
@@ -52,6 +63,12 @@ def get_user_by_telegram_id(telegram_id: int, db: Session = Depends(get_db)):
     
     # Проверяем, является ли пользователь админом
     admin = db.query(Admin).filter(Admin.telegram_id == telegram_id).first()
+    has_paid_access = (
+        db.query(UserEntitlement)
+        .filter(UserEntitlement.user_id == user.id, UserEntitlement.code == PAID_ACCESS_ENTITLEMENT)
+        .first()
+        is not None
+    )
     
     # Создаем ответ с информацией об админстве
     user_dict = {
@@ -65,7 +82,9 @@ def get_user_by_telegram_id(telegram_id: int, db: Session = Depends(get_db)):
         "referred_by_telegram_id": user.referred_by_telegram_id,
         "is_blocked": user.is_blocked,
         "is_admin": admin is not None,
-        "role": admin.role if admin else None
+        "role": admin.role if admin else None,
+        "client_role": "member" if has_paid_access else None,
+        "has_paid_access": has_paid_access,
     }
     return user_dict
 
@@ -78,6 +97,12 @@ def get_user(user_id: int, db: Session = Depends(get_db)):
     
     # Проверяем, является ли пользователь админом
     admin = db.query(Admin).filter(Admin.telegram_id == user.telegram_id).first()
+    has_paid_access = (
+        db.query(UserEntitlement)
+        .filter(UserEntitlement.user_id == user.id, UserEntitlement.code == PAID_ACCESS_ENTITLEMENT)
+        .first()
+        is not None
+    )
     
     # Создаем ответ с информацией об админстве
     user_dict = {
@@ -91,7 +116,9 @@ def get_user(user_id: int, db: Session = Depends(get_db)):
         "referred_by_telegram_id": user.referred_by_telegram_id,
         "is_blocked": user.is_blocked,
         "is_admin": admin is not None,
-        "role": admin.role if admin else None
+        "role": admin.role if admin else None,
+        "client_role": "member" if has_paid_access else None,
+        "has_paid_access": has_paid_access,
     }
     return user_dict
 
@@ -116,6 +143,12 @@ def create_user(user: UserCreate, db: Session = Depends(get_db)):
         
         # Проверяем, является ли пользователь админом
         admin = db.query(Admin).filter(Admin.telegram_id == existing_user.telegram_id).first()
+        has_paid_access = (
+            db.query(UserEntitlement)
+            .filter(UserEntitlement.user_id == existing_user.id, UserEntitlement.code == PAID_ACCESS_ENTITLEMENT)
+            .first()
+            is not None
+        )
         return {
             "id": existing_user.id,
             "telegram_id": existing_user.telegram_id,
@@ -127,7 +160,9 @@ def create_user(user: UserCreate, db: Session = Depends(get_db)):
             "referred_by_telegram_id": existing_user.referred_by_telegram_id,
             "is_blocked": existing_user.is_blocked,
             "is_admin": admin is not None,
-            "role": admin.role if admin else None
+            "role": admin.role if admin else None,
+            "client_role": "member" if has_paid_access else None,
+            "has_paid_access": has_paid_access,
         }
     
     # Создаем нового пользователя
@@ -139,6 +174,12 @@ def create_user(user: UserCreate, db: Session = Depends(get_db)):
         
         # Проверяем, является ли пользователь админом
         admin = db.query(Admin).filter(Admin.telegram_id == db_user.telegram_id).first()
+        has_paid_access = (
+            db.query(UserEntitlement)
+            .filter(UserEntitlement.user_id == db_user.id, UserEntitlement.code == PAID_ACCESS_ENTITLEMENT)
+            .first()
+            is not None
+        )
         return {
             "id": db_user.id,
             "telegram_id": db_user.telegram_id,
@@ -150,7 +191,9 @@ def create_user(user: UserCreate, db: Session = Depends(get_db)):
             "referred_by_telegram_id": db_user.referred_by_telegram_id,
             "is_blocked": db_user.is_blocked,
             "is_admin": admin is not None,
-            "role": admin.role if admin else None
+            "role": admin.role if admin else None,
+            "client_role": "member" if has_paid_access else None,
+            "has_paid_access": has_paid_access,
         }
     except Exception as e:
         db.rollback()
@@ -171,6 +214,12 @@ def create_user(user: UserCreate, db: Session = Depends(get_db)):
             db.refresh(existing_user)
             
             admin = db.query(Admin).filter(Admin.telegram_id == existing_user.telegram_id).first()
+            has_paid_access = (
+                db.query(UserEntitlement)
+                .filter(UserEntitlement.user_id == existing_user.id, UserEntitlement.code == PAID_ACCESS_ENTITLEMENT)
+                .first()
+                is not None
+            )
             return {
                 "id": existing_user.id,
                 "telegram_id": existing_user.telegram_id,
@@ -182,7 +231,9 @@ def create_user(user: UserCreate, db: Session = Depends(get_db)):
                 "referred_by_telegram_id": existing_user.referred_by_telegram_id,
                 "is_blocked": existing_user.is_blocked,
                 "is_admin": admin is not None,
-                "role": admin.role if admin else None
+                "role": admin.role if admin else None,
+                "client_role": "member" if has_paid_access else None,
+                "has_paid_access": has_paid_access,
             }
         # Если пользователь все еще не найден, пробрасываем ошибку
         raise HTTPException(status_code=400, detail=f"Failed to create user: {str(e)}")
@@ -264,6 +315,12 @@ def create_or_update_user_by_telegram(
     
     # Проверяем, является ли пользователь админом
     admin = db.query(Admin).filter(Admin.telegram_id == telegram_id).first()
+    has_paid_access = (
+        db.query(UserEntitlement)
+        .filter(UserEntitlement.user_id == existing_user.id, UserEntitlement.code == PAID_ACCESS_ENTITLEMENT)
+        .first()
+        is not None
+    )
     
     # Создаем ответ с информацией об админстве
     user_dict = {
@@ -277,7 +334,9 @@ def create_or_update_user_by_telegram(
         "referred_by_telegram_id": existing_user.referred_by_telegram_id,
         "is_blocked": existing_user.is_blocked,
         "is_admin": admin is not None,
-        "role": admin.role if admin else None
+        "role": admin.role if admin else None,
+        "client_role": "member" if has_paid_access else None,
+        "has_paid_access": has_paid_access,
     }
     return user_dict
 

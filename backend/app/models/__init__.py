@@ -9,6 +9,7 @@ from app.models.webinar_material import WebinarMaterial
 from app.models.nowpayments_payment import NowPaymentsPayment
 from app.models.nowpayments_ipn_event import NowPaymentsIpnEvent
 from app.models.admin_panel_user import AdminPanelUser
+from app.models.user_entitlement import UserEntitlement
 
 __all__ = [
     "User",
@@ -22,5 +23,6 @@ __all__ = [
     "NowPaymentsPayment",
     "NowPaymentsIpnEvent",
     "AdminPanelUser",
+    "UserEntitlement",
 ]
 

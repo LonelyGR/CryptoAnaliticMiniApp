@@ -14,7 +14,17 @@
         </div>
         <div class="field">
           <label>Роль (свободный текст)</label>
-          <input name="role" value="admin" />
+          <input name="role" value="admin" list="roleOptions" />
+          <datalist id="roleOptions">
+            <option value="developer"></option>
+            <option value="admin"></option>
+            <option value="support"></option>
+            <option value="editor"></option>
+            <option value="разработчик"></option>
+            <option value="админ"></option>
+            <option value="поддержка"></option>
+            <option value="редактор"></option>
+          </datalist>
         </div>
         <div class="field">
           <label>Права доступа (переключатели)</label>
@@ -41,7 +51,7 @@
           </div>
         </div>
         <div class="field">
-          <label>Scopes (ручной ввод, опционально)</label>
+          <label>Права (ручной ввод, опционально)</label>
           <input name="scopes" placeholder="posts:view,posts:write, ... или *" />
         </div>
         <button class="btn primary" type="submit">Создать</button>
@@ -50,15 +60,23 @@
 
     <div class="card">
       <h2>Пользователи</h2>
+      <div class="field" style="margin-top: 12px">
+        <label>Поиск</label>
+        <input id="userSearch" placeholder="Логин, роль, scopes…" />
+      </div>
       <div class="user-list">
         {% for u in users %}
-          <details class="card" {% if loop.first %}open{% endif %}>
+          <details
+            class="card"
+            data-search="{{ (u.username ~ ' ' ~ u.role ~ ' ' ~ (u.scopes or '')) | lower }}"
+            {% if loop.first %}open{% endif %}
+          >
             <summary class="user-summary">
               <div class="user-summary__left">
                 <span class="pill">#{{ u.id }}</span>
                 <span class="pill">{{ u.username }}</span>
                 <span class="pill">{{ u.role }}</span>
-                <span class="pill">{{ 'active' if u.is_active else 'inactive' }}</span>
+                <span class="pill">{{ 'активен' if u.is_active else 'выключен' }}</span>
               </div>
               <div class="user-summary__right muted">
                 {{ u.scopes or '— (по роли)' }}
@@ -68,18 +86,18 @@
               <form method="post" action="/admin/users/{{ u.id }}/update" class="user-form">
                 <div class="user-form__row">
                   <div class="field">
-                    <label>Role</label>
-                    <input name="role" value="{{ u.role }}" />
+                    <label>Роль</label>
+                    <input name="role" value="{{ u.role }}" list="roleOptions" />
                   </div>
                   <div class="field">
-                    <label>Scopes (ручной ввод, опционально)</label>
+                    <label>Права (ручной ввод, опционально)</label>
                     <input name="scopes" value="{{ u.scopes or '' }}" placeholder="posts:view,posts:write, ... или *" />
                   </div>
                 </div>
 
                 <div class="perm-actions">
                   <label class="btn"><input type="checkbox" name="perms" value="*" {% if '*' in user_scopes[u.id] %}checked{% endif %} /> полный доступ (*)</label>
-                  <label class="toggle"><input type="checkbox" name="is_active" value="1" {% if u.is_active %}checked{% endif %} /> <strong>active</strong></label>
+                  <label class="toggle"><input type="checkbox" name="is_active" value="1" {% if u.is_active %}checked{% endif %} /> <strong>активен</strong></label>
                   <button class="btn" type="submit">Сохранить</button>
                 </div>
 
@@ -124,5 +142,21 @@
       </div>
     </div>
   </div>
+
+  <script>
+    (function () {
+      var input = document.getElementById('userSearch');
+      if (!input) return;
+      input.addEventListener('input', function () {
+        var q = (input.value || '').trim().toLowerCase();
+        var items = document.querySelectorAll('.user-list details[data-search]');
+        items.forEach(function (el) {
+          var hay = (el.getAttribute('data-search') || '');
+          var ok = !q || hay.indexOf(q) !== -1;
+          el.style.display = ok ? '' : 'none';
+        });
+      });
+    })();
+  </script>
 {% endblock %}
 

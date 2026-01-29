@@ -1,12 +1,12 @@
 {% extends "base.html" %}
 {% block content %}
   <div class="stats">
-    <div class="stat"><div class="stat__label">Users</div><div class="stat__value">{{ counts.users }}</div></div>
-    <div class="stat"><div class="stat__label">Admins</div><div class="stat__value">{{ counts.admins }}</div></div>
-    <div class="stat"><div class="stat__label">Posts</div><div class="stat__value">{{ counts.posts }}</div></div>
-    <div class="stat"><div class="stat__label">Webinars</div><div class="stat__value">{{ counts.webinars }}</div></div>
-    <div class="stat"><div class="stat__label">Bookings</div><div class="stat__value">{{ counts.bookings }}</div></div>
-    <div class="stat"><div class="stat__label">Referrals</div><div class="stat__value">{{ counts.referrals }}</div></div>
+    <div class="stat"><div class="stat__label">Пользователи</div><div class="stat__value">{{ counts.users }}</div></div>
+    <div class="stat"><div class="stat__label">Админы</div><div class="stat__value">{{ counts.admins }}</div></div>
+    <div class="stat"><div class="stat__label">Посты</div><div class="stat__value">{{ counts.posts }}</div></div>
+    <div class="stat"><div class="stat__label">Вебинары</div><div class="stat__value">{{ counts.webinars }}</div></div>
+    <div class="stat"><div class="stat__label">Записи</div><div class="stat__value">{{ counts.bookings }}</div></div>
+    <div class="stat"><div class="stat__label">Рефералы</div><div class="stat__value">{{ counts.referrals }}</div></div>
   </div>
 
   <div class="grid">
@@ -37,10 +37,10 @@
 
   <div class="details">
     <details class="card" open>
-      <summary>Users (последние 20)</summary>
+      <summary>Пользователи (последние 20)</summary>
       <div class="details__body">
         <table class="table">
-          <thead><tr><th>ID</th><th>Telegram</th><th>Username</th><th>Name</th><th>Blocked</th></tr></thead>
+          <thead><tr><th>ID</th><th>Telegram ID</th><th>Username</th><th>Имя</th><th>Блок</th></tr></thead>
           <tbody>
             {% for u in recent_users %}
               <tr>
@@ -48,7 +48,7 @@
                 <td class="muted">{{ u.telegram_id }}</td>
                 <td class="muted">{% if u.username %}@{{ u.username }}{% else %}—{% endif %}</td>
                 <td>{{ u.first_name or '' }} {{ u.last_name or '' }}</td>
-                <td><span class="pill">{{ 'yes' if u.is_blocked else 'no' }}</span></td>
+                <td><span class="pill">{{ 'да' if u.is_blocked else 'нет' }}</span></td>
               </tr>
             {% endfor %}
           </tbody>
@@ -57,10 +57,10 @@
     </details>
 
     <details class="card">
-      <summary>Posts (последние 20)</summary>
+      <summary>Посты (последние 20)</summary>
       <div class="details__body">
         <table class="table">
-          <thead><tr><th>ID</th><th>Title</th><th>Created</th></tr></thead>
+          <thead><tr><th>ID</th><th>Заголовок</th><th>Создано</th></tr></thead>
           <tbody>
             {% for p in recent_posts %}
               <tr><td>{{ p.id }}</td><td><strong>{{ p.title }}</strong></td><td class="muted">{{ p.created_at }}</td></tr>
@@ -71,10 +71,10 @@
     </details>
 
     <details class="card">
-      <summary>Webinars (последние 20)</summary>
+      <summary>Вебинары (последние 20)</summary>
       <div class="details__body">
         <table class="table">
-          <thead><tr><th>ID</th><th>Title</th><th>Date</th><th>Status</th></tr></thead>
+          <thead><tr><th>ID</th><th>Тема</th><th>Дата</th><th>Статус</th></tr></thead>
           <tbody>
             {% for w in recent_webinars %}
               <tr><td>{{ w.id }}</td><td><strong>{{ w.title }}</strong></td><td class="muted">{{ w.date }} {{ w.time }}</td><td><span class="pill">{{ w.status }}</span></td></tr>
@@ -85,10 +85,10 @@
     </details>
 
     <details class="card">
-      <summary>Bookings / Tickets (последние 20)</summary>
+      <summary>Записи / Тикеты (последние 20)</summary>
       <div class="details__body">
         <table class="table">
-          <thead><tr><th>ID</th><th>User ID</th><th>Type</th><th>Status</th><th>Topic</th></tr></thead>
+          <thead><tr><th>ID</th><th>ID пользователя</th><th>Тип</th><th>Статус</th><th>Тема</th></tr></thead>
           <tbody>
             {% for b in recent_bookings %}
               <tr>
@@ -105,10 +105,10 @@
     </details>
 
     <details class="card">
-      <summary>Referrals (последние 20)</summary>
+      <summary>Рефералы (последние 20)</summary>
       <div class="details__body">
         <table class="table">
-          <thead><tr><th>ID</th><th>Referrer</th><th>Referred</th><th>Username</th><th>Created</th></tr></thead>
+          <thead><tr><th>ID</th><th>Пригласивший</th><th>Приглашённый</th><th>Username</th><th>Создано</th></tr></thead>
           <tbody>
             {% for r in recent_referrals %}
               <tr>

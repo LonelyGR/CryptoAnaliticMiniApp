@@ -439,7 +439,6 @@ def admin_webinars_create(
     speaker: str = Form(""),
     status: str = Form("upcoming"),
     description: str = Form(""),
-    price_usd: float = Form(0.0),
     meeting_link: str = Form(""),
 ):
     # date stored as string in schema/model? keep as provided
@@ -451,7 +450,8 @@ def admin_webinars_create(
         speaker=(speaker or "").strip(),
         status=(status or "upcoming").strip(),
         description=(description or "").strip(),
-        price_usd=float(price_usd or 0.0),
+        # Вебинары бесплатные
+        price_usd=0.0,
         price_eur=0.0,
         meeting_link=(meeting_link or "").strip() or None,
         meeting_platform=None,

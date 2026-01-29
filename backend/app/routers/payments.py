@@ -32,7 +32,7 @@ def check_admin_access(request: Request, admin_telegram_id: int | None, db: Sess
 
 @router.post("/", response_model=PaymentResponse)
 def create_payment(payment: PaymentCreate, db: Session = Depends(get_db)):
-    """Создать платеж (доступно всем для оплаты вебинара)"""
+    """Создать платеж (legacy endpoint, используется для бронирований)"""
     # Проверяем, что booking существует
     booking = db.query(Booking).filter(Booking.id == payment.booking_id).first()
     if not booking:

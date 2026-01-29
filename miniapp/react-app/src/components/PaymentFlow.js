@@ -152,7 +152,7 @@ export default function PaymentFlow({
     return () => {
       mounted = false;
     };
-  }, [apiBase, paymentId]);
+  }, [apiBase, headers, paymentId]);
 
   // 2) если paymentId нет — создаём платеж автоматически (один экран, минимум действий)
   useEffect(() => {
@@ -199,7 +199,7 @@ export default function PaymentFlow({
     return () => {
       mounted = false;
     };
-  }, [apiBase, amount, creating, fixedPayCurrency, orderId, payment, paymentId, priceCurrency, webinarTitle]);
+  }, [apiBase, amount, creating, fixedPayCurrency, headers, orderId, payment, paymentId, priceCurrency, webinarTitle]);
 
   // 3) авто-обновление статуса
   useEffect(() => {
@@ -221,7 +221,7 @@ export default function PaymentFlow({
       }
     }, 10000);
     return () => clearInterval(interval);
-  }, [apiBase, isFailure, isSuccess, payment?.payment_id]);
+  }, [apiBase, headers, isFailure, isSuccess, payment?.payment_id]);
 
   const handleCopyAddress = async () => {
     if (!payAddress) return;

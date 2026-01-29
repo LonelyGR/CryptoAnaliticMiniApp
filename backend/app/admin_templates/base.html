@@ -3,13 +3,13 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>{{ title or "Admin" }}</title>
+    <title>{{ title or "Панель администратора" }}</title>
     <link rel="stylesheet" href="/admin/static/admin.css" />
   </head>
   <body>
     <div class="wrap">
       <div class="topbar">
-        <div class="brand">CryptoSensei · Admin</div>
+        <div class="brand">CryptoSensei · Панель</div>
         <div class="topbar__right">
           <div class="nav">
             <a href="/admin/posts" class="{{ 'active' if section=='posts' else '' }}">Посты</a>

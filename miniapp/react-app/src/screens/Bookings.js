@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
 import ScreenWrapper from '../components/ScreenWrapper';
-import PaymentFlow from '../components/PaymentFlow';
 import { getWebinars, createBooking, getUserByTelegramId, getUserBookings, getWebinarMaterials } from '../services/api';
 
 function getDaysUntil(dateString) {
@@ -28,9 +27,6 @@ export default function Bookings({ user, apiConnected }) {
     const [loading, setLoading] = useState(true);
     const [bookingStatus, setBookingStatus] = useState({});
     const [materials, setMaterials] = useState({});
-    const [paymentContext, setPaymentContext] = useState(null);
-    
-    const isDeveloper = ['разработчик', 'developer', 'владелец', 'owner'].includes((user?.role || '').toLowerCase());
 
     const loadUserBookings = async () => {
         if (!apiConnected) return [];
@@ -102,7 +98,7 @@ export default function Bookings({ user, apiConnected }) {
                 return;
             }
 
-            const booking = await createBooking({
+            await createBooking({
                 user_id: dbUser.id,
                 webinar_id: webinar.id,
                 type: 'webinar',
@@ -111,34 +107,13 @@ export default function Bookings({ user, apiConnected }) {
             });
 
             setBookingStatus(prev => ({ ...prev, [webinar.id]: 'booked' }));
-            
-            // Если вебинар платный, переходим к оплате
-            if (!isDeveloper && ((webinar.price_usd && webinar.price_usd > 0) || (webinar.price_eur && webinar.price_eur > 0))) {
-                handlePayment(webinar, booking.id);
-            } else {
-                alert('Вы успешно записались на вебинар!');
-                loadUserBookings();
-            }
+            alert('Вы успешно записались на вебинар!');
+            loadUserBookings();
         } catch (error) {
             console.error('Failed to book webinar:', error);
             setBookingStatus(prev => ({ ...prev, [webinar.id]: 'error' }));
             alert('Не удалось записаться на вебинар. Попробуйте позже.');
         }
-    };
-
-    const handlePayment = async (webinar, bookingId) => {
-        const amount = webinar.price_usd || webinar.price_eur || 0;
-        const priceCurrency = 'usd';
-        const existingPaymentId = bookingId
-            ? userBookings.find(b => b.id === bookingId)?.payment_id
-            : null;
-        setPaymentContext({
-            orderId: `booking-${bookingId}`,
-            amount,
-            priceCurrency,
-            webinarTitle: webinar.title,
-            paymentId: existingPaymentId
-        });
     };
 
     const getUserBookingForWebinar = (webinarId) => {
@@ -189,17 +164,6 @@ export default function Bookings({ user, apiConnected }) {
                                 
                                 {webinar.description && <p className="webinar-description">{webinar.description}</p>}
                                 
-                                {((webinar.price_usd && webinar.price_usd > 0) || (webinar.price_eur && webinar.price_eur > 0)) && (
-                                    <div className="webinar-price">
-                                        💰 Цена: {webinar.price_usd || webinar.price_eur} USDT
-                                    </div>
-                                )}
-                                {((webinar.price_usd && webinar.price_usd > 0) || (webinar.price_eur && webinar.price_eur > 0)) && (
-                                    <div className="webinar-price">
-                                        💳 Оплата: USDT (TRC20)
-                                    </div>
-                                )}
-                                
                                 {webinar.meeting_platform && (
                                     <div className="webinar-platform">
                                         📹 Платформа: {webinar.meeting_platform}
@@ -209,9 +173,7 @@ export default function Bookings({ user, apiConnected }) {
                                 {(() => {
                                     const userBooking = getUserBookingForWebinar(webinar.id);
                                     const isBooked = userBooking || bookingStatus[webinar.id] === 'booked';
-                                    const isPaid = userBooking?.payment_status === 'paid';
-                                    const canAccessWebinar = isDeveloper || isPaid;
-                                    const showJoinSection = canAccessWebinar && (isDeveloper || isBooked);
+                                    const showJoinSection = Boolean(isBooked);
                                     const startAt = getWebinarStartDateTime(webinar);
                                     const joinAvailableAt = new Date(startAt.getTime() - 15 * 60 * 1000);
                                     const now = new Date();
@@ -247,13 +209,6 @@ export default function Bookings({ user, apiConnected }) {
                                                 </div>
                                             )}
                                             
-                                            {!isDeveloper && userBooking && userBooking.payment_status === 'unpaid' && 
-                                             ((webinar.price_usd && webinar.price_usd > 0) || (webinar.price_eur && webinar.price_eur > 0)) && (
-                                                <div className="webinar-payment-pending">
-                                                    ⏳ Ожидается оплата
-                                                </div>
-                                            )}
-                                            
                                             {materials[webinar.id] && materials[webinar.id].length > 0 && (
                                                 <div className="webinar-materials">
                                                     <h4>Материалы:</h4>
@@ -271,7 +226,7 @@ export default function Bookings({ user, apiConnected }) {
                                                 </div>
                                             )}
                                             
-                                            {webinar.recording_link && (isPaid || (!webinar.price_usd && !webinar.price_eur)) && (
+                                            {webinar.recording_link && (
                                                 <div className="webinar-recording">
                                                     <a 
                                                         href={webinar.recording_link} 
@@ -295,30 +250,7 @@ export default function Bookings({ user, apiConnected }) {
                                     {(() => {
                                         const userBooking = getUserBookingForWebinar(webinar.id);
                                         const isBooked = userBooking || bookingStatus[webinar.id] === 'booked';
-                                        const isPaid = userBooking?.payment_status === 'paid';
-                                        
-                                        if (isDeveloper) {
-                                            return <span className="booking-status-paid">✓ Оплачено</span>;
-                                        } else if (isPaid) {
-                                            return <span className="booking-status-paid">✓ Оплачено</span>;
-                                        } else if (!isDeveloper && isBooked && ((webinar.price_usd && webinar.price_usd > 0) || (webinar.price_eur && webinar.price_eur > 0))) {
-                                            // Важно: userBooking может быть ещё не загружен, даже если статус "booked" уже выставлен
-                                            if (!userBooking?.id) {
-                                                return (
-                                                    <button className="btn-pay" disabled>
-                                                        ⏳ Подготовка оплаты...
-                                                    </button>
-                                                );
-                                            }
-                                            return (
-                                                <button 
-                                                    className="btn-pay"
-                                                    onClick={() => handlePayment(webinar, userBooking.id)}
-                                                >
-                                                    💳 Оплатить сейчас
-                                                </button>
-                                            );
-                                        } else if (isBooked) {
+                                    if (isBooked) {
                                             return <span className="booking-status-confirmed">✓ Записано</span>;
                                         } else {
                                             return (
@@ -338,38 +270,6 @@ export default function Bookings({ user, apiConnected }) {
                     </div>
                 )}
             </div>
-            {paymentContext && (
-                <div className="modal-overlay" onClick={() => setPaymentContext(null)}>
-                    <div className="modal-content" onClick={(event) => event.stopPropagation()}>
-                        <div className="modal-header">
-                            <h2>Оплата: {paymentContext.webinarTitle}</h2>
-                            <button
-                                className="modal-close"
-                                type="button"
-                                onClick={() => setPaymentContext(null)}
-                                aria-label="Закрыть"
-                            >
-                                ×
-                            </button>
-                        </div>
-                        <div className="modal-body">
-                            <PaymentFlow
-                                orderId={paymentContext.orderId}
-                                amount={paymentContext.amount}
-                                priceCurrency={paymentContext.priceCurrency}
-                                fixedPayCurrency="usdttrc20"
-                                paymentId={paymentContext.paymentId}
-                                onClose={() => setPaymentContext(null)}
-                                onComplete={(payment, success) => {
-                                    if (success) {
-                                        loadUserBookings();
-                                    }
-                                }}
-                            />
-                        </div>
-                    </div>
-                </div>
-            )}
         </ScreenWrapper>
     );
 }
