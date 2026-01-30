@@ -72,6 +72,24 @@ function readTelegramInitData() {
   }
 }
 
+function debugTgAuthLog(where, initData) {
+  // Build-time flag (React env vars are build-time)
+  if (process.env.REACT_APP_DEBUG_TELEGRAM_AUTH !== '1') return;
+  try {
+    const unsafeUserId = window.Telegram?.WebApp?.initDataUnsafe?.user?.id;
+    const prefix = initData ? `${initData.slice(0, 24)}…` : '';
+    // Never print full initData
+    // eslint-disable-next-line no-console
+    console.debug('[tg-auth]', where, {
+      initDataLen: initData ? initData.length : 0,
+      initDataPrefix: prefix,
+      unsafeUserId,
+    });
+  } catch {
+    // ignore
+  }
+}
+
 export default function PaymentFlow({
   orderId,
   amount,
@@ -98,6 +116,7 @@ export default function PaymentFlow({
   const buildHeaders = () => {
     const h = { 'Content-Type': 'application/json' };
     const tgInitData = readTelegramInitData();
+    debugTgAuthLog('PaymentFlow.buildHeaders', tgInitData);
     if (tgInitData) h['X-Telegram-Init-Data'] = tgInitData;
     return h;
   };
@@ -191,13 +210,13 @@ export default function PaymentFlow({
       setError(null);
       try {
         const tgInitData = readTelegramInitData();
+        debugTgAuthLog('PaymentFlow.create.beforeFetch', tgInitData);
         const body = {
           amount,
           price_currency: priceCurrency,
           pay_currency: fixedPayCurrency,
           ...(orderId ? { order_id: orderId } : {}),
           order_description: orderDescription || title || webinarTitle || (orderId ? `Order ${orderId}` : 'Order'),
-          ...(tgInitData ? { telegram_init_data: tgInitData } : {}),
         };
         const resp = await fetchWithTimeout(`${apiBase}${createPath}`, {
           method: 'POST',

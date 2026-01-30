@@ -10,6 +10,17 @@ import urllib.parse
 from fastapi import HTTPException, Request
 
 
+def _debug_enabled() -> bool:
+    return os.getenv("DEBUG_TELEGRAM_AUTH") == "1"
+
+
+def _safe_prefix(value: str, n: int = 80) -> str:
+    value = value or ""
+    if len(value) <= n:
+        return value
+    return value[:n] + "…"
+
+
 def _parse_init_data(init_data: str) -> dict[str, str]:
     # initData приходит как querystring (urlencoded), напр: "query_id=...&user=...&auth_date=...&hash=..."
     parsed = urllib.parse.parse_qs(init_data, strict_parsing=False, keep_blank_values=True)
@@ -45,12 +56,41 @@ def verify_telegram_webapp_init_data(init_data: str, bot_token: str) -> dict:
     data = _parse_init_data(init_data)
     received_hash = (data.get("hash") or "").strip()
     if not received_hash:
+        if _debug_enabled():
+            keys = sorted(list(data.keys()))
+            raise HTTPException(
+                status_code=401,
+                detail=f"Missing Telegram initData hash (keys={keys})",
+            )
         raise HTTPException(status_code=401, detail="Missing Telegram initData hash")
 
     secret_key = hashlib.sha256(bot_token.encode("utf-8")).digest()
     data_check_string = _build_data_check_string(data).encode("utf-8")
     calculated_hash = hmac.new(secret_key, data_check_string, hashlib.sha256).hexdigest()
     if not hmac.compare_digest(calculated_hash, received_hash):
+        if _debug_enabled():
+            # DO NOT log full initData. Only a safe prefix & metadata.
+            keys = sorted([k for k in data.keys()])
+            user_raw = data.get("user") or ""
+            user_id = None
+            try:
+                user_obj = json.loads(user_raw) if user_raw else None
+                if isinstance(user_obj, dict):
+                    user_id = user_obj.get("id")
+            except Exception:
+                user_id = None
+
+            raise HTTPException(
+                status_code=401,
+                detail=(
+                    "Invalid Telegram initData signature "
+                    f"(init_len={len(init_data)} init_prefix={_safe_prefix(init_data)!r} "
+                    f"keys={keys} has_hash={'hash' in data} "
+                    f"user_id={user_id} "
+                    f"received_hash={received_hash[:10]} computed_hash={calculated_hash[:10]} "
+                    f"bot_token_sha256={hashlib.sha256(bot_token.encode('utf-8')).hexdigest()[:12]})"
+                ),
+            )
         raise HTTPException(status_code=401, detail="Invalid Telegram initData signature")
 
     # optional TTL check

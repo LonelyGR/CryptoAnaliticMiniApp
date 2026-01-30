@@ -17,8 +17,29 @@ function getTelegramInitData() {
   }
 }
 
+let _tgAuthLoggedOnce = false;
+function debugTgAuthLog(where, initData) {
+  if (process.env.REACT_APP_DEBUG_TELEGRAM_AUTH !== '1') return;
+  if (_tgAuthLoggedOnce) return;
+  _tgAuthLoggedOnce = true;
+  try {
+    const unsafeUserId = window.Telegram?.WebApp?.initDataUnsafe?.user?.id;
+    const prefix = initData ? `${initData.slice(0, 24)}…` : '';
+    // Never print full initData
+    // eslint-disable-next-line no-console
+    console.debug('[tg-auth]', where, {
+      initDataLen: initData ? initData.length : 0,
+      initDataPrefix: prefix,
+      unsafeUserId,
+    });
+  } catch {
+    // ignore
+  }
+}
+
 function buildHeaders(extra = {}) {
   const initData = getTelegramInitData();
+  debugTgAuthLog('api.buildHeaders', initData);
   return {
     'Content-Type': 'application/json',
     ...(initData ? { 'X-Telegram-Init-Data': initData } : {}),
