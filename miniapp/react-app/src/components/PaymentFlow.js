@@ -78,6 +78,26 @@ async function readJsonWithTimeout(resp, timeoutMs = BODY_TIMEOUT_MS) {
   }
 }
 
+function readPaymentFromHeaders(resp) {
+  try {
+    const pid = resp.headers.get('X-Payment-Id') || resp.headers.get('x-payment-id');
+    if (!pid) return null;
+    const payAddress = resp.headers.get('X-Pay-Address') || resp.headers.get('x-pay-address') || '';
+    const payAmountRaw = resp.headers.get('X-Pay-Amount') || resp.headers.get('x-pay-amount');
+    const payCurrency = resp.headers.get('X-Pay-Currency') || resp.headers.get('x-pay-currency') || 'usdttrc20';
+    const payAmount = payAmountRaw != null && payAmountRaw !== '' ? Number(payAmountRaw) : null;
+    return {
+      payment_id: Number(pid),
+      pay_address: payAddress,
+      pay_amount: Number.isFinite(payAmount) ? payAmount : null,
+      pay_currency: payCurrency,
+      payment_status: 'waiting',
+    };
+  } catch {
+    return null;
+  }
+}
+
 function readTelegramInitData() {
   try {
     return (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initData) || '';
@@ -256,7 +276,21 @@ export default function PaymentFlow({
           headers: buildHeaders(),
           body: JSON.stringify(body),
         });
-        const data = await readJsonWithTimeout(resp).catch(() => ({}));
+        // Prefer body JSON, but if WebView hangs on body reading, fallback to headers.
+        let data = {};
+        try {
+          data = await readJsonWithTimeout(resp);
+        } catch (e) {
+          data = {};
+          if (process.env.REACT_APP_DEBUG_TELEGRAM_AUTH === '1') {
+            // eslint-disable-next-line no-console
+            console.debug('[pay]', 'readJsonWithTimeout failed', e?.message);
+          }
+        }
+        if (!data || !data.payment_id) {
+          const headerPayment = readPaymentFromHeaders(resp);
+          if (headerPayment) data = headerPayment;
+        }
         if (!resp.ok) {
           const detail = data?.detail || data?.message;
           throw new Error(detail || 'Не удалось создать платеж');

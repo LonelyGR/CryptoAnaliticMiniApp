@@ -3,8 +3,9 @@ from __future__ import annotations
 import json
 import logging
 import os
+from datetime import datetime, timedelta, timezone
 
-from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi import APIRouter, Depends, HTTPException, Request, Response
 from sqlalchemy.orm import Session
 
 from app.database import SessionLocal
@@ -32,6 +33,7 @@ def create_product_payment(
     payload: ProductPaymentCreateRequest,
     request: Request,
     admin_telegram_id: int | None = None,
+    response: Response | None = None,
     db: Session = Depends(get_db),
 ):
     """
@@ -71,6 +73,49 @@ def create_product_payment(
         db.add(user)
         db.commit()
         db.refresh(user)
+
+    # Idempotency / anti-duplicate:
+    # If WebView re-mounts and re-sends create, return a recent pending purchase for this user.
+    try:
+        cutoff = datetime.now(timezone.utc) - timedelta(minutes=30)
+        recent = (
+            db.query(ProductPurchase)
+            .filter(
+                ProductPurchase.user_id == user.id,
+                ProductPurchase.created_at >= cutoff,
+                ProductPurchase.status.in_(["pending", "waiting", "confirming"]),
+            )
+            .order_by(ProductPurchase.id.desc())
+            .first()
+        )
+        if recent and recent.nowpayments_payment_id and recent.pay_address and recent.pay_amount:
+            resp_obj = ProductPaymentCreateResponse(
+                purchase_id=recent.id,
+                order_id=recent.order_id,
+                payment_id=int(recent.nowpayments_payment_id),
+                pay_address=recent.pay_address,
+                pay_amount=recent.pay_amount,
+                pay_currency=recent.pay_currency,
+                payment_status=recent.status,
+                expiration_estimate_date=None,
+                invoice_url=None,
+            )
+            # Provide critical values via headers too (so frontend can use without reading body).
+            if response is not None:
+                response.headers["X-Payment-Id"] = str(resp_obj.payment_id)
+                response.headers["X-Pay-Address"] = resp_obj.pay_address or ""
+                response.headers["X-Pay-Amount"] = str(resp_obj.pay_amount or "")
+                response.headers["X-Pay-Currency"] = (resp_obj.pay_currency or "").lower()
+            logger.info(
+                "product_payments.create reuse purchase_id=%s payment_id=%s order_id=%s",
+                recent.id,
+                recent.nowpayments_payment_id,
+                recent.order_id,
+            )
+            return resp_obj
+    except Exception:
+        # never block payment creation on idempotency logic
+        pass
 
     # Normalize price_currency for NOWPayments (see earlier issue with USDT -> USDTTRC20 estimate)
     price_currency = (payload.price_currency or "").strip().lower()
@@ -127,7 +172,7 @@ def create_product_payment(
     db.commit()
     db.refresh(purchase)
 
-    return ProductPaymentCreateResponse(
+    resp_obj = ProductPaymentCreateResponse(
         purchase_id=purchase.id,
         order_id=purchase.order_id,
         payment_id=int(data["payment_id"]),
@@ -138,4 +183,17 @@ def create_product_payment(
         expiration_estimate_date=data.get("expiration_estimate_date"),
         invoice_url=data.get("invoice_url") or data.get("payment_url"),
     )
+
+    # Provide critical values via headers too (so frontend can use without reading body).
+    if response is not None:
+        response.headers["X-Payment-Id"] = str(resp_obj.payment_id)
+        response.headers["X-Pay-Address"] = resp_obj.pay_address or ""
+        response.headers["X-Pay-Amount"] = str(resp_obj.pay_amount or "")
+        response.headers["X-Pay-Currency"] = (resp_obj.pay_currency or "").lower()
+
+    logger.info(
+        "product_payments.create response_keys=%s",
+        ["purchase_id", "order_id", "payment_id", "pay_address", "pay_amount", "pay_currency", "payment_status", "expiration_estimate_date", "invoice_url"],
+    )
+    return resp_obj
 
