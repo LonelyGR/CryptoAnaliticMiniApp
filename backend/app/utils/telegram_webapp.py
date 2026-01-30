@@ -64,13 +64,20 @@ def verify_telegram_webapp_init_data(init_data: str, bot_token: str) -> dict:
             )
         raise HTTPException(status_code=401, detail="Missing Telegram initData hash")
 
-    # Telegram WebApp signing (current):
-    # secret_key = HMAC_SHA256(key=bot_token, msg="WebAppData")
-    # hash = HMAC_SHA256(key=secret_key, msg=data_check_string)
+    # Telegram Mini Apps (WebApp) validation using bot token:
+    # - Exclude ONLY "hash" from data_check_string
+    # - "signature" (if present) MUST be INCLUDED (it is excluded only in public-key validation mode)
+    #
+    # Algorithm (see Telegram Mini Apps docs):
+    # 1) secret_key = HMAC_SHA256(key="WebAppData", msg=bot_token)
+    # 2) computed_hash = HMAC_SHA256(key=secret_key, msg=data_check_string)
+    #
+    # Note: many examples show it as HMAC(bot_token, "WebAppData") for step (1).
+    # HMAC is not symmetric; the correct form is key="WebAppData", msg=bot_token.
     data_check_string_raw = _build_data_check_string(data)
     data_check_string = data_check_string_raw.encode("utf-8")
 
-    secret_key = hmac.new(bot_token.encode("utf-8"), b"WebAppData", hashlib.sha256).digest()
+    secret_key = hmac.new(b"WebAppData", bot_token.encode("utf-8"), hashlib.sha256).digest()
     calculated_hash = hmac.new(secret_key, data_check_string, hashlib.sha256).hexdigest()
 
     # Backward compatibility (legacy implementations used sha256(bot_token) as secret_key)
@@ -96,6 +103,7 @@ def verify_telegram_webapp_init_data(init_data: str, bot_token: str) -> dict:
                     "Invalid Telegram initData signature "
                     f"(init_len={len(init_data)} init_prefix={_safe_prefix(init_data)!r} "
                     f"keys={keys} has_hash={'hash' in data} "
+                    f"data_check_prefix={_safe_prefix(data_check_string_raw, 80)!r} "
                     f"user_id={user_id} "
                     f"received_hash={received_hash[:10]} computed_hash={calculated_hash[:10]} legacy_hash={legacy_hash[:10]} "
                     f"bot_token_sha256={hashlib.sha256(bot_token.encode('utf-8')).hexdigest()[:12]})"

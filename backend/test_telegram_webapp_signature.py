@@ -33,10 +33,10 @@ def _build_data_check_string(data: dict[str, str]) -> str:
 def sign_webapp_init_data(fields: dict[str, str], bot_token: str) -> str:
     """
     Telegram WebApp:
-      secret_key = HMAC_SHA256(key=bot_token, msg="WebAppData")
+      secret_key = HMAC_SHA256(key="WebAppData", msg=bot_token)
       hash = HMAC_SHA256(key=secret_key, msg=data_check_string)
     """
-    secret_key = hmac.new(bot_token.encode("utf-8"), b"WebAppData", hashlib.sha256).digest()
+    secret_key = hmac.new(b"WebAppData", bot_token.encode("utf-8"), hashlib.sha256).digest()
     dcs = _build_data_check_string(fields).encode("utf-8")
     signature = hmac.new(secret_key, dcs, hashlib.sha256).hexdigest()
     payload = dict(fields)
@@ -58,9 +58,18 @@ def main() -> None:
         "auth_date": str(now),
     }
 
+    # initData can include "signature" param in modern Telegram Mini Apps.
+    # It MUST be included into data_check_string for bot-token validation.
+    fields_with_signature = dict(fields)
+    fields_with_signature["signature"] = "dummy_signature_value"
+
     init_data = sign_webapp_init_data(fields, token)
     parsed_user = verify_telegram_webapp_init_data(init_data, token)
     assert int(parsed_user["id"]) == int(user["id"])
+
+    init_data2 = sign_webapp_init_data(fields_with_signature, token)
+    parsed_user2 = verify_telegram_webapp_init_data(init_data2, token)
+    assert int(parsed_user2["id"]) == int(user["id"])
 
     # Tamper => must fail
     bad = init_data.replace("Test", "Toast")
@@ -71,7 +80,7 @@ def main() -> None:
         pass
 
     print("OK: verify_telegram_webapp_init_data works with generated initData")
-    print("initData length:", len(init_data))
+    print("initData length:", len(init_data), "initData(with signature) length:", len(init_data2))
 
 
 if __name__ == "__main__":

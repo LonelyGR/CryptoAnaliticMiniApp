@@ -7,7 +7,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.exceptions import RequestValidationError
 from fastapi.exception_handlers import request_validation_exception_handler
 
-from app.routers import users, bookings, webinars, admins, posts, payments, webinar_materials, reminders, referrals, nowpayments, admin_panel, product_payments
+from app.routers import users, bookings, webinars, admins, posts, payments, webinar_materials, reminders, referrals, nowpayments, admin_panel, product_payments, debug
 
 from app.database import engine, Base
 from app.models import User, Booking, Webinar, Admin, Post, Payment, WebinarMaterial, ReferralInvite
@@ -72,6 +72,7 @@ app.include_router(referrals.router)
 app.include_router(nowpayments.router)
 app.include_router(admin_panel.router)
 app.include_router(product_payments.router)
+app.include_router(debug.router)
 
 # Static assets for backend admin panel
 _admin_static_dir = os.path.join(os.path.dirname(__file__), "admin_static")
