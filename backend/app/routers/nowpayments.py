@@ -434,14 +434,29 @@ def get_payment_full(payment_id: int, db: Session = Depends(get_db)):
 @router.post("/ipn")
 async def nowpayments_ipn(request: Request, db: Session = Depends(get_db)):
     secret = os.getenv("NOWPAYMENTS_IPN_SECRET", "")
-    signature = request.headers.get("X-NOWPayments-Sig", "")
+    # Read raw body FIRST (must be exact bytes for signature validation)
     raw_body = await request.body()
+    raw_str = raw_body.decode("utf-8", errors="replace")
+
+    # Signature header (case-insensitive in Starlette, but keep explicit fallbacks)
+    signature = (
+        request.headers.get("X-NOWPayments-Sig")
+        or request.headers.get("x-nowpayments-sig")
+        or request.headers.get("X-NowPayments-Sig")
+        or ""
+    )
     try:
-        payload = json.loads(raw_body.decode("utf-8") or "{}")
+        payload = json.loads(raw_str or "{}")
     except json.JSONDecodeError as exc:
         raise HTTPException(status_code=400, detail="Invalid JSON payload") from exc
 
-    signature_valid = verify_nowpayments_signature(payload, signature, secret)
+    signature_valid, sig_debug = verify_nowpayments_signature(
+        raw_body=raw_body,
+        signature=signature,
+        secret=secret,
+        payload=payload,
+        algorithm=os.getenv("NOWPAYMENTS_IPN_ALGO", "sha512"),
+    )
     logger.info(
         "ipn received payment_id=%s status=%s signature_valid=%s",
         payload.get("payment_id"),
@@ -449,7 +464,19 @@ async def nowpayments_ipn(request: Request, db: Session = Depends(get_db)):
         signature_valid,
     )
     if os.getenv("DEBUG_NOWPAYMENTS_IPN") == "1":
-        logger.info("ipn payload: %s", payload)
+        # Safe debug only (no full payload, no secret)
+        logger.info(
+            "ipn sig debug reason=%s algo=%s raw_len=%s secret_len=%s sig_prefix=%s computed_raw_prefix=%s computed_canon_prefix=%s matched=%s keys=%s",
+            sig_debug.get("reason"),
+            sig_debug.get("algo"),
+            sig_debug.get("raw_len"),
+            sig_debug.get("secret_len"),
+            sig_debug.get("received_prefix"),
+            sig_debug.get("computed_raw_prefix"),
+            sig_debug.get("computed_canon_prefix"),
+            sig_debug.get("matched_mode"),
+            sorted(list(payload.keys()))[:25],
+        )
     _store_ipn_event(db, payload, signature, signature_valid)
 
     if not signature_valid:
