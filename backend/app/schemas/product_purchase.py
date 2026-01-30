@@ -11,6 +11,8 @@ class ProductPaymentCreateRequest(BaseModel):
     price_currency: str = Field(default="usd", min_length=2)
     pay_currency: str = Field(default="usdttrc20", min_length=2)
     order_description: Optional[str] = Field(default=None, max_length=255)
+    # Fallback for Telegram WebViews that don't send custom headers reliably.
+    telegram_init_data: Optional[str] = Field(default=None, max_length=4096)
 
 
 class ProductPaymentCreateResponse(BaseModel):

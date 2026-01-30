@@ -12,7 +12,7 @@ from app.models.product_purchase import ProductPurchase
 from app.models.user import User
 from app.schemas.product_purchase import ProductPaymentCreateRequest, ProductPaymentCreateResponse
 from app.routers.nowpayments import nowpayments_request
-from app.utils.telegram_webapp import resolve_admin_telegram_id
+from app.utils.telegram_webapp import resolve_admin_telegram_id, verify_telegram_webapp_init_data
 
 
 logger = logging.getLogger("product_payments")
@@ -44,8 +44,16 @@ def create_product_payment(
         raise HTTPException(status_code=500, detail="NOWPAYMENTS_IPN_CALLBACK_URL is not configured")
 
     # Primary: Telegram WebApp initData header (X-Telegram-Init-Data)
+    # Fallback: telegram_init_data in JSON body (some WebViews strip custom headers)
     # Optional for server-side testing: X-Internal-Key + admin_telegram_id query
-    telegram_id = int(resolve_admin_telegram_id(request, admin_telegram_id, allow_internal=True))
+    try:
+        telegram_id = int(resolve_admin_telegram_id(request, admin_telegram_id, allow_internal=True))
+    except HTTPException as exc:
+        if exc.status_code == 401 and payload.telegram_init_data:
+            user = verify_telegram_webapp_init_data(payload.telegram_init_data, os.getenv("TELEGRAM_BOT_TOKEN", ""))
+            telegram_id = int(user["id"])
+        else:
+            raise
     user = db.query(User).filter(User.telegram_id == telegram_id).first()
     if not user:
         # Minimal create; real fields can be filled by /users/telegram/{id}

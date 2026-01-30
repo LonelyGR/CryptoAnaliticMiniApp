@@ -64,6 +64,14 @@ async function fetchWithTimeout(url, options = {}, timeoutMs = REQUEST_TIMEOUT_M
   }
 }
 
+function readTelegramInitData() {
+  try {
+    return (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initData) || '';
+  } catch {
+    return '';
+  }
+}
+
 export default function PaymentFlow({
   orderId,
   amount,
@@ -87,19 +95,12 @@ export default function PaymentFlow({
   const [expiresAt, setExpiresAt] = useState(null);
   const [nowSec, setNowSec] = useState(Math.floor(Date.now() / 1000));
 
-  const tgInitData = useMemo(() => {
-    try {
-      return (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initData) || '';
-    } catch {
-      return '';
-    }
-  }, []);
-
-  const headers = useMemo(() => {
+  const buildHeaders = () => {
     const h = { 'Content-Type': 'application/json' };
+    const tgInitData = readTelegramInitData();
     if (tgInitData) h['X-Telegram-Init-Data'] = tgInitData;
     return h;
-  }, [tgInitData]);
+  };
 
   const statusView = useMemo(() => getStatusView(payment?.payment_status), [payment?.payment_status]);
   const isSuccess = SUCCESS_STATUSES.has((payment?.payment_status || '').toLowerCase());
@@ -151,7 +152,7 @@ export default function PaymentFlow({
       setLoadingExisting(true);
       setError(null);
       try {
-        const resp = await fetchWithTimeout(`${apiBase}/payments/payment/${paymentId}`, { headers });
+        const resp = await fetchWithTimeout(`${apiBase}/payments/payment/${paymentId}`, { headers: buildHeaders() });
         if (!resp.ok) throw new Error('Не удалось получить платеж');
         const data = await resp.json();
         if (!mounted) return;
@@ -177,7 +178,7 @@ export default function PaymentFlow({
     return () => {
       mounted = false;
     };
-  }, [apiBase, headers, paymentId]);
+  }, [apiBase, paymentId]);
 
   // 2) если paymentId нет — создаём платеж автоматически (один экран, минимум действий)
   useEffect(() => {
@@ -189,16 +190,18 @@ export default function PaymentFlow({
       setCreating(true);
       setError(null);
       try {
+        const tgInitData = readTelegramInitData();
         const body = {
           amount,
           price_currency: priceCurrency,
           pay_currency: fixedPayCurrency,
           ...(orderId ? { order_id: orderId } : {}),
           order_description: orderDescription || title || webinarTitle || (orderId ? `Order ${orderId}` : 'Order'),
+          ...(tgInitData ? { telegram_init_data: tgInitData } : {}),
         };
         const resp = await fetchWithTimeout(`${apiBase}${createPath}`, {
           method: 'POST',
-          headers,
+          headers: buildHeaders(),
           body: JSON.stringify(body),
         });
         const data = await resp.json().catch(() => ({}));
@@ -230,7 +233,7 @@ export default function PaymentFlow({
     return () => {
       mounted = false;
     };
-  }, [apiBase, amount, createPath, creating, fixedPayCurrency, headers, orderDescription, orderId, payment, paymentId, priceCurrency, title, webinarTitle]);
+  }, [apiBase, amount, createPath, creating, fixedPayCurrency, orderDescription, orderId, payment, paymentId, priceCurrency, title, webinarTitle]);
 
   // 3) авто-обновление статуса
   useEffect(() => {
@@ -239,7 +242,7 @@ export default function PaymentFlow({
     const id = payment.payment_id;
     const interval = setInterval(async () => {
       try {
-        const resp = await fetch(`${apiBase}/payments/payment/${id}`, { headers });
+        const resp = await fetch(`${apiBase}/payments/payment/${id}`, { headers: buildHeaders() });
         if (!resp.ok) return;
         const data = await resp.json();
         setPayment((prev) => ({ ...(prev || {}), ...data }));
@@ -252,7 +255,7 @@ export default function PaymentFlow({
       }
     }, 10000);
     return () => clearInterval(interval);
-  }, [apiBase, headers, isFailure, isSuccess, payment?.payment_id]);
+  }, [apiBase, isFailure, isSuccess, payment?.payment_id]);
 
   const handleCopyAddress = async () => {
     if (!payAddress) return;
