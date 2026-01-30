@@ -33,7 +33,7 @@ def create_product_payment(
     payload: ProductPaymentCreateRequest,
     request: Request,
     admin_telegram_id: int | None = None,
-    response: Response | None = None,
+    response: Response = None,
     db: Session = Depends(get_db),
 ):
     """
@@ -101,11 +101,10 @@ def create_product_payment(
                 invoice_url=None,
             )
             # Provide critical values via headers too (so frontend can use without reading body).
-            if response is not None:
-                response.headers["X-Payment-Id"] = str(resp_obj.payment_id)
-                response.headers["X-Pay-Address"] = resp_obj.pay_address or ""
-                response.headers["X-Pay-Amount"] = str(resp_obj.pay_amount or "")
-                response.headers["X-Pay-Currency"] = (resp_obj.pay_currency or "").lower()
+            response.headers["X-Payment-Id"] = str(resp_obj.payment_id)
+            response.headers["X-Pay-Address"] = resp_obj.pay_address or ""
+            response.headers["X-Pay-Amount"] = str(resp_obj.pay_amount or "")
+            response.headers["X-Pay-Currency"] = (resp_obj.pay_currency or "").lower()
             logger.info(
                 "product_payments.create reuse purchase_id=%s payment_id=%s order_id=%s",
                 recent.id,
@@ -185,11 +184,10 @@ def create_product_payment(
     )
 
     # Provide critical values via headers too (so frontend can use without reading body).
-    if response is not None:
-        response.headers["X-Payment-Id"] = str(resp_obj.payment_id)
-        response.headers["X-Pay-Address"] = resp_obj.pay_address or ""
-        response.headers["X-Pay-Amount"] = str(resp_obj.pay_amount or "")
-        response.headers["X-Pay-Currency"] = (resp_obj.pay_currency or "").lower()
+    response.headers["X-Payment-Id"] = str(resp_obj.payment_id)
+    response.headers["X-Pay-Address"] = resp_obj.pay_address or ""
+    response.headers["X-Pay-Amount"] = str(resp_obj.pay_amount or "")
+    response.headers["X-Pay-Currency"] = (resp_obj.pay_currency or "").lower()
 
     logger.info(
         "product_payments.create response_keys=%s",
