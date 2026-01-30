@@ -12,7 +12,7 @@ from app.models.product_purchase import ProductPurchase
 from app.models.user import User
 from app.schemas.product_purchase import ProductPaymentCreateRequest, ProductPaymentCreateResponse
 from app.routers.nowpayments import nowpayments_request
-from app.utils.telegram_webapp import get_request_telegram_user_id
+from app.utils.telegram_webapp import resolve_admin_telegram_id
 
 
 logger = logging.getLogger("product_payments")
@@ -28,7 +28,12 @@ def get_db():
 
 
 @router.post("/create", response_model=ProductPaymentCreateResponse)
-def create_product_payment(payload: ProductPaymentCreateRequest, request: Request, db: Session = Depends(get_db)):
+def create_product_payment(
+    payload: ProductPaymentCreateRequest,
+    request: Request,
+    admin_telegram_id: int | None = None,
+    db: Session = Depends(get_db),
+):
     """
     Create NOWPayments invoice for a product purchase.
     Not related to bookings/webinars.
@@ -38,7 +43,9 @@ def create_product_payment(payload: ProductPaymentCreateRequest, request: Reques
     if not ipn_callback_url:
         raise HTTPException(status_code=500, detail="NOWPAYMENTS_IPN_CALLBACK_URL is not configured")
 
-    telegram_id = int(get_request_telegram_user_id(request))
+    # Primary: Telegram WebApp initData header (X-Telegram-Init-Data)
+    # Optional for server-side testing: X-Internal-Key + admin_telegram_id query
+    telegram_id = int(resolve_admin_telegram_id(request, admin_telegram_id, allow_internal=True))
     user = db.query(User).filter(User.telegram_id == telegram_id).first()
     if not user:
         # Minimal create; real fields can be filled by /users/telegram/{id}
