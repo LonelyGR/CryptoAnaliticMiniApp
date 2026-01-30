@@ -49,6 +49,16 @@ def create_product_payment(
     try:
         telegram_id = int(resolve_admin_telegram_id(request, admin_telegram_id, allow_internal=True))
     except HTTPException as exc:
+        # Safe debug: do not log initData contents, only presence/length + reason.
+        if exc.status_code == 401:
+            hdr_len = len((request.headers.get("X-Telegram-Init-Data") or "").strip())
+            body_len = len((payload.telegram_init_data or "").strip())
+            logger.info(
+                "product_payments.telegram_auth_failed detail=%s header_len=%s body_len=%s",
+                getattr(exc, "detail", "unauthorized"),
+                hdr_len,
+                body_len,
+            )
         if exc.status_code == 401 and payload.telegram_init_data:
             user = verify_telegram_webapp_init_data(payload.telegram_init_data, os.getenv("TELEGRAM_BOT_TOKEN", ""))
             telegram_id = int(user["id"])
