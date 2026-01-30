@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState } from 'react';
 const SUCCESS_STATUSES = new Set(['confirmed', 'finished']);
 const FAILURE_STATUSES = new Set(['failed', 'expired', 'refunded']);
 const REQUEST_TIMEOUT_MS = 25000;
+const BODY_TIMEOUT_MS = 15000;
 
 function formatAmount5(value) {
   if (value === null || value === undefined || Number.isNaN(Number(value))) return '—';
@@ -61,6 +62,18 @@ async function fetchWithTimeout(url, options = {}, timeoutMs = REQUEST_TIMEOUT_M
     return await Promise.race([req, timer]);
   } finally {
     if (abortId) clearTimeout(abortId);
+  }
+}
+
+async function readJsonWithTimeout(resp, timeoutMs = BODY_TIMEOUT_MS) {
+  // Some mobile WebViews can hang on resp.json()/resp.text() forever.
+  // Always protect body reading with a hard timeout.
+  const timer = new Promise((_, reject) => setTimeout(() => reject(new Error('timeout_body')), timeoutMs));
+  const text = await Promise.race([resp.text(), timer]);
+  try {
+    return JSON.parse(text || '{}');
+  } catch {
+    return {};
   }
 }
 
@@ -173,7 +186,7 @@ export default function PaymentFlow({
       try {
         const resp = await fetchWithTimeout(`${apiBase}/payments/payment/${paymentId}`, { headers: buildHeaders() });
         if (!resp.ok) throw new Error('Не удалось получить платеж');
-        const data = await resp.json();
+        const data = await readJsonWithTimeout(resp);
         if (!mounted) return;
         setPayment(data);
         if (data?.expiration_estimate_date) {
@@ -223,7 +236,7 @@ export default function PaymentFlow({
           headers: buildHeaders(),
           body: JSON.stringify(body),
         });
-        const data = await resp.json().catch(() => ({}));
+        const data = await readJsonWithTimeout(resp).catch(() => ({}));
         if (!resp.ok) {
           const detail = data?.detail || data?.message;
           throw new Error(detail || 'Не удалось создать платеж');
@@ -263,7 +276,7 @@ export default function PaymentFlow({
       try {
         const resp = await fetch(`${apiBase}/payments/payment/${id}`, { headers: buildHeaders() });
         if (!resp.ok) return;
-        const data = await resp.json();
+        const data = await readJsonWithTimeout(resp);
         setPayment((prev) => ({ ...(prev || {}), ...data }));
         if (data?.expiration_estimate_date) {
           const sec = Math.floor(new Date(data.expiration_estimate_date).getTime() / 1000);
