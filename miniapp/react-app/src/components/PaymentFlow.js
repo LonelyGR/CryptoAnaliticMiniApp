@@ -241,6 +241,10 @@ export default function PaymentFlow({
           const detail = data?.detail || data?.message;
           throw new Error(detail || 'Не удалось создать платеж');
         }
+        // If response is OK but body is empty/unparseable, don't spin forever.
+        if (!data || !data.payment_id) {
+          throw new Error('Некорректный ответ сервера: отсутствует payment_id');
+        }
         if (!mounted) return;
         setPayment(data);
         if (data?.expiration_estimate_date) {
@@ -251,7 +255,7 @@ export default function PaymentFlow({
         }
       } catch (e) {
         if (mounted) {
-          const msg = (e && (e.name === 'AbortError' || e.message === 'timeout'))
+          const msg = (e && (e.name === 'AbortError' || e.message === 'timeout' || e.message === 'timeout_body'))
             ? 'Сервер не ответил вовремя. Попробуйте ещё раз.'
             : (e instanceof Error ? e.message : 'Ошибка создания платежа');
           setError(msg);

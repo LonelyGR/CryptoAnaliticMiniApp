@@ -22,6 +22,10 @@ class ProductPaymentCreateResponse(BaseModel):
     pay_address: Optional[str] = None
     pay_amount: Optional[float] = None
     pay_currency: Optional[str] = None
+    # Optional NOWPayments fields (UI can use them immediately)
+    payment_status: Optional[str] = None
+    expiration_estimate_date: Optional[str] = None
+    invoice_url: Optional[str] = None
 
 
 class ProductPurchaseResponse(BaseModel):

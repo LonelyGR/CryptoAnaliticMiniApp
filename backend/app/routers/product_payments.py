@@ -103,6 +103,21 @@ def create_product_payment(
     logger.info("product_payments.create start order_id=%s user_tg=%s", purchase.order_id, telegram_id)
     data = nowpayments_request("POST", "/payment", json=request_payload)
 
+    # Diagnostics: what we got from NOWPayments and what we return to frontend (no secrets).
+    try:
+        logger.info(
+            "product_payments.create nowpayments payment_id=%s pay_address=%s pay_amount=%s pay_currency=%s status=%s invoice_url=%s keys=%s",
+            data.get("payment_id"),
+            (data.get("pay_address") or "")[:12] + ("…" if data.get("pay_address") else ""),
+            data.get("pay_amount"),
+            data.get("pay_currency"),
+            data.get("payment_status"),
+            data.get("invoice_url") or data.get("payment_url") or None,
+            sorted(list(data.keys()))[:40],
+        )
+    except Exception:
+        pass
+
     purchase.nowpayments_payment_id = str(data.get("payment_id")) if data.get("payment_id") is not None else None
     purchase.pay_address = data.get("pay_address")
     purchase.pay_amount = data.get("pay_amount")
@@ -119,5 +134,8 @@ def create_product_payment(
         pay_address=data.get("pay_address"),
         pay_amount=data.get("pay_amount"),
         pay_currency=data.get("pay_currency"),
+        payment_status=data.get("payment_status"),
+        expiration_estimate_date=data.get("expiration_estimate_date"),
+        invoice_url=data.get("invoice_url") or data.get("payment_url"),
     )
 
