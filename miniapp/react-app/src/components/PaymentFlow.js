@@ -4,6 +4,7 @@ const SUCCESS_STATUSES = new Set(['confirmed', 'finished']);
 const FAILURE_STATUSES = new Set(['failed', 'expired', 'refunded']);
 const REQUEST_TIMEOUT_MS = 25000;
 const BODY_TIMEOUT_MS = 15000;
+const WATCHDOG_MS = 35000;
 
 function formatAmount5(value) {
   if (value === null || value === undefined || Number.isNaN(Number(value))) return '—';
@@ -125,6 +126,25 @@ export default function PaymentFlow({
   const [loadingExisting, setLoadingExisting] = useState(false);
   const [expiresAt, setExpiresAt] = useState(null);
   const [nowSec, setNowSec] = useState(Math.floor(Date.now() / 1000));
+
+  // Watchdog: if WebView hangs and promises never resolve, stop infinite spinner.
+  useEffect(() => {
+    if (!creating || payment) return;
+    const id = setTimeout(() => {
+      setError('Оплата готовится слишком долго. Закройте и откройте модалку ещё раз.');
+      setCreating(false);
+    }, WATCHDOG_MS);
+    return () => clearTimeout(id);
+  }, [creating, payment]);
+
+  useEffect(() => {
+    if (!loadingExisting || payment) return;
+    const id = setTimeout(() => {
+      setError('Платёж загружается слишком долго. Закройте и откройте модалку ещё раз.');
+      setLoadingExisting(false);
+    }, WATCHDOG_MS);
+    return () => clearTimeout(id);
+  }, [loadingExisting, payment]);
 
   const buildHeaders = () => {
     const h = { 'Content-Type': 'application/json' };
