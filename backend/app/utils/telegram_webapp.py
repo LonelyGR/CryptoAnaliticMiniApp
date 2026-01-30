@@ -64,10 +64,20 @@ def verify_telegram_webapp_init_data(init_data: str, bot_token: str) -> dict:
             )
         raise HTTPException(status_code=401, detail="Missing Telegram initData hash")
 
-    secret_key = hashlib.sha256(bot_token.encode("utf-8")).digest()
-    data_check_string = _build_data_check_string(data).encode("utf-8")
+    # Telegram WebApp signing (current):
+    # secret_key = HMAC_SHA256(key=bot_token, msg="WebAppData")
+    # hash = HMAC_SHA256(key=secret_key, msg=data_check_string)
+    data_check_string_raw = _build_data_check_string(data)
+    data_check_string = data_check_string_raw.encode("utf-8")
+
+    secret_key = hmac.new(bot_token.encode("utf-8"), b"WebAppData", hashlib.sha256).digest()
     calculated_hash = hmac.new(secret_key, data_check_string, hashlib.sha256).hexdigest()
-    if not hmac.compare_digest(calculated_hash, received_hash):
+
+    # Backward compatibility (legacy implementations used sha256(bot_token) as secret_key)
+    legacy_secret_key = hashlib.sha256(bot_token.encode("utf-8")).digest()
+    legacy_hash = hmac.new(legacy_secret_key, data_check_string, hashlib.sha256).hexdigest()
+
+    if not (hmac.compare_digest(calculated_hash, received_hash) or hmac.compare_digest(legacy_hash, received_hash)):
         if _debug_enabled():
             # DO NOT log full initData. Only a safe prefix & metadata.
             keys = sorted([k for k in data.keys()])
@@ -87,7 +97,7 @@ def verify_telegram_webapp_init_data(init_data: str, bot_token: str) -> dict:
                     f"(init_len={len(init_data)} init_prefix={_safe_prefix(init_data)!r} "
                     f"keys={keys} has_hash={'hash' in data} "
                     f"user_id={user_id} "
-                    f"received_hash={received_hash[:10]} computed_hash={calculated_hash[:10]} "
+                    f"received_hash={received_hash[:10]} computed_hash={calculated_hash[:10]} legacy_hash={legacy_hash[:10]} "
                     f"bot_token_sha256={hashlib.sha256(bot_token.encode('utf-8')).hexdigest()[:12]})"
                 ),
             )

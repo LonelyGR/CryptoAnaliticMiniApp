@@ -10,6 +10,7 @@ RUN pip install --no-cache-dir -r requirements.txt && \
     pip install --no-cache-dir gunicorn
 
 COPY app ./app
+COPY test_telegram_webapp_signature.py ./test_telegram_webapp_signature.py
 
 EXPOSE 8000
 
