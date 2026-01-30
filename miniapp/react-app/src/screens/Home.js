@@ -4,7 +4,7 @@ import CopyTradingHeader from '../components/CopyTradingHeader';
 import CryptoCard from '../components/CryptoCard';
 import ScreenWrapper from '../components/ScreenWrapper';
 import PaymentFlow from '../components/PaymentFlow';
-import { createBooking, getPosts, getUserByTelegramId } from '../services/api';
+import { getPosts } from '../services/api';
 
 // Popular cryptocurrencies to fetch from Binance
 const BINANCE_SYMBOLS = [
@@ -16,7 +16,7 @@ const BINANCE_SYMBOLS = [
     { symbol: 'XRPUSDT', name: 'XRP', id: 'ripple', image: 'https://assets.coingecko.com/coins/images/44/large/xrp-symbol-white-128.png' }
 ];
 
-export default function Home({ user, apiConnected, dbUser }) {
+export default function Home({ user, apiConnected }) {
     const [cryptos, setCryptos] = useState([]);
     const [currentCryptoIndex, setCurrentCryptoIndex] = useState(0);
     const [loading, setLoading] = useState(true);
@@ -211,39 +211,17 @@ export default function Home({ user, apiConnected, dbUser }) {
             return;
         }
 
-        const telegramId = user?.telegram_id || user?.id;
-        if (!telegramId) {
-            alert('Пользователь не найден. Перезагрузите мини‑приложение.');
-            return;
-        }
-
         try {
-            const ensuredDbUser = dbUser || await getUserByTelegramId(telegramId);
-            if (!ensuredDbUser?.id) {
-                alert('Пользователь не найден в базе данных. Перезагрузите мини‑приложение.');
-                return;
-            }
-
-            const today = new Date().toISOString().slice(0, 10);
-            const booking = await createBooking({
-                user_id: ensuredDbUser.id,
-                type: 'payment',
-                date: today,
-                status: 'pending',
-                topic: 'Оплата',
-                message: 'Оплата 590 USDT (TRC20)',
-            });
-
             setAboutModalOpen(false);
             setPaymentContext({
-                orderId: `booking-${booking.id}`,
                 amount: 590,
                 // NOWPayments: price_currency должен быть фиатом (usd/eur), pay_currency — крипта (usdttrc20)
                 // Сумму в USDT покажем в UI (pay_amount придёт от NOWPayments).
                 priceCurrency: 'usd',
                 title: 'Приобрести продукт',
                 orderDescription: 'Crypto Sensei · Приобрести продукт · 590 USDT (TRC20)',
-                paymentId: booking?.payment_id || null,
+                paymentId: null,
+                createPath: '/product-payments/create',
             });
         } catch (e) {
             console.error('Failed to start payment:', e);
@@ -507,6 +485,7 @@ export default function Home({ user, apiConnected, dbUser }) {
                                 priceCurrency={paymentContext.priceCurrency}
                                 fixedPayCurrency="usdttrc20"
                                 paymentId={paymentContext.paymentId}
+                                createPath={paymentContext.createPath}
                                 title={paymentContext.title}
                                 orderDescription={paymentContext.orderDescription}
                                 hideHeader={true}

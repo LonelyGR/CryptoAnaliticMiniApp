@@ -17,6 +17,7 @@ from app.models.nowpayments_ipn_event import NowPaymentsIpnEvent
 from app.models.nowpayments_payment import NowPaymentsPayment
 from app.models.payment import Payment as PaymentModel
 from app.models.user_entitlement import UserEntitlement
+from app.models.product_purchase import ProductPurchase
 from app.schemas.nowpayments import CreatePaymentRequest, CreatePaymentResponse, PaymentStatusMinimal
 from app.utils.security import verify_nowpayments_signature
 
@@ -43,6 +44,17 @@ def parse_booking_id(order_id: Optional[str]) -> Optional[int]:
         return None
     try:
         return int(order_id.split("booking-")[1])
+    except (ValueError, IndexError):
+        return None
+
+
+def parse_product_purchase_id(order_id: Optional[str]) -> Optional[int]:
+    if not order_id:
+        return None
+    if not order_id.startswith("product-"):
+        return None
+    try:
+        return int(order_id.split("product-")[1])
     except (ValueError, IndexError):
         return None
 
@@ -193,6 +205,14 @@ def _apply_non_finished_status(db: Session, payment_id: str, order_id: Optional[
         else:
             booking.payment_status = "pending"
 
+    # Product purchase status update
+    pp_id = parse_product_purchase_id(order_id)
+    if pp_id:
+        purchase = db.query(ProductPurchase).filter(ProductPurchase.id == pp_id).first()
+        if purchase:
+            purchase.status = status or purchase.status
+            purchase.raw_last_ipn = json.dumps(payload)
+
     db.commit()
 
 
@@ -243,6 +263,29 @@ def apply_finished_status(
             )
             if not exists:
                 db.add(UserEntitlement(user_id=booking.user_id, code=PAID_ACCESS_ENTITLEMENT))
+
+    # Product purchase: выдаём доступ по order_id product-<id>
+    pp_id = parse_product_purchase_id(order_id)
+    if pp_id:
+        purchase = db.query(ProductPurchase).filter(ProductPurchase.id == pp_id).first()
+        if purchase:
+            purchase.status = "finished"
+            purchase.nowpayments_payment_id = str(payment_id)
+            purchase.raw_last_ipn = json.dumps(payload)
+            if payload.get("pay_address"):
+                purchase.pay_address = payload.get("pay_address")
+            if payload.get("pay_amount") is not None:
+                try:
+                    purchase.pay_amount = float(payload.get("pay_amount"))
+                except Exception:
+                    pass
+            exists2 = (
+                db.query(UserEntitlement)
+                .filter(UserEntitlement.user_id == purchase.user_id, UserEntitlement.code == PAID_ACCESS_ENTITLEMENT)
+                .first()
+            )
+            if not exists2:
+                db.add(UserEntitlement(user_id=purchase.user_id, code=PAID_ACCESS_ENTITLEMENT))
 
     db.commit()
 

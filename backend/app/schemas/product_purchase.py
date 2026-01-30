@@ -1,0 +1,39 @@
+from __future__ import annotations
+
+from datetime import datetime
+from typing import Optional
+
+from pydantic import BaseModel, Field
+
+
+class ProductPaymentCreateRequest(BaseModel):
+    amount: float = Field(..., gt=0)
+    price_currency: str = Field(default="usd", min_length=2)
+    pay_currency: str = Field(default="usdttrc20", min_length=2)
+    order_description: Optional[str] = Field(default=None, max_length=255)
+
+
+class ProductPaymentCreateResponse(BaseModel):
+    purchase_id: int
+    order_id: str
+    payment_id: int
+    pay_address: Optional[str] = None
+    pay_amount: Optional[float] = None
+    pay_currency: Optional[str] = None
+
+
+class ProductPurchaseResponse(BaseModel):
+    id: int
+    order_id: str
+    amount_usd: float
+    price_currency: str
+    pay_currency: str
+    status: str
+    nowpayments_payment_id: Optional[str] = None
+    pay_address: Optional[str] = None
+    pay_amount: Optional[float] = None
+    created_at: Optional[datetime] = None
+
+    class Config:
+        from_attributes = True
+

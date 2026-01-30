@@ -50,24 +50,18 @@ async function copyToClipboard(text) {
 }
 
 async function fetchWithTimeout(url, options = {}, timeoutMs = REQUEST_TIMEOUT_MS) {
-  const hasAbort = typeof AbortController !== 'undefined';
-  if (hasAbort) {
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
-    try {
-      const resp = await fetch(url, { ...options, signal: controller.signal });
-      return resp;
-    } finally {
-      clearTimeout(timeoutId);
-    }
-  }
+  // Telegram/embedded WebViews can expose AbortController but still not abort fetch reliably.
+  // So we ALWAYS use Promise.race to guarantee we stop waiting.
+  const controller = typeof AbortController !== 'undefined' ? new AbortController() : null;
+  const timer = new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), timeoutMs));
+  const req = fetch(url, controller ? { ...options, signal: controller.signal } : options);
 
-  // Fallback for environments without AbortController (some embedded WebViews):
-  // can't cancel fetch, but we can stop waiting.
-  return await Promise.race([
-    fetch(url, options),
-    new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), timeoutMs)),
-  ]);
+  const abortId = controller ? setTimeout(() => controller.abort(), timeoutMs) : null;
+  try {
+    return await Promise.race([req, timer]);
+  } finally {
+    if (abortId) clearTimeout(abortId);
+  }
 }
 
 export default function PaymentFlow({
@@ -76,6 +70,7 @@ export default function PaymentFlow({
   priceCurrency = 'usd',
   backendUrl,
   fixedPayCurrency = 'usdttrc20',
+  createPath = '/payments/create',
   paymentId,
   onClose,
   onComplete,
@@ -194,16 +189,17 @@ export default function PaymentFlow({
       setCreating(true);
       setError(null);
       try {
-        const resp = await fetchWithTimeout(`${apiBase}/payments/create`, {
+        const body = {
+          amount,
+          price_currency: priceCurrency,
+          pay_currency: fixedPayCurrency,
+          ...(orderId ? { order_id: orderId } : {}),
+          order_description: orderDescription || title || webinarTitle || (orderId ? `Order ${orderId}` : 'Order'),
+        };
+        const resp = await fetchWithTimeout(`${apiBase}${createPath}`, {
           method: 'POST',
           headers,
-          body: JSON.stringify({
-            amount,
-            price_currency: priceCurrency,
-            pay_currency: fixedPayCurrency,
-            order_id: orderId,
-            order_description: orderDescription || title || webinarTitle || `Order ${orderId}`
-          })
+          body: JSON.stringify(body),
         });
         const data = await resp.json().catch(() => ({}));
         if (!resp.ok) {
@@ -234,7 +230,7 @@ export default function PaymentFlow({
     return () => {
       mounted = false;
     };
-  }, [apiBase, amount, creating, fixedPayCurrency, headers, orderDescription, orderId, payment, paymentId, priceCurrency, title, webinarTitle]);
+  }, [apiBase, amount, createPath, creating, fixedPayCurrency, headers, orderDescription, orderId, payment, paymentId, priceCurrency, title, webinarTitle]);
 
   // 3) авто-обновление статуса
   useEffect(() => {
