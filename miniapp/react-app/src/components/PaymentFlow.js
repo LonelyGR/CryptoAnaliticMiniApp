@@ -276,21 +276,19 @@ export default function PaymentFlow({
           headers: buildHeaders(),
           body: JSON.stringify(body),
         });
-        // Prefer body JSON, but if WebView hangs on body reading, fallback to headers.
+        // CRITICAL: In some Telegram WebViews resp.text()/resp.json() can hang forever.
+        // So if backend provides payment details via headers — use them immediately and DO NOT read body.
+        const headerPayment = readPaymentFromHeaders(resp);
+        if (resp.ok && headerPayment) {
+          if (!mounted) return;
+          setPayment(headerPayment);
+          setExpiresAt(Math.floor(Date.now() / 1000) + 15 * 60);
+          return;
+        }
+
+        // Otherwise try to read JSON body (with timeout)
         let data = {};
-        try {
-          data = await readJsonWithTimeout(resp);
-        } catch (e) {
-          data = {};
-          if (process.env.REACT_APP_DEBUG_TELEGRAM_AUTH === '1') {
-            // eslint-disable-next-line no-console
-            console.debug('[pay]', 'readJsonWithTimeout failed', e?.message);
-          }
-        }
-        if (!data || !data.payment_id) {
-          const headerPayment = readPaymentFromHeaders(resp);
-          if (headerPayment) data = headerPayment;
-        }
+        data = await readJsonWithTimeout(resp);
         if (!resp.ok) {
           const detail = data?.detail || data?.message;
           throw new Error(detail || 'Не удалось создать платеж');
