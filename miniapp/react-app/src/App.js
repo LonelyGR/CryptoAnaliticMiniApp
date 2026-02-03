@@ -4,6 +4,7 @@ import Home from "./screens/Home";
 import Bookings from "./screens/Bookings";
 import Support from "./screens/Support";
 import Profile from "./screens/Profile";
+import Prezentation from "./screens/Prezentation";
 import { getUserByTelegramId, createOrUpdateUser, checkApiHealth, trackReferral } from "./services/api";
 
 function App() {
@@ -191,6 +192,7 @@ function App() {
         {activeTab === "home" && <Home user={displayUser} apiConnected={apiConnected} dbUser={displayUser} />}
         {activeTab === "bookings" && <Bookings user={displayUser} apiConnected={apiConnected} />}
         {activeTab === "support" && <Support user={displayUser} apiConnected={apiConnected} />}
+        {activeTab === "presentation" && <Prezentation />}
         {activeTab === "profile" && (
           <Profile
             user={displayUser}
@@ -217,6 +219,15 @@ function App() {
         >
           <span className="nav-icon">📋</span>
           <span className="nav-label">Vebinars</span>
+        </div>
+
+        <div
+          className={`nav-item ${activeTab === "presentation" ? "active" : ""}`}
+          onClick={() => setActiveTab("presentation")}
+          data-tab="presentation"
+        >
+          <span className="nav-icon">📊</span>
+          <span className="nav-label">Presentation</span>
         </div>
 
         <div
