@@ -500,12 +500,12 @@ export default function Home({ user, apiConnected }) {
                                     По оплате, пожалуйста, свяжитесь с менеджером — он подскажет, как оплатить и подключиться.
                                 </div>
 
-                                <div style={{ display: 'flex', gap: 10, marginTop: 14 }}>
+                                <div style={{ display: 'flex', gap: 10, marginTop: 14, alignItems: 'stretch' }}>
                                     <button
                                         type="button"
                                         className="btn-primary"
                                         onClick={handleContactManager}
-                                        style={{ flex: 1 }}
+                                        style={{ flex: 1, marginTop: 0, height: 44 }}
                                     >
                                         Contact Manager
                                     </button>
@@ -513,7 +513,7 @@ export default function Home({ user, apiConnected }) {
                                         type="button"
                                         className="btn-secondary"
                                         onClick={() => setPaymentContext(null)}
-                                        style={{ flex: 1 }}
+                                        style={{ flex: 1, marginTop: 0, height: 44 }}
                                     >
                                         Закрыть
                                     </button>
