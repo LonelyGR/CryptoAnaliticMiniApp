@@ -507,7 +507,7 @@ export default function Home({ user, apiConnected }) {
                                         onClick={handleContactManager}
                                         style={{ flex: 1 }}
                                     >
-                                        Связаться с менеджером
+                                        Contact Manager
                                     </button>
                                     <button
                                         type="button"
