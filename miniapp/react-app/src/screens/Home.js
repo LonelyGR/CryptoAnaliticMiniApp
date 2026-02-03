@@ -3,7 +3,7 @@ import CopyTradingHeader from '../components/CopyTradingHeader';
 // import PromoBanner from '../components/PromoBanner';
 import CryptoCard from '../components/CryptoCard';
 import ScreenWrapper from '../components/ScreenWrapper';
-import PaymentFlow from '../components/PaymentFlow';
+// import PaymentFlow from '../components/PaymentFlow'; // временно отключено (оплата в разработке)
 import { getPosts } from '../services/api';
 
 // Popular cryptocurrencies to fetch from Binance
@@ -206,27 +206,35 @@ export default function Home({ user, apiConnected }) {
     };
 
     const handlePay = async () => {
-        if (!apiConnected) {
-            alert('Сервер недоступен. Оплата временно невозможна.');
-            return;
-        }
+        // ✅ Временно: оплата в разработке.
+        // Кнопку оставляем, модалку открываем, НО никаких запросов / создания платежа не делаем.
+        setAboutModalOpen(false);
+        setPaymentContext({ amount: 590 });
 
-        try {
-            setAboutModalOpen(false);
-            setPaymentContext({
-                amount: 590,
-                // NOWPayments: price_currency должен быть фиатом (usd/eur), pay_currency — крипта (usdttrc20)
-                // Сумму в USDT покажем в UI (pay_amount придёт от NOWPayments).
-                priceCurrency: 'usd',
-                title: 'Приобрести продукт',
-                orderDescription: 'Crypto Sensei · Приобрести продукт · 590 USDT (TRC20)',
-                paymentId: null,
-                createPath: '/product-payments/create',
-            });
-        } catch (e) {
-            console.error('Failed to start payment:', e);
-            alert('Не удалось создать оплату. Попробуйте позже.');
-        }
+        /*
+        // === Платежный флоу (вернём позже) ===
+        // if (!apiConnected) {
+        //     alert('Сервер недоступен. Оплата временно невозможна.');
+        //     return;
+        // }
+        //
+        // try {
+        //     setAboutModalOpen(false);
+        //     setPaymentContext({
+        //         amount: 590,
+        //         // NOWPayments: price_currency должен быть фиатом (usd/eur), pay_currency — крипта (usdttrc20)
+        //         // Сумму в USDT покажем в UI (pay_amount придёт от NOWPayments).
+        //         priceCurrency: 'usd',
+        //         title: 'Приобрести продукт',
+        //         orderDescription: 'Crypto Sensei · Приобрести продукт · 590 USDT (TRC20)',
+        //         paymentId: null,
+        //         createPath: '/product-payments/create',
+        //     });
+        // } catch (e) {
+        //     console.error('Failed to start payment:', e);
+        //     alert('Не удалось создать оплату. Попробуйте позже.');
+        // }
+        */
     };
 
     return (
@@ -479,6 +487,41 @@ export default function Home({ user, apiConnected }) {
                             </button>
                         </div>
                         <div className="modal-body">
+                            <div style={{
+                                padding: 14,
+                                borderRadius: 16,
+                                border: '1px solid rgba(255,255,255,0.12)',
+                                background: 'rgba(255,255,255,0.05)',
+                            }}>
+                                <div style={{ fontSize: 16, fontWeight: 800, marginBottom: 8 }}>
+                                    Оплата сейчас в разработке
+                                </div>
+                                <div style={{ fontSize: 13, opacity: 0.8, lineHeight: 1.5 }}>
+                                    По оплате, пожалуйста, свяжитесь с менеджером — он подскажет, как оплатить и подключиться.
+                                </div>
+
+                                <div style={{ display: 'flex', gap: 10, marginTop: 14 }}>
+                                    <button
+                                        type="button"
+                                        className="btn-primary"
+                                        onClick={handleContactManager}
+                                        style={{ flex: 1 }}
+                                    >
+                                        Связаться с менеджером
+                                    </button>
+                                    <button
+                                        type="button"
+                                        className="btn-secondary"
+                                        onClick={() => setPaymentContext(null)}
+                                        style={{ flex: 1 }}
+                                    >
+                                        Закрыть
+                                    </button>
+                                </div>
+                            </div>
+
+                            {/*
+                            // === PaymentFlow (вернём позже) ===
                             <PaymentFlow
                                 orderId={paymentContext.orderId}
                                 amount={paymentContext.amount}
@@ -490,6 +533,7 @@ export default function Home({ user, apiConnected }) {
                                 orderDescription={paymentContext.orderDescription}
                                 hideHeader={true}
                             />
+                            */}
                         </div>
                     </div>
                 </div>
