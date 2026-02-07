@@ -237,6 +237,24 @@ export default function Home({ user, apiConnected }) {
         */
     };
 
+
+    const resolveTelegramChatLink = () => {
+        const raw = (process.env.REACT_APP_TELEGRAM_CHAT_LINK || '').trim();
+        if (!raw) return '';
+        if (raw.startsWith('http://') || raw.startsWith('https://')) return raw;
+        if (raw.startsWith('@')) return `https://t.me/${raw.slice(1)}`;
+        return `https://t.me/${raw}`;
+    };
+
+    const handleJoinTelegramChat = () => {
+        const url = resolveTelegramChatLink();
+        if (!url) {
+            alert('Ссылка на чат не настроена (REACT_APP_TELEGRAM_CHAT_LINK)');
+            return;
+        }
+        window.open(url, '_blank', 'noopener,noreferrer');
+    };
+    
     return (
         <ScreenWrapper>
             <CopyTradingHeader user={user} username={user?.first_name} onDepositClick={handleDepositClick} />
@@ -280,7 +298,14 @@ export default function Home({ user, apiConnected }) {
                                 className="neo-platform-btn neo-platform-btn--secondary"
                                 onClick={handleContactManager}
                             >
-                                Contact Manager
+                                Написать менеджеру
+                            </button>
+                            <button
+                                type="button"
+                                className="neo-platform-btn neo-platform-btn--secondary"
+                                onClick={handleJoinTelegramChat}
+                            >
+                                Присоединиться к чату
                             </button>
                         </div>
 

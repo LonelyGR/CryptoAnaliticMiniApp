@@ -162,6 +162,7 @@ export default function Profile({ user, apiConnected, onNavigate, username }) {
         }
     };
 
+
     return (
         <ScreenWrapper>
             <Header username={user?.first_name} user={user} />
@@ -223,6 +224,7 @@ export default function Profile({ user, apiConnected, onNavigate, username }) {
                         </div>
                     </div>
                 </div>
+
 
                 <div className="profile-section">
                     <h2 className="section-title">Мои данные</h2>
