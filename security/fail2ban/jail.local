@@ -1,0 +1,16 @@
+[DEFAULT]
+bantime = 1h
+findtime = 10m
+maxretry = 30
+
+backend = auto
+
+[caddy-scan]
+enabled = true
+filter = caddy-scan
+logpath = /var/log/caddy/access.log
+port = http,https
+
+# Start with iptables backend (Linux). Adjust on your distro/firewall.
+action = iptables[name=caddy-scan, port="http,https", protocol=tcp]
+

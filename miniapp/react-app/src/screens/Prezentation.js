@@ -3,10 +3,10 @@ import * as pdfjsLib from 'pdfjs-dist';
 
 // iOS Telegram WebView: PDF.js can throw if workerSrc is not set,
 // even when we request `disableWorker: true`.
-// Point to the exact package version on a reliable CDN.
+// Point to a local worker shipped with the app (avoid external CDNs).
 if (!pdfjsLib.GlobalWorkerOptions.workerSrc) {
-    pdfjsLib.GlobalWorkerOptions.workerSrc =
-        'https://unpkg.com/pdfjs-dist@5.4.624/build/pdf.worker.min.mjs';
+    const publicUrl = (process.env.PUBLIC_URL || '').replace(/\/$/, '');
+    pdfjsLib.GlobalWorkerOptions.workerSrc = `${publicUrl}/pdf.worker.min.mjs`;
 }
 
 export default function Prezentation() {

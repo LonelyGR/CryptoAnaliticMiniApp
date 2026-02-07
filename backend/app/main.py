@@ -6,6 +6,9 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.exceptions import RequestValidationError
 from fastapi.exception_handlers import request_validation_exception_handler
+from starlette.middleware.trustedhost import TrustedHostMiddleware
+from starlette.requests import Request
+from starlette.responses import Response
 
 from app.routers import users, bookings, webinars, admins, posts, payments, webinar_materials, reminders, referrals, nowpayments, admin_panel, product_payments, debug
 
@@ -34,16 +37,38 @@ async def validation_exception_handler(request, exc: RequestValidationError):
         except Exception:
             pass
     return await request_validation_exception_handler(request, exc)
+
+
+def _get_domain() -> str:
+    return (os.getenv("DOMAIN") or "").strip()
+
+
+def _get_allowed_hosts() -> list[str]:
+    """
+    Protect against Host header attacks.
+    - In prod: set DOMAIN and we only allow that host (+ www).
+    - In dev: allow all.
+    """
+    domain = _get_domain()
+    if not domain:
+        return ["*"]
+    return [domain, f"www.{domain}"]
+
+
 def _get_cors_origins() -> list[str]:
     """
     CORS origins for production.
     - If CORS_ALLOW_ORIGINS is set (comma-separated), use it.
-    - Else fallback to "*" (dev-friendly).
+    - Else if DOMAIN is set, allow only https://<DOMAIN> and https://www.<DOMAIN>.
+    - Else: allow none (fail closed).
     """
     raw = (os.getenv("CORS_ALLOW_ORIGINS") or "").strip()
-    if not raw:
-        return ["*"]
-    return [o.strip() for o in raw.split(",") if o.strip()]
+    if raw:
+        return [o.strip() for o in raw.split(",") if o.strip()]
+    domain = _get_domain()
+    if domain:
+        return [f"https://{domain}", f"https://www.{domain}"]
+    return []
 
 
 # Настройка CORS
@@ -55,6 +80,21 @@ app.add_middleware(
     allow_headers=["*"],  # Разрешаем все заголовки (включая ngrok-specific)
     expose_headers=["*"],  # Разрешаем доступ ко всем заголовкам ответа
 )
+
+
+# Trusted hosts (works well behind reverse-proxy when DOMAIN is configured)
+app.add_middleware(TrustedHostMiddleware, allowed_hosts=_get_allowed_hosts())
+
+
+@app.middleware("http")
+async def add_security_headers(request: Request, call_next):
+    resp: Response = await call_next(request)
+    # Minimal safe headers for API responses (edge proxy also adds headers).
+    resp.headers.setdefault("X-Content-Type-Options", "nosniff")
+    resp.headers.setdefault("Referrer-Policy", "strict-origin-when-cross-origin")
+    resp.headers.setdefault("Permissions-Policy", "camera=(), microphone=(), geolocation=()")
+    return resp
+
 
 @app.get("/")
 def root():

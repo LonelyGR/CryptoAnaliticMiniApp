@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import QRCode from 'qrcode';
 
 const SUCCESS_STATUSES = new Set(['confirmed', 'finished']);
 const FAILURE_STATUSES = new Set(['failed', 'expired', 'refunded']);
@@ -203,6 +204,36 @@ export default function PaymentFlow({
     // QR должен содержать адрес + сумму (для кошельков это чаще всего deep-link)
     return walletUri || payAddress;
   }, [walletUri, payAddress]);
+
+  const [qrDataUrl, setQrDataUrl] = useState('');
+
+  useEffect(() => {
+    let cancelled = false;
+    const run = async () => {
+      if (!qrValue) {
+        setQrDataUrl('');
+        return;
+      }
+      try {
+        const url = await QRCode.toDataURL(qrValue, {
+          errorCorrectionLevel: 'M',
+          margin: 1,
+          width: 240,
+          color: {
+            dark: '#000000',
+            light: '#ffffff',
+          },
+        });
+        if (!cancelled) setQrDataUrl(url || '');
+      } catch {
+        if (!cancelled) setQrDataUrl('');
+      }
+    };
+    run();
+    return () => {
+      cancelled = true;
+    };
+  }, [qrValue]);
 
   useEffect(() => {
     const t = setInterval(() => setNowSec(Math.floor(Date.now() / 1000)), 1000);
@@ -469,9 +500,9 @@ export default function PaymentFlow({
           <div className="pay-modern__qrWrap">
             <div className="pay-modern__label">QR‑код</div>
             <div className="pay-modern__qr">
-              {qrValue ? (
+              {qrDataUrl ? (
                 <img
-                  src={`https://api.qrserver.com/v1/create-qr-code/?size=240x240&data=${encodeURIComponent(qrValue)}`}
+                  src={qrDataUrl}
                   alt="QR код для оплаты"
                 />
               ) : (

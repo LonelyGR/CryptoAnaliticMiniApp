@@ -3,6 +3,7 @@ FROM node:20-alpine AS build
 WORKDIR /app
 
 COPY package.json package-lock.json ./
+COPY scripts ./scripts
 RUN npm ci
 
 COPY public ./public
@@ -22,6 +23,7 @@ ENV REACT_APP_MANAGER_TELEGRAM=$REACT_APP_MANAGER_TELEGRAM
 ARG REACT_APP_BUILD_ID=
 ENV REACT_APP_BUILD_ID=$REACT_APP_BUILD_ID
 
+RUN node scripts/copy-pdf-worker.js
 RUN npm run build
 
 FROM nginx:1.27-alpine

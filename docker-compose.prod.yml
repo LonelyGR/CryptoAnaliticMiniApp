@@ -4,6 +4,12 @@ services:
     restart: unless-stopped
     env_file:
       - .env
+    security_opt:
+      - no-new-privileges:true
+    read_only: true
+    tmpfs:
+      - /tmp
+      - /var/run
     ports:
       - "80:80"
       - "443:443"
@@ -11,6 +17,7 @@ services:
       - ./Caddyfile:/etc/caddy/Caddyfile:ro
       - caddy_data:/data
       - caddy_config:/config
+      - caddy_logs:/var/log/caddy
     depends_on:
       - frontend
       - backend
@@ -26,6 +33,13 @@ services:
         REACT_APP_MANAGER_TELEGRAM: ${REACT_APP_MANAGER_TELEGRAM}
         REACT_APP_BUILD_ID: ${REACT_APP_BUILD_ID:-prod}
     restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    read_only: true
+    tmpfs:
+      - /tmp
+      - /var/cache/nginx
+      - /var/run
     expose:
       - "80"
     depends_on:
@@ -35,6 +49,8 @@ services:
     build:
       context: ./backend
     restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
     # SQLite + multiple gunicorn workers can deadlock/lock DB.
     # If you use Postgres, you can increase workers safely.
     command: ["gunicorn", "-k", "uvicorn.workers.UvicornWorker", "app.main:app", "--bind", "0.0.0.0:8000", "--workers", "1", "--timeout", "60", "--access-logfile", "-", "--error-logfile", "-", "--log-level", "info"]
@@ -67,6 +83,8 @@ services:
     build:
       context: ./bot
     restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
     env_file:
       - .env
     command: ["python", "bot_service.py"]
@@ -77,6 +95,8 @@ services:
     build:
       context: ./bot
     restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
     env_file:
       - .env
     command: ["python", "reminders_worker.py"]
@@ -87,4 +107,6 @@ volumes:
   backend-data:
   caddy_data:
   caddy_config:
+  caddy_logs:
+    name: caddy_logs
 

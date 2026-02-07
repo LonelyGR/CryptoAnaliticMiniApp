@@ -1,0 +1,51 @@
+services:
+  loki:
+    image: grafana/loki:3.1.0
+    restart: unless-stopped
+    command: ["-config.file=/etc/loki/config.yml"]
+    ports:
+      - "3100:3100"
+    volumes:
+      - ./security/loki/config.yml:/etc/loki/config.yml:ro
+      - loki-data:/loki
+    security_opt:
+      - no-new-privileges:true
+
+  promtail:
+    image: grafana/promtail:3.1.0
+    restart: unless-stopped
+    command: ["-config.file=/etc/promtail/config.yml"]
+    volumes:
+      - ./security/promtail/config.yml:/etc/promtail/config.yml:ro
+      # Reads Caddy access logs from the prod stack volume:
+      - caddy_logs:/var/log/caddy:ro
+    depends_on:
+      - loki
+    security_opt:
+      - no-new-privileges:true
+
+  grafana:
+    image: grafana/grafana:11.2.0
+    restart: unless-stopped
+    environment:
+      - GF_SECURITY_ADMIN_USER=${GRAFANA_ADMIN_USER:-admin}
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD:-change-me}
+      - GF_USERS_ALLOW_SIGN_UP=false
+    ports:
+      - "3000:3000"
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ./security/grafana/provisioning:/etc/grafana/provisioning:ro
+    depends_on:
+      - loki
+    security_opt:
+      - no-new-privileges:true
+
+volumes:
+  loki-data:
+  grafana-data:
+  # must match the prod stack volume name
+  caddy_logs:
+    external: true
+    name: caddy_logs
+
