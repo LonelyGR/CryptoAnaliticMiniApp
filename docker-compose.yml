@@ -32,7 +32,8 @@ services:
     depends_on:
       - backend
     ports:
-      - "80:80"
+      # Dev/local convenience: avoid clashing with prod Caddy (80/443).
+      - "8080:80"
 
   reminders-worker:
     build:
