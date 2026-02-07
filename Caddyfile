@@ -12,7 +12,11 @@
   }
 }
 
-{$DOMAIN} {
+www.cryptosensei.info {
+  redir https://cryptosensei.info{uri} permanent
+}
+
+cryptosensei.info {
   encode zstd gzip
 
   # --- Logging (needed for incident response, anti-bot tooling, audits) ---
