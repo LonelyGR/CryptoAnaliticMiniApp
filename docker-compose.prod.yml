@@ -31,6 +31,7 @@ services:
         # Optional: used for referral link fallback and manager contact
         REACT_APP_BOT_USERNAME: ${REACT_APP_BOT_USERNAME}
         REACT_APP_MANAGER_TELEGRAM: ${REACT_APP_MANAGER_TELEGRAM}
+        REACT_APP_TELEGRAM_CHAT_LINK: ${REACT_APP_TELEGRAM_CHAT_LINK}
         REACT_APP_BUILD_ID: ${REACT_APP_BUILD_ID:-prod}
     restart: unless-stopped
     security_opt:

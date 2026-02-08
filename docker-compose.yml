@@ -29,6 +29,11 @@ services:
       args:
         # Frontend will call /api (nginx proxy)
         REACT_APP_API_URL: /api
+        # Optional: used for chat join button on Home screen
+        REACT_APP_TELEGRAM_CHAT_LINK: ${REACT_APP_TELEGRAM_CHAT_LINK}
+        REACT_APP_MANAGER_TELEGRAM: ${REACT_APP_MANAGER_TELEGRAM}
+        REACT_APP_BOT_USERNAME: ${REACT_APP_BOT_USERNAME}
+        REACT_APP_BUILD_ID: ${REACT_APP_BUILD_ID:-dev}
     depends_on:
       - backend
     ports:
