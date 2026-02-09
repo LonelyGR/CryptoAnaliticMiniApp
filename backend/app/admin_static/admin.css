@@ -30,6 +30,9 @@ a:hover{text-decoration:underline}
 .wrap{width:min(var(--container), calc(100% - 32px)); margin: 18px auto 60px;}
 .topbar__right{display:flex; align-items:center; gap:10px}
 .topbar__meta{color:var(--muted); font-size:12px; font-weight:900}
+.nav-toggle{display:none}
+.nav-overlay{display:none}
+.nav-drawer{display:none}
 .link-btn{
   appearance:none;
   border:1px solid rgba(255,255,255,.14);
@@ -57,6 +60,8 @@ a:hover{text-decoration:underline}
 }
 .nav{display:flex; gap:10px; flex-wrap:wrap}
 .nav a{padding:8px 10px;border-radius:999px;border:1px solid transparent;color:var(--muted);font-weight:900;font-size:13px}
+.nav--drawer{display:flex; flex-direction:column; gap:8px}
+.nav--drawer a{border-color: rgba(255,255,255,.12); background: rgba(0,0,0,.18)}
 .nav a.active{
   background: linear-gradient(135deg, rgba(124,92,255,.18), rgba(69,177,255,.14));
   border-color: rgba(124,92,255,.25);
@@ -114,6 +119,7 @@ a:hover{text-decoration:underline}
 .table{width:100%; border-collapse: collapse; margin-top: 10px; font-size: 13px}
 .table th,.table td{border-bottom:1px solid var(--stroke); padding:10px 8px; vertical-align: top}
 .table th{color: var(--muted); text-transform: uppercase; letter-spacing: .06em; font-size: 11px; text-align:left}
+.table td{word-break: break-word}
 .pill{display:inline-flex; padding: 5px 9px; border-radius: 999px; border:1px solid rgba(255,255,255,.14); background: rgba(0,0,0,.18); font-weight:1000; font-size: 12px}
 .flash{margin-top: 12px; padding: 10px 12px; border-radius: 14px; border:1px solid rgba(255,255,255,.14); background: rgba(0,0,0,.22)}
 .flash.ok{border-color: rgba(34,197,94,.28); background: rgba(34,197,94,.10)}
@@ -239,15 +245,64 @@ details.card .details__body{padding: 0 14px 14px}
   .topbar__right{flex-direction:column; align-items:stretch; gap:10px}
   .topbar__meta{font-size:12px}
 
-  /* Horizontal scroll for many nav items */
-  .nav{
-    flex-wrap: nowrap;
-    overflow-x: auto;
-    overflow-y: hidden;
-    -webkit-overflow-scrolling: touch;
-    padding-bottom: 4px;
+  /* Hide desktop nav; use drawer */
+  .nav{display:none}
+  .topbar__meta{display:none}
+  .topbar__right form[action="/admin/logout"]{display:none}
+
+  .topbar__right{flex-direction:row; justify-content:flex-end}
+
+  .nav-toggle{
+    display:inline-flex;
+    flex-direction:column;
+    justify-content:center;
+    gap:5px;
+    width:44px;
+    height:44px;
+    border-radius: 14px;
+    border:1px solid rgba(255,255,255,.14);
+    background: rgba(0,0,0,.18);
+    cursor:pointer;
+    padding: 0 12px;
   }
-  .nav a{white-space:nowrap; font-size:12px; padding:7px 9px}
+  .nav-toggle:hover{background: rgba(255,255,255,.06)}
+  .nav-toggle__bar{display:block; height:2px; width:100%; background: rgba(255,255,255,.88); border-radius: 99px}
+
+  .nav-overlay{
+    display:block;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,.55);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity .18s ease;
+    z-index: 40;
+  }
+  .nav-drawer{
+    display:block;
+    position: fixed;
+    top: 0;
+    right: 0;
+    height: 100vh;
+    width: min(92vw, 360px);
+    background:
+      radial-gradient(120% 120% at 0% 0%, rgba(124,92,255,.18), transparent 60%),
+      radial-gradient(120% 120% at 100% 0%, rgba(69,177,255,.16), transparent 60%),
+      rgba(0,0,0,.92);
+    border-left: 1px solid rgba(255,255,255,.14);
+    box-shadow: -30px 0 70px rgba(0,0,0,.55);
+    transform: translateX(105%);
+    transition: transform .18s ease;
+    z-index: 45;
+    padding: 14px;
+    overflow: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  .nav-drawer__head{display:flex; align-items:flex-start; justify-content:space-between; gap:10px; margin-bottom: 12px}
+  .nav-drawer__brand{font-weight:1000; letter-spacing: .02em}
+
+  body[data-nav-open="1"] .nav-overlay{opacity: 1; pointer-events:auto}
+  body[data-nav-open="1"] .nav-drawer{transform: translateX(0)}
 
   /* Touch targets */
   .btn, .link-btn{min-height:44px}
