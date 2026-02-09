@@ -107,3 +107,12 @@
   .perm-grid-v2 { grid-template-columns: 1fr; }
 }
 
+@media (max-width: 560px) {
+  .admin-users-v2 { margin-top: 12px; }
+  .admin-users-v2__panel { padding: 12px; min-height: auto; border-radius: 16px; }
+  .admin-users-v2__list { max-height: 320px; }
+  .user-mini { padding: 10px; border-radius: 14px; }
+  .user-mini__avatar { width: 36px; height: 36px; border-radius: 13px; }
+  .perm-tile { padding: 10px; border-radius: 16px; }
+}
+

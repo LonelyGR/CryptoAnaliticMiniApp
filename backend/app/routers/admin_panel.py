@@ -298,6 +298,7 @@ def _render(request: Request, name: str, *, section: str, title: str, **ctx):
     flash = request.query_params.get("flash")
     flash_kind = request.query_params.get("kind")  # ok|bad
     flash_details = request.query_params.get("details")
+    static_v = (os.getenv("ADMIN_STATIC_VERSION") or "").strip() or "dev"
     return templates.TemplateResponse(
         name,
         {
@@ -309,6 +310,7 @@ def _render(request: Request, name: str, *, section: str, title: str, **ctx):
             "flash": flash,
             "flash_kind": flash_kind,
             "flash_details": flash_details,
+            "static_v": static_v,
             **ctx,
         },
     )
@@ -337,6 +339,7 @@ def admin_login_get(request: Request, db=Depends(get_db)):
     flash = request.query_params.get("flash")
     flash_kind = request.query_params.get("kind")
     flash_details = request.query_params.get("details")
+    static_v = (os.getenv("ADMIN_STATIC_VERSION") or "").strip() or "dev"
     return templates.TemplateResponse(
         "login.html",
         {
@@ -345,6 +348,7 @@ def admin_login_get(request: Request, db=Depends(get_db)):
             "flash": flash,
             "flash_kind": flash_kind,
             "flash_details": flash_details,
+            "static_v": static_v,
         },
     )
 

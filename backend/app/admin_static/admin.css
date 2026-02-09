@@ -231,3 +231,48 @@ details.card .details__body{padding: 0 14px 14px}
 @media (max-width: 920px){ .grid{grid-template-columns: 1fr;} .topbar{position:static} }
 @media (max-width: 920px){ .stats{grid-template-columns: repeat(2, 1fr);} }
 @media (max-width: 920px){ .user-form__row{grid-template-columns: 1fr;} }
+
+/* ===== Mobile-friendly admin panel (phones) ===== */
+@media (max-width: 560px){
+  .wrap{width: calc(100% - 20px); margin: 12px auto 36px;}
+  .topbar{padding:12px; gap:10px}
+  .topbar__right{flex-direction:column; align-items:stretch; gap:10px}
+  .topbar__meta{font-size:12px}
+
+  /* Horizontal scroll for many nav items */
+  .nav{
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    overflow-y: hidden;
+    -webkit-overflow-scrolling: touch;
+    padding-bottom: 4px;
+  }
+  .nav a{white-space:nowrap; font-size:12px; padding:7px 9px}
+
+  /* Touch targets */
+  .btn, .link-btn{min-height:44px}
+  .field input,.field textarea,.field select{min-height:44px}
+
+  .card{padding:12px}
+  .card h2{font-size:15px}
+  .muted{font-size:12px}
+  .field textarea{min-height:96px}
+
+  /* Tables: allow horizontal scroll instead of breaking layout */
+  .table{
+    display:block;
+    overflow-x:auto;
+    -webkit-overflow-scrolling: touch;
+    border-radius: 14px;
+  }
+  .table th,.table td{padding:10px 8px}
+
+  /* Stats: single column looks better on narrow screens */
+  .stats{grid-template-columns: 1fr;}
+
+  /* Admin users actions: stack nicely */
+  .user-reset input{min-width: 0; width: 100%;}
+  .user-reset{width:100%}
+  .user-actions form{width:100%}
+  .user-actions .btn{width:100%}
+}
