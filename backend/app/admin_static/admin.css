@@ -246,7 +246,8 @@ details.card .details__body{padding: 0 14px 14px}
   .topbar__meta{font-size:12px}
 
   /* Hide desktop nav; use drawer */
-  .nav{display:none}
+  .topbar .nav{display:none}
+  .nav-drawer .nav{display:flex}
   .topbar__meta{display:none}
   .topbar__right form[action="/admin/logout"]{display:none}
 
