@@ -8,6 +8,7 @@ import base64
 from fastapi import APIRouter, Depends, Form, HTTPException, Request
 from fastapi.responses import RedirectResponse
 from starlette.templating import Jinja2Templates
+from urllib.parse import urlencode
 
 from app.database import SessionLocal
 from app.database import Base
@@ -242,6 +243,22 @@ def _verify_session_token(token: str) -> tuple[int, int] | None:
         return None
     return int(user_id_s), int(ver_s)
 
+def _login_location(*, next_url: str | None = None, flash: str | None = None, kind: str | None = None) -> str:
+    """
+    Build ASCII-safe Location header to /admin/login.
+    IMPORTANT: headers must be latin-1/ASCII, so we always percent-encode query params.
+    """
+    q: dict[str, str] = {}
+    if next_url:
+        q["next"] = next_url
+    if flash:
+        q["flash"] = flash
+    if kind:
+        q["kind"] = kind
+    if not q:
+        return "/admin/login"
+    return "/admin/login?" + urlencode(q, encoding="utf-8", errors="strict")
+
 
 def require_admin_session(request: Request, db=Depends(get_db)) -> AdminPanelUser:
     _ensure_bootstrap_user(db)
@@ -251,13 +268,13 @@ def require_admin_session(request: Request, db=Depends(get_db)) -> AdminPanelUse
         next_url = request.url.path
         if request.url.query:
             next_url = f"{next_url}?{request.url.query}"
-        raise HTTPException(status_code=303, headers={"Location": f"/admin/login?next={next_url}"})
+        raise HTTPException(status_code=303, headers={"Location": _login_location(next_url=next_url)})
     user_id, ver = token_data
     u = db.query(AdminPanelUser).filter(AdminPanelUser.id == user_id).first()
     if not u or not u.is_active:
-        raise HTTPException(status_code=303, headers={"Location": "/admin/login?flash=Сессия%20недействительна&kind=bad"})
+        raise HTTPException(status_code=303, headers={"Location": _login_location(flash="Сессия недействительна", kind="bad")})
     if int(u.session_version or 0) != int(ver):
-        raise HTTPException(status_code=303, headers={"Location": "/admin/login?flash=Сессия%20устарела&kind=bad"})
+        raise HTTPException(status_code=303, headers={"Location": _login_location(flash="Сессия устарела", kind="bad")})
     return u
 
 
