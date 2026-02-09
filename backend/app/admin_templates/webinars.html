@@ -53,7 +53,7 @@
               <td class="muted">{{ w.date }} {{ w.time }}</td>
               <td><span class="pill">Бесплатно</span></td>
               <td>
-                <form method="post" action="/admin/webinars/{{ w.id }}/delete" onsubmit="return confirm('Удалить вебинар {{ w.id }}?')">
+                <form method="post" action="/admin/webinars/{{ w.id }}/delete" data-confirm="Удалить вебинар {{ w.id }}?">
                   <button class="btn danger" type="submit">Удалить</button>
                 </form>
               </td>

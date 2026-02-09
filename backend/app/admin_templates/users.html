@@ -118,11 +118,11 @@
         </form>
 
         <div class="user-actions" style="margin-top:14px">
-          <form method="post" action="/admin/users/{{ selected_user.id }}/reset-password" class="user-reset" onsubmit="return confirm('Сбросить пароль пользователю {{ selected_user.username }}?')">
+          <form method="post" action="/admin/users/{{ selected_user.id }}/reset-password" class="user-reset" data-confirm="Сбросить пароль пользователю {{ selected_user.username }}?">
             <input name="new_password" type="password" placeholder="Новый пароль" required />
             <button class="btn ok" type="submit">Сохранить</button>
           </form>
-          <form method="post" action="/admin/users/{{ selected_user.id }}/delete" onsubmit="return confirm('Удалить пользователя {{ selected_user.username }}?')">
+          <form method="post" action="/admin/users/{{ selected_user.id }}/delete" data-confirm="Удалить пользователя {{ selected_user.username }}?">
             <button class="btn danger" type="submit">Удалить</button>
           </form>
         </div>
@@ -131,21 +131,5 @@
       {% endif %}
     </div>
   </div>
-
-  <script>
-    (function () {
-      var input = document.getElementById('userSearch');
-      if (!input) return;
-      input.addEventListener('input', function () {
-        var q = (input.value || '').trim().toLowerCase();
-        var items = document.querySelectorAll('#userList [data-search]');
-        items.forEach(function (el) {
-          var hay = (el.getAttribute('data-search') || '');
-          var ok = !q || hay.indexOf(q) !== -1;
-          el.style.display = ok ? '' : 'none';
-        });
-      });
-    })();
-  </script>
 {% endblock %}
 

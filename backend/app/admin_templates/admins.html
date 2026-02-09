@@ -53,7 +53,7 @@
                 </form>
               </td>
               <td>
-                <form method="post" action="/admin/admins/{{ a.id }}/delete" onsubmit="return confirm('Удалить админа {{ a.id }}?')">
+                <form method="post" action="/admin/admins/{{ a.id }}/delete" data-confirm="Удалить админа {{ a.id }}?">
                   <button class="btn danger" type="submit">Удалить</button>
                 </form>
               </td>

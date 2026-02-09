@@ -40,7 +40,7 @@
               </td>
               <td class="muted">{{ p.created_at }}</td>
               <td>
-                <form method="post" action="/admin/posts/{{ p.id }}/delete" onsubmit="return confirm('Удалить пост {{ p.id }}?')">
+                <form method="post" action="/admin/posts/{{ p.id }}/delete" data-confirm="Удалить пост {{ p.id }}?">
                   <button class="btn danger" type="submit">Удалить</button>
                 </form>
               </td>
