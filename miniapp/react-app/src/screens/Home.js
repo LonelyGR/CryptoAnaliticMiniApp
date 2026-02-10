@@ -212,7 +212,7 @@ export default function Home({ user, apiConnected }) {
         setPaymentContext({ amount: 590 });
 
         /*
-        // === Платежный флоу (вернём позже) ===
+        // === Платежный флоу (оставил до лучших времен) ===
         // if (!apiConnected) {
         //     alert('Сервер недоступен. Оплата временно невозможна.');
         //     return;
