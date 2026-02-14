@@ -730,6 +730,48 @@ export async function deleteWebinarMaterial(materialId, adminTelegramId) {
 }
 
 /**
+ * Balance: get current user balance (requires Telegram initData)
+ */
+export async function getMyBalance() {
+  try {
+    return await apiRequest('/me/balance');
+  } catch (error) {
+    console.error('Failed to get balance:', error);
+    return null;
+  }
+}
+
+/**
+ * Balance: get deposit address (static from env)
+ */
+export async function getDepositAddress() {
+  try {
+    return await apiRequest('/me/deposit-address');
+  } catch (error) {
+    console.error('Failed to get deposit address:', error);
+    return null;
+  }
+}
+
+/**
+ * Balance: submit deposit request (tx hash or explorer url)
+ */
+export async function createBalanceRequest(txRef) {
+  try {
+    const response = await fetch(`${API_BASE_URL}/me/balance-requests`, {
+      method: 'POST',
+      headers: buildHeaders(),
+      body: JSON.stringify({ tx_ref: txRef }),
+    });
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    return await response.json();
+  } catch (error) {
+    console.error('Failed to create balance request:', error);
+    throw error;
+  }
+}
+
+/**
  * Проверка доступности API
  */
 export async function checkApiHealth() {

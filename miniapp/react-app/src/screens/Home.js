@@ -4,7 +4,7 @@ import CopyTradingHeader from '../components/CopyTradingHeader';
 import CryptoCard from '../components/CryptoCard';
 import ScreenWrapper from '../components/ScreenWrapper';
 // import PaymentFlow from '../components/PaymentFlow'; // временно отключено (оплата в разработке)
-import { getPosts } from '../services/api';
+import { getPosts, getMyBalance, getDepositAddress, createBalanceRequest } from '../services/api';
 
 // Popular cryptocurrencies to fetch from Binance
 const BINANCE_SYMBOLS = [
@@ -24,6 +24,13 @@ export default function Home({ user, apiConnected }) {
     const [aboutModalOpen, setAboutModalOpen] = useState(false);
     const [paymentContext, setPaymentContext] = useState(null);
     const [posts, setPosts] = useState([]);
+    const [balance, setBalance] = useState(null);
+    const [depositModalOpen, setDepositModalOpen] = useState(false);
+    const [txRefModalOpen, setTxRefModalOpen] = useState(false);
+    const [depositAddress, setDepositAddress] = useState(null);
+    const [txRefValue, setTxRefValue] = useState('');
+    const [txRefSubmitting, setTxRefSubmitting] = useState(false);
+    const [txRefSuccess, setTxRefSuccess] = useState(false);
     // Admin actions were moved to backend admin panel (/admin)
     const touchStartX = useRef(null);
     const touchEndX = useRef(null);
@@ -122,9 +129,21 @@ export default function Home({ user, apiConnected }) {
         }
     }, [apiConnected]);
 
+    const loadBalance = useCallback(async () => {
+        if (!apiConnected) return;
+        try {
+            const data = await getMyBalance();
+            setBalance(data);
+        } catch (error) {
+            console.error('Failed to load balance:', error);
+            setBalance(null);
+        }
+    }, [apiConnected]);
+
     useEffect(() => {
         fetchCryptoData();
         loadPosts();
+        loadBalance();
         
         // Обновление данных криптовалют каждые 5 секунд (Binance API быстрее чем CoinGecko)
         const cryptoInterval = setInterval(() => {
@@ -132,7 +151,7 @@ export default function Home({ user, apiConnected }) {
         }, 5000);
         
         return () => clearInterval(cryptoInterval);
-    }, [fetchCryptoData, loadPosts]);
+    }, [fetchCryptoData, loadPosts, loadBalance]);
 
     // Swipe handlers для слайдера криптовалют
     const minSwipeDistance = 50;
@@ -164,8 +183,68 @@ export default function Home({ user, apiConnected }) {
         touchEndX.current = null;
     };
 
-    const handleDepositClick = () => {
-        // Handle deposit action
+    const handleDepositClick = async () => {
+        setDepositModalOpen(true);
+        if (apiConnected) {
+            try {
+                const addr = await getDepositAddress();
+                setDepositAddress(addr);
+            } catch (e) {
+                console.error('Failed to load deposit address:', e);
+            }
+        }
+    };
+
+    const handleCopyAddress = () => {
+        if (depositAddress?.address) {
+            navigator.clipboard?.writeText(depositAddress.address).then(() => {
+                if (window.Telegram?.WebApp?.showPopup) {
+                    window.Telegram.WebApp.showPopup({ title: 'Скопировано' });
+                } else {
+                    alert('Скопировано');
+                }
+            });
+        }
+    };
+
+    const handlePaidClick = () => {
+        setDepositModalOpen(false);
+        setTxRefModalOpen(true);
+        setTxRefValue('');
+        setTxRefSuccess(false);
+    };
+
+    const handleTxRefSubmit = async (e) => {
+        e.preventDefault();
+        const ref = (txRefValue || '').trim();
+        if (!ref) return;
+        setTxRefSubmitting(true);
+        try {
+            await createBalanceRequest(ref);
+            setTxRefSuccess(true);
+            loadBalance();
+            setTimeout(() => {
+                setTxRefModalOpen(false);
+                setTxRefSuccess(false);
+            }, 2000);
+        } catch (err) {
+            console.error('Failed to submit balance request:', err);
+            if (window.Telegram?.WebApp?.showPopup) {
+                window.Telegram.WebApp.showPopup({ title: 'Ошибка', message: 'Не удалось отправить заявку' });
+            } else {
+                alert('Не удалось отправить заявку');
+            }
+        } finally {
+            setTxRefSubmitting(false);
+        }
+    };
+
+    const handleWithdrawClick = () => {
+        if (window.Telegram?.WebApp?.showPopup) {
+            window.Telegram.WebApp.showPopup({ title: 'Вывод временно недоступен' });
+        } else {
+            alert('Вывод временно недоступен');
+        }
     };
 
     // Creating/updating/deleting posts is handled in backend admin panel.
@@ -270,6 +349,38 @@ export default function Home({ user, apiConnected }) {
                             <p className="neo-subtitle">
                                 Умная панель управления активами с прозрачной аналитикой и защитой капитала.
                             </p>
+                        </div>
+
+                        <div className="balance-block" style={{
+                            display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                            padding: '14px 18px', margin: '14px 0',
+                            background: 'rgba(46, 46, 46, 0.55)', borderRadius: 16,
+                            border: '1px solid rgba(68, 68, 68, 0.65)'
+                        }}>
+                            <span style={{ fontWeight: 600, fontSize: 15 }}>Баланс</span>
+                            <span style={{ fontWeight: 700, fontSize: 18, color: 'var(--accent)' }}>
+                                {balance?.balance_formatted ?? (apiConnected ? '—' : '0.00 KZT')}
+                            </span>
+                        </div>
+                        <div style={{ display: 'flex', gap: 10, marginBottom: 14 }}>
+                            <button
+                                type="button"
+                                className="neo-platform-btn neo-platform-btn--primary"
+                                onClick={handleDepositClick}
+                                style={{ flex: 1 }}
+                            >
+                                Пополнить
+                            </button>
+                            <button
+                                type="button"
+                                className="neo-platform-btn neo-platform-btn--secondary"
+                                onClick={handleWithdrawClick}
+                                style={{ flex: 1, opacity: 0.7 }}
+                                title="Временно недоступно"
+                            >
+                                Вывести
+                                <span style={{ display: 'block', fontSize: 10, opacity: 0.9 }}>Временно недоступно</span>
+                            </button>
                         </div>
 
                         <div className="neo-grid">
@@ -403,6 +514,55 @@ export default function Home({ user, apiConnected }) {
                                                 Итог: алгоритм ориентирован на стабильную работу в разных рыночных фазах, а не на агрессивную спекуляцию.
                                             </p>
                                         </div>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {depositModalOpen && (
+                            <div className="neo-modal-overlay" role="dialog" aria-modal="true" onClick={() => setDepositModalOpen(false)}>
+                                <div className="neo-modal-card" onClick={(e) => e.stopPropagation()}>
+                                    <button type="button" className="neo-modal-back" onClick={() => setDepositModalOpen(false)} aria-label="Закрыть">←</button>
+                                    <div className="neo-modal-body">
+                                        <h2 className="neo-modal-title">Пополнение баланса</h2>
+                                        {depositAddress ? (
+                                            <>
+                                                <img src="/qr.jpg" alt="QR для оплаты" style={{ maxWidth: 180, margin: '0 auto 16px', display: 'block' }} />
+                                                <p style={{ fontSize: 13, color: 'var(--text-3)', marginBottom: 10 }}>{depositAddress.network_label}</p>
+                                                <div style={{ wordBreak: 'break-all', fontFamily: 'monospace', fontSize: 12, marginBottom: 12 }}>{depositAddress.address}</div>
+                                                <button type="button" className="btn-primary" onClick={handleCopyAddress} style={{ marginBottom: 16 }}>Скопировать</button>
+                                                <button type="button" className="btn-primary" onClick={handlePaidClick}>Я оплатил</button>
+                                            </>
+                                        ) : (
+                                            <p>Загрузка адреса…</p>
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {txRefModalOpen && (
+                            <div className="neo-modal-overlay" role="dialog" aria-modal="true" onClick={() => !txRefSubmitting && setTxRefModalOpen(false)}>
+                                <div className="neo-modal-card" onClick={(e) => e.stopPropagation()}>
+                                    <button type="button" className="neo-modal-back" onClick={() => !txRefSubmitting && setTxRefModalOpen(false)} aria-label="Закрыть">←</button>
+                                    <div className="neo-modal-body">
+                                        <h2 className="neo-modal-title">{txRefSuccess ? 'Заявка отправлена' : 'Ссылка на транзакцию'}</h2>
+                                        {txRefSuccess ? (
+                                            <p style={{ color: 'var(--accent)' }}>Заявка передана на проверку.</p>
+                                        ) : (
+                                            <form onSubmit={handleTxRefSubmit}>
+                                                <input
+                                                    type="text"
+                                                    placeholder="Tx hash или ссылка на explorer"
+                                                    value={txRefValue}
+                                                    onChange={(e) => setTxRefValue(e.target.value)}
+                                                    style={{ width: '100%', padding: 12, marginBottom: 12, borderRadius: 10 }}
+                                                />
+                                                <button type="submit" className="btn-primary" disabled={txRefSubmitting}>
+                                                    {txRefSubmitting ? 'Отправка…' : 'Отправить на проверку'}
+                                                </button>
+                                            </form>
+                                        )}
                                     </div>
                                 </div>
                             </div>

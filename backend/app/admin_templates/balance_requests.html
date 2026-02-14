@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+{% block content %}
+  <div class="card">
+    <h2>Заявки на пополнение</h2>
+    <form method="get" action="/admin/balance-requests" class="filters" style="display:flex; gap:10px; margin-bottom:14px; flex-wrap:wrap">
+      <select name="status">
+        <option value="pending" {% if status_filter=='pending' %}selected{% endif %}>Pending</option>
+        <option value="approved" {% if status_filter=='approved' %}selected{% endif %}>Approved</option>
+        <option value="rejected" {% if status_filter=='rejected' %}selected{% endif %}>Rejected</option>
+        <option value="all" {% if status_filter=='all' %}selected{% endif %}>Все</option>
+      </select>
+      <input type="hidden" name="limit" value="{{ limit }}" />
+      <button class="btn" type="submit">Фильтр</button>
+    </form>
+
+    <table class="table">
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Пользователь</th>
+          <th>tx_ref</th>
+          <th>Статус</th>
+          <th>Создано</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for r in items %}
+          <tr>
+            <td>{{ r.id }}</td>
+            <td>
+              #{{ r.user_id }}
+              {% if r.user_first_name or r.user_username %}
+                · {{ r.user_first_name or '' }} {% if r.user_username %}@{{ r.user_username }}{% endif %}
+              {% endif %}
+            </td>
+            <td class="muted" style="max-width:200px; overflow:hidden; text-overflow:ellipsis">{{ r.tx_ref[:80] }}{% if r.tx_ref|length > 80 %}…{% endif %}</td>
+            <td><span class="pill">{{ r.status }}</span></td>
+            <td class="muted">{{ r.created_at.strftime('%Y-%m-%d %H:%M') if r.created_at else '—' }}</td>
+            <td>
+              <a class="btn small" href="/admin/balance-requests/{{ r.id }}">Открыть</a>
+            </td>
+          </tr>
+        {% else %}
+          <tr><td colspan="6" class="muted">Нет заявок</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+
+    {% if pages > 1 %}
+      <div class="pagination" style="margin-top:14px">
+        {% if page > 1 %}
+          <a href="?status={{ status_filter }}&page={{ page - 1 }}&limit={{ limit }}">← Пред</a>
+        {% endif %}
+        <span class="muted">Стр. {{ page }} / {{ pages }} (всего {{ total }})</span>
+        {% if page < pages %}
+          <a href="?status={{ status_filter }}&page={{ page + 1 }}&limit={{ limit }}">След →</a>
+        {% endif %}
+      </div>
+    {% endif %}
+  </div>
+{% endblock %}

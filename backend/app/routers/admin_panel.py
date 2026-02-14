@@ -20,6 +20,18 @@ from app.models.user import User
 from app.models.payment import Payment
 from app.models.referral_invite import ReferralInvite
 from app.models.admin_panel_user import AdminPanelUser
+from app.models.balance_request import BalanceRequest
+from app.models.balance_ledger import BalanceLedger
+from app.models.user_balance import UserBalance
+from app.services.balance_service import (
+    _format_money,
+    admin_adjust_balance,
+    approve_deposit_request,
+    get_balance_cents,
+    get_or_create_balance,
+    parse_money,
+    reject_deposit_request,
+)
 
 # Reuse DB-clear helpers (works for sqlite + postgres)
 from app.routers.admins import _clear_all_tables, _clear_selected_tables  # noqa: F401
@@ -110,6 +122,7 @@ def _role_default_scopes(role: str) -> set[str]:
             "tickets:view", "tickets:respond",
             "data:view", "data:delete",
             "admins:manage",
+            "balance:view", "balance:manage",
         }
     if r in ("support", "поддержка"):
         return {"tickets:view", "tickets:respond"}
@@ -162,6 +175,9 @@ ADMIN_PERMS: list[tuple[str, str, str, str]] = [
 
     ("Управление", "admins:manage", "Управление Telegram-админами", "Добавлять/удалять админов приложения"),
     ("Управление", "users:manage", "Управление пользователями панели", "Создавать аккаунты/роли/права для панели"),
+
+    ("Баланс", "balance:view", "Просмотр заявок и балансов", "Видеть заявки на пополнение и балансы пользователей"),
+    ("Баланс", "balance:manage", "Управление балансом", "Подтверждать/отклонять заявки, изменять баланс"),
 ]
 
 
@@ -782,4 +798,252 @@ def admin_panel_users_delete(
     db.delete(target)
     db.commit()
     return _redir("/admin/users", flash="Пользователь удалён", kind="ok")
+
+
+# --- Balance / Deposit requests ---
+
+
+def _limit_safe(limit_raw, default=50, max_val=100):
+    try:
+        n = int(limit_raw)
+        return min(max(n, 1), max_val) if n > 0 else default
+    except (TypeError, ValueError):
+        return default
+
+
+@router.get("/balance-requests")
+def admin_balance_requests(
+    request: Request,
+    user: AdminPanelUser = Depends(require_scope("balance:view")),
+    db=Depends(get_db),
+):
+    status_filter = (request.query_params.get("status") or "pending").strip().lower()
+    if status_filter not in ("pending", "approved", "rejected", "all"):
+        status_filter = "pending"
+    limit = _limit_safe(request.query_params.get("limit"), 50, 100)
+    page = max(1, int(request.query_params.get("page") or 1))
+
+    q = db.query(BalanceRequest)
+    if status_filter != "all":
+        q = q.filter(BalanceRequest.status == status_filter)
+    q = q.order_by(BalanceRequest.created_at.desc())
+    total = q.count()
+    items = q.offset((page - 1) * limit).limit(limit).all()
+
+    def to_ctx(r):
+        u = db.query(User).filter(User.id == r.user_id).first()
+        return {
+            "id": r.id,
+            "user_id": r.user_id,
+            "user_telegram_id": u.telegram_id if u else None,
+            "user_first_name": u.first_name if u else None,
+            "user_username": u.username if u else None,
+            "tx_ref": r.tx_ref,
+            "status": r.status,
+            "created_at": r.created_at,
+        }
+
+    pages = (total + limit - 1) // limit if limit else 0
+    return _render(
+        request,
+        "balance_requests.html",
+        section="balance_requests",
+        title="Admin · Заявки на пополнение",
+        items=[to_ctx(r) for r in items],
+        page=page,
+        pages=pages,
+        total=total,
+        limit=limit,
+        status_filter=status_filter,
+        admin_user=f"{user.username} · {user.role}",
+        can_manage_users=_has_scope(user, "users"),
+    )
+
+
+@router.get("/balance-requests/{req_id}")
+def admin_balance_request_detail(
+    request: Request,
+    req_id: int,
+    user: AdminPanelUser = Depends(require_scope("balance:view")),
+    db=Depends(get_db),
+):
+    r = db.query(BalanceRequest).filter(BalanceRequest.id == req_id).first()
+    if not r:
+        return _redir("/admin/balance-requests", flash="Заявка не найдена", kind="bad")
+    u = db.query(User).filter(User.id == r.user_id).first()
+    can_manage = _has_scope(user, "balance:manage")
+    return _render(
+        request,
+        "balance_request_detail.html",
+        section="balance_requests",
+        title=f"Admin · Заявка #{r.id}",
+        req=r,
+        user=u,
+        can_manage=can_manage,
+        admin_user=f"{user.username} · {user.role}",
+    )
+
+
+@router.post("/balance-requests/{req_id}/approve")
+def admin_balance_request_approve(
+    req_id: int,
+    acting: AdminPanelUser = Depends(require_scope("balance:manage")),
+    db=Depends(get_db),
+    amount: str = Form(...),
+    comment: str = Form(""),
+):
+    try:
+        amount_cents = parse_money(amount.strip())
+        if amount_cents <= 0:
+            return _redir(f"/admin/balance-requests/{req_id}", flash="Сумма должна быть положительной", kind="bad")
+    except ValueError as e:
+        return _redir(f"/admin/balance-requests/{req_id}", flash=str(e), kind="bad")
+    try:
+        approve_deposit_request(db, req_id, amount_cents, acting.id, comment or None)
+        return _redir("/admin/balance-requests", flash="Заявка одобрена", kind="ok")
+    except ValueError as e:
+        return _redir(f"/admin/balance-requests/{req_id}", flash=str(e), kind="bad")
+
+
+@router.post("/balance-requests/{req_id}/reject")
+def admin_balance_request_reject(
+    req_id: int,
+    acting: AdminPanelUser = Depends(require_scope("balance:manage")),
+    db=Depends(get_db),
+    comment: str = Form(""),
+):
+    try:
+        reject_deposit_request(db, req_id, acting.id, comment or None)
+        return _redir("/admin/balance-requests", flash="Заявка отклонена", kind="ok")
+    except ValueError as e:
+        return _redir(f"/admin/balance-requests/{req_id}", flash=str(e), kind="bad")
+
+
+@router.get("/app-users")
+def admin_app_users(
+    request: Request,
+    user: AdminPanelUser = Depends(require_scope("balance:view")),
+    db=Depends(get_db),
+):
+    search = (request.query_params.get("search") or "").strip()
+    limit = _limit_safe(request.query_params.get("limit"), 50, 100)
+    page = max(1, int(request.query_params.get("page") or 1))
+
+    from sqlalchemy import or_
+
+    q = db.query(User)
+    if search:
+        like = f"%{search}%"
+        conds = [User.username.ilike(like), User.first_name.ilike(like), User.last_name.ilike(like)]
+        if search.isdigit():
+            conds.append(User.telegram_id == int(search))
+        q = q.filter(or_(*conds))
+    q = q.order_by(User.id.desc())
+    total = q.count()
+    users = q.offset((page - 1) * limit).limit(limit).all()
+
+    def to_ctx(u):
+        balance = get_balance_cents(db, u.id)
+        return {
+            "id": u.id,
+            "telegram_id": u.telegram_id,
+            "username": u.username,
+            "first_name": u.first_name,
+            "last_name": u.last_name,
+            "is_blocked": u.is_blocked,
+            "balance_cents": balance,
+            "balance_formatted": _format_money(balance),
+        }
+
+    pages = (total + limit - 1) // limit if limit else 0
+    return _render(
+        request,
+        "app_users.html",
+        section="app_users",
+        title="Admin · Пользователи приложения",
+        users=[to_ctx(u) for u in users],
+        page=page,
+        pages=pages,
+        total=total,
+        limit=limit,
+        search=search,
+        admin_user=f"{user.username} · {user.role}",
+    )
+
+
+@router.get("/app-users/{user_id}")
+def admin_app_user_profile(
+    request: Request,
+    user_id: int,
+    acting: AdminPanelUser = Depends(require_scope("balance:view")),
+    db=Depends(get_db),
+):
+    u = db.query(User).filter(User.id == user_id).first()
+    if not u:
+        return _redir("/admin/app-users", flash="Пользователь не найден", kind="bad")
+    balance = get_balance_cents(db, u.id)
+    can_manage = _has_scope(acting, "balance:manage")
+
+    ledger_page = max(1, int(request.query_params.get("ledger_page") or 1))
+    ledger_limit = _limit_safe(request.query_params.get("ledger_limit"), 50, 100)
+    ledger_q = db.query(BalanceLedger).filter(BalanceLedger.user_id == user_id).order_by(BalanceLedger.created_at.desc())
+    ledger_total = ledger_q.count()
+    ledger_items = ledger_q.offset((ledger_page - 1) * ledger_limit).limit(ledger_limit).all()
+    ledger_pages = (ledger_total + ledger_limit - 1) // ledger_limit if ledger_limit else 0
+
+    return _render(
+        request,
+        "app_user_profile.html",
+        section="app_users",
+        title=f"Admin · Пользователь #{u.id}",
+        target_user=u,
+        balance_cents=balance,
+        balance_formatted=_format_money(balance),
+        can_manage=can_manage,
+        ledger_items=ledger_items,
+        ledger_page=ledger_page,
+        ledger_pages=ledger_pages,
+        ledger_total=ledger_total,
+        ledger_limit=ledger_limit,
+        admin_user=f"{acting.username} · {acting.role}",
+    )
+
+
+@router.post("/app-users/{user_id}/block")
+def admin_app_user_block(
+    user_id: int,
+    acting: AdminPanelUser = Depends(require_scope("balance:manage")),
+    db=Depends(get_db),
+    blocked: str = Form("0"),
+):
+    u = db.query(User).filter(User.id == user_id).first()
+    if not u:
+        return _redir("/admin/app-users", flash="Пользователь не найден", kind="bad")
+    u.is_blocked = str(blocked).strip() == "1"
+    db.commit()
+    return _redir(f"/admin/app-users/{user_id}", flash="Статус блокировки обновлён", kind="ok")
+
+
+@router.post("/app-users/{user_id}/balance-adjust")
+def admin_app_user_balance_adjust(
+    user_id: int,
+    acting: AdminPanelUser = Depends(require_scope("balance:manage")),
+    db=Depends(get_db),
+    delta: str = Form(...),
+    comment: str = Form(""),
+):
+    try:
+        delta_cents = parse_money(delta.strip())
+        if delta_cents == 0:
+            return _redir(f"/admin/app-users/{user_id}", flash="Дельта не должна быть 0", kind="bad")
+    except ValueError as e:
+        return _redir(f"/admin/app-users/{user_id}", flash=str(e), kind="bad")
+    u = db.query(User).filter(User.id == user_id).first()
+    if not u:
+        return _redir("/admin/app-users", flash="Пользователь не найден", kind="bad")
+    try:
+        admin_adjust_balance(db, user_id, delta_cents, acting.id, comment or None)
+        return _redir(f"/admin/app-users/{user_id}", flash="Баланс изменён", kind="ok")
+    except ValueError as e:
+        return _redir(f"/admin/app-users/{user_id}", flash=str(e), kind="bad")
 

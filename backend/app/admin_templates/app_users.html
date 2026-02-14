@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% block content %}
+  <div class="card">
+    <h2>Пользователи приложения</h2>
+    <form method="get" action="/admin/app-users" style="display:flex; gap:10px; margin-bottom:14px; flex-wrap:wrap">
+      <input name="search" type="text" placeholder="Поиск (username, имя, telegram_id)" value="{{ search }}" style="min-width:200px" />
+      <input type="hidden" name="limit" value="{{ limit }}" />
+      <button class="btn" type="submit">Поиск</button>
+    </form>
+
+    <table class="table">
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Telegram</th>
+          <th>Username</th>
+          <th>Имя</th>
+          <th>Блок</th>
+          <th>Баланс</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for u in users %}
+          <tr>
+            <td>{{ u.id }}</td>
+            <td class="muted">{{ u.telegram_id }}</td>
+            <td>{% if u.username %}@{{ u.username }}{% else %}—{% endif %}</td>
+            <td>{{ u.first_name or '' }} {{ u.last_name or '' }}</td>
+            <td><span class="pill">{{ 'да' if u.is_blocked else 'нет' }}</span></td>
+            <td>{{ u.balance_formatted }}</td>
+            <td><a class="btn small" href="/admin/app-users/{{ u.id }}">Профиль</a></td>
+          </tr>
+        {% else %}
+          <tr><td colspan="7" class="muted">Нет пользователей</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+
+    {% if pages > 1 %}
+      <div class="pagination" style="margin-top:14px">
+        {% if page > 1 %}
+          <a href="?search={{ search }}&page={{ page - 1 }}&limit={{ limit }}">← Пред</a>
+        {% endif %}
+        <span class="muted">Стр. {{ page }} / {{ pages }} (всего {{ total }})</span>
+        {% if page < pages %}
+          <a href="?search={{ search }}&page={{ page + 1 }}&limit={{ limit }}">След →</a>
+        {% endif %}
+      </div>
+    {% endif %}
+  </div>
+{% endblock %}

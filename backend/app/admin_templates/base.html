@@ -24,6 +24,8 @@
             <a href="/admin/tickets" class="{{ 'active' if section=='tickets' else '' }}">Тикеты</a>
             <a href="/admin/admins" class="{{ 'active' if section=='admins' else '' }}">Админы</a>
             <a href="/admin/data" class="{{ 'active' if section=='data' else '' }}">Данные</a>
+            <a href="/admin/balance-requests" class="{{ 'active' if section=='balance_requests' else '' }}">Заявки на пополнение</a>
+            <a href="/admin/app-users" class="{{ 'active' if section=='app_users' else '' }}">Пользователи приложения</a>
             <a href="/admin/users" class="{{ 'active' if section=='users' else '' }}">Пользователи панели</a>
           </div>
           <div class="topbar__meta">
@@ -51,6 +53,8 @@
           <a href="/admin/tickets" class="{{ 'active' if section=='tickets' else '' }}">Тикеты</a>
           <a href="/admin/admins" class="{{ 'active' if section=='admins' else '' }}">Админы</a>
           <a href="/admin/data" class="{{ 'active' if section=='data' else '' }}">Данные</a>
+          <a href="/admin/balance-requests" class="{{ 'active' if section=='balance_requests' else '' }}">Заявки на пополнение</a>
+          <a href="/admin/app-users" class="{{ 'active' if section=='app_users' else '' }}">Пользователи приложения</a>
           <a href="/admin/users" class="{{ 'active' if section=='users' else '' }}">Пользователи панели</a>
         </nav>
         <form method="post" action="/admin/logout" style="margin-top:12px">

@@ -10,7 +10,7 @@ from starlette.middleware.trustedhost import TrustedHostMiddleware
 from starlette.requests import Request
 from starlette.responses import Response
 
-from app.routers import users, bookings, webinars, admins, posts, payments, webinar_materials, reminders, referrals, nowpayments, admin_panel, product_payments, debug
+from app.routers import users, bookings, webinars, admins, posts, payments, webinar_materials, reminders, referrals, nowpayments, admin_panel, product_payments, me, debug
 
 from app.database import engine, Base
 from app.models import User, Booking, Webinar, Admin, Post, Payment, WebinarMaterial, ReferralInvite
@@ -112,6 +112,7 @@ app.include_router(referrals.router)
 app.include_router(nowpayments.router)
 app.include_router(admin_panel.router)
 app.include_router(product_payments.router)
+app.include_router(me.router)
 app.include_router(debug.router)
 
 # Static assets for backend admin panel

@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+{% block content %}
+  <div class="card">
+    <h2>Заявка #{{ req.id }}</h2>
+    <table class="table">
+      <tr><th>Пользователь</th>
+        <td>
+          #{{ req.user_id }}
+          {% if user %}
+            · {{ user.first_name or '' }} {{ user.last_name or '' }}
+            {% if user.username %}@{{ user.username }}{% endif %}
+            (tg: {{ user.telegram_id }})
+          {% else %}
+            <span class="muted">—</span>
+          {% endif %}
+        </td>
+      </tr>
+      <tr><th>tx_ref</th>
+        <td style="word-break:break-all">
+          {% if req.tx_ref and (req.tx_ref.startswith('http://') or req.tx_ref.startswith('https://')) %}
+            <a href="{{ req.tx_ref }}" target="_blank" rel="noopener noreferrer">{{ req.tx_ref }}</a>
+          {% else %}
+            {{ req.tx_ref }}
+          {% endif %}
+        </td>
+      </tr>
+      <tr><th>Статус</th><td><span class="pill">{{ req.status }}</span></td></tr>
+      <tr><th>Создано</th><td>{{ req.created_at.strftime('%Y-%m-%d %H:%M') if req.created_at else '—' }}</td></tr>
+      {% if req.reviewed_at %}
+        <tr><th>Проверено</th><td>{{ req.reviewed_at.strftime('%Y-%m-%d %H:%M') if req.reviewed_at else '—' }}</td></tr>
+      {% endif %}
+      {% if req.admin_comment %}
+        <tr><th>Комментарий админа</th><td>{{ req.admin_comment }}</td></tr>
+      {% endif %}
+    </table>
+
+    {% if req.status == 'pending' and can_manage %}
+      <hr />
+      <div style="display:flex; gap:20px; flex-wrap:wrap; margin-top:14px">
+        <form method="post" action="/admin/balance-requests/{{ req.id }}/approve" style="display:flex; gap:10px; align-items:flex-end">
+          <div class="field">
+            <label>Сумма (12.50 = 1250)</label>
+            <input name="amount" type="text" placeholder="12.50" required />
+          </div>
+          <div class="field">
+            <label>Комментарий</label>
+            <input name="comment" type="text" placeholder="опционально" />
+          </div>
+          <button class="btn ok" type="submit">Одобрить</button>
+        </form>
+        <form method="post" action="/admin/balance-requests/{{ req.id }}/reject" style="display:flex; gap:10px; align-items:flex-end">
+          <div class="field">
+            <label>Комментарий</label>
+            <input name="comment" type="text" placeholder="причина отклонения" />
+          </div>
+          <button class="btn danger" type="submit">Отклонить</button>
+        </form>
+      </div>
+    {% endif %}
+  </div>
+  <div style="margin-top:14px">
+    <a href="/admin/balance-requests">← К списку заявок</a>
+  </div>
+{% endblock %}

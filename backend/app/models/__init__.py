@@ -11,6 +11,9 @@ from app.models.nowpayments_ipn_event import NowPaymentsIpnEvent
 from app.models.admin_panel_user import AdminPanelUser
 from app.models.user_entitlement import UserEntitlement
 from app.models.product_purchase import ProductPurchase
+from app.models.user_balance import UserBalance
+from app.models.balance_request import BalanceRequest
+from app.models.balance_ledger import BalanceLedger
 
 __all__ = [
     "User",
@@ -26,5 +29,8 @@ __all__ = [
     "AdminPanelUser",
     "UserEntitlement",
     "ProductPurchase",
+    "UserBalance",
+    "BalanceRequest",
+    "BalanceLedger",
 ]
 

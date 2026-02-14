@@ -1,0 +1,88 @@
+{% extends "base.html" %}
+{% block content %}
+  <div class="card">
+    <h2>Пользователь #{{ target_user.id }}</h2>
+    <table class="table">
+      <tr><th>Telegram ID</th><td>{{ target_user.telegram_id }}</td></tr>
+      <tr><th>Username</th><td>{% if target_user.username %}@{{ target_user.username }}{% else %}—{% endif %}</td></tr>
+      <tr><th>Имя</th><td>{{ target_user.first_name or '' }} {{ target_user.last_name or '' }}</td></tr>
+      <tr><th>Заблокирован</th><td><span class="pill">{{ 'да' if target_user.is_blocked else 'нет' }}</span></td></tr>
+      <tr><th>Баланс</th><td><strong>{{ balance_formatted }}</strong></td></tr>
+    </table>
+
+    {% if can_manage %}
+      <hr />
+      <div style="margin-top:14px">
+        <form method="post" action="/admin/app-users/{{ target_user.id }}/block" style="display:inline-block; margin-right:14px">
+          <input type="hidden" name="blocked" value="0" />
+          <label class="toggle">
+            <input type="checkbox" name="blocked" value="1" {% if target_user.is_blocked %}checked{% endif %} />
+            Заблокирован
+          </label>
+          <button class="btn" type="submit">Сохранить</button>
+        </form>
+      </div>
+
+      <div style="margin-top:14px">
+        <h3>Изменить баланс</h3>
+        <form method="post" action="/admin/app-users/{{ target_user.id }}/balance-adjust" style="display:flex; gap:10px; align-items:flex-end; flex-wrap:wrap">
+          <div class="field">
+            <label>Дельта (+ или -, например -5.50 или +10)</label>
+            <input name="delta" type="text" placeholder="+10.50 или -5" required />
+          </div>
+          <div class="field">
+            <label>Комментарий</label>
+            <input name="comment" type="text" placeholder="опционально" />
+          </div>
+          <button class="btn ok" type="submit">Применить</button>
+        </form>
+      </div>
+    {% endif %}
+  </div>
+
+  <div class="card" style="margin-top:14px">
+    <h3>История операций (ledger)</h3>
+    <table class="table">
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Тип</th>
+          <th>Дельта</th>
+          <th>Баланс после</th>
+          <th>Комментарий</th>
+          <th>Дата</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for e in ledger_items %}
+          <tr>
+            <td>{{ e.id }}</td>
+            <td><span class="pill">{{ e.type }}</span></td>
+            <td>{{ '%+.2f'|format(e.delta_cents / 100) }}</td>
+            <td>{{ '%.2f'|format(e.balance_after_cents / 100) }}</td>
+            <td class="muted">{{ e.comment or '—' }}</td>
+            <td class="muted">{{ e.created_at.strftime('%Y-%m-%d %H:%M') if e.created_at else '—' }}</td>
+          </tr>
+        {% else %}
+          <tr><td colspan="6" class="muted">Нет операций</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+
+    {% if ledger_pages > 1 %}
+      <div class="pagination" style="margin-top:14px">
+        {% if ledger_page > 1 %}
+          <a href="?ledger_page={{ ledger_page - 1 }}&ledger_limit={{ ledger_limit }}">← Пред</a>
+        {% endif %}
+        <span class="muted">Стр. {{ ledger_page }} / {{ ledger_pages }} (всего {{ ledger_total }})</span>
+        {% if ledger_page < ledger_pages %}
+          <a href="?ledger_page={{ ledger_page + 1 }}&ledger_limit={{ ledger_limit }}">След →</a>
+        {% endif %}
+      </div>
+    {% endif %}
+  </div>
+
+  <div style="margin-top:14px">
+    <a href="/admin/app-users">← К списку пользователей</a>
+  </div>
+{% endblock %}
