@@ -559,15 +559,18 @@ export default function Home({ user, apiConnected }) {
                                         {txRefSuccess ? (
                                             <p style={{ color: 'var(--accent)' }}>Заявка передана на проверку.</p>
                                         ) : (
-                                            <form onSubmit={handleTxRefSubmit}>
+                                            <form onSubmit={handleTxRefSubmit} className="txref-form">
+                                                <p className="txref-form__hint">
+                                                    Вставьте хеш транзакции или ссылку на блокчейн-explorer. Найти можно в кошельке после оплаты.
+                                                </p>
                                                 <input
                                                     type="text"
                                                     placeholder="Tx hash или ссылка на explorer"
                                                     value={txRefValue}
                                                     onChange={(e) => setTxRefValue(e.target.value)}
-                                                    style={{ width: '100%', padding: 12, marginBottom: 12, borderRadius: 10 }}
+                                                    className="txref-form__input"
                                                 />
-                                                <button type="submit" className="btn-primary" disabled={txRefSubmitting}>
+                                                <button type="submit" className="btn-primary txref-form__btn" disabled={txRefSubmitting}>
                                                     {txRefSubmitting ? 'Отправка…' : 'Отправить на проверку'}
                                                 </button>
                                             </form>
