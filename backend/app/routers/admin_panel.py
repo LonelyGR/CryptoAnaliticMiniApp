@@ -634,7 +634,6 @@ def admin_admins_delete(admin_id: int, _: AdminPanelUser = Depends(require_scope
 def admin_data(request: Request, user: AdminPanelUser = Depends(require_scope("data:view")), db=Depends(get_db)):
     tables = [t.name for t in Base.metadata.sorted_tables]
 
-    # High-signal counts + recent rows (so you can see what exists)
     counts = {
         "users": db.query(User).count(),
         "admins": db.query(Admin).count(),
@@ -645,13 +644,6 @@ def admin_data(request: Request, user: AdminPanelUser = Depends(require_scope("d
         "referrals": db.query(ReferralInvite).count(),
     }
 
-    recent_users = db.query(User).order_by(User.id.desc()).limit(20).all()
-    recent_posts = db.query(Post).order_by(Post.id.desc()).limit(20).all()
-    recent_webinars = db.query(Webinar).order_by(Webinar.id.desc()).limit(20).all()
-    recent_bookings = db.query(Booking).order_by(Booking.id.desc()).limit(20).all()
-    recent_payments = db.query(Payment).order_by(Payment.id.desc()).limit(20).all()
-    recent_referrals = db.query(ReferralInvite).order_by(ReferralInvite.id.desc()).limit(20).all()
-
     return _render(
         request,
         "data.html",
@@ -659,12 +651,6 @@ def admin_data(request: Request, user: AdminPanelUser = Depends(require_scope("d
         title="Admin · Данные",
         tables=tables,
         counts=counts,
-        recent_users=recent_users,
-        recent_posts=recent_posts,
-        recent_webinars=recent_webinars,
-        recent_bookings=recent_bookings,
-        recent_payments=recent_payments,
-        recent_referrals=recent_referrals,
         admin_user=f"{user.username} · {user.role}",
         can_manage_users=_has_scope(user, "users"),
     )

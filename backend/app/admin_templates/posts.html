@@ -14,7 +14,7 @@
         </div>
         <button class="btn primary" type="submit">Создать</button>
       </form>
-      <div class="muted" style="margin-top:10px">
+      <div class="muted" style="margin-top:var(--ds-spacing-md)">
         Эта админка работает без Telegram initData. Доступ — по логину/паролю из env.
       </div>
     </div>
@@ -36,7 +36,7 @@
               <td>{{ p.id }}</td>
               <td>
                 <div style="font-weight:900">{{ p.title }}</div>
-                <div class="muted" style="margin-top:6px; white-space:pre-wrap">{{ (p.content or '')[:220] }}{% if (p.content or '')|length > 220 %}…{% endif %}</div>
+                <div class="muted" style="margin-top:var(--ds-spacing-sm); white-space:pre-wrap">{{ (p.content or '')[:220] }}{% if (p.content or '')|length > 220 %}…{% endif %}</div>
               </td>
               <td class="muted">{{ p.created_at }}</td>
               <td>

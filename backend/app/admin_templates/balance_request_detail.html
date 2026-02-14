@@ -36,7 +36,7 @@
 
     {% if req.status == 'pending' and can_manage %}
       <hr />
-      <div style="display:flex; gap:20px; flex-wrap:wrap; margin-top:14px">
+      <div style="display:flex; gap:var(--ds-spacing-xl); flex-wrap:wrap; margin-top:var(--ds-spacing-lg)">
         <form method="post" action="/admin/balance-requests/{{ req.id }}/approve" class="row">
           <div class="field">
             <label>Сумма (12.50 = 1250)</label>
@@ -58,7 +58,7 @@
       </div>
     {% endif %}
   </div>
-  <div style="margin-top:14px">
+  <div style="margin-top:var(--ds-spacing-lg)">
     <a href="/admin/balance-requests">← К списку заявок</a>
   </div>
 {% endblock %}

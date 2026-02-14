@@ -20,7 +20,7 @@
               <td class="muted">{{ t.user_first_name or "—" }} {% if t.user_username %}@{{ t.user_username }}{% endif %}<br/>ID: {{ t.user_telegram_id }}</td>
               <td>
                 <div style="font-weight:900">{{ t.topic or "Поддержка" }}</div>
-                <div class="muted" style="margin-top:6px; white-space:pre-wrap">{{ t.message }}</div>
+                <div class="muted" style="margin-top:var(--ds-spacing-sm); white-space:pre-wrap">{{ t.message }}</div>
               </td>
               <td><span class="pill">{{ t.status }}</span></td>
               <td>
@@ -59,7 +59,7 @@
               <td class="muted">{{ c.user_first_name or "—" }} {% if c.user_username %}@{{ c.user_username }}{% endif %}<br/>ID: {{ c.user_telegram_id }}</td>
               <td>
                 <div style="font-weight:900">{{ c.topic or "Консультация" }}</div>
-                <div class="muted" style="margin-top:6px; white-space:pre-wrap">{{ c.message }}</div>
+                <div class="muted" style="margin-top:var(--ds-spacing-sm); white-space:pre-wrap">{{ c.message }}</div>
               </td>
               <td><span class="pill">{{ c.status }}</span></td>
             </tr>

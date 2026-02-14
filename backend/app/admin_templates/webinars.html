@@ -45,7 +45,7 @@
               <td>{{ w.id }}</td>
               <td>
                 <div style="font-weight:900">{{ w.title }}</div>
-                <div class="muted" style="margin-top:6px">
+                <div class="muted" style="margin-top:var(--ds-spacing-sm)">
                   {% if w.status == 'upcoming' %}Предстоящий{% elif w.status == 'completed' %}Завершён{% elif w.status == 'cancelled' %}Отменён{% else %}{{ w.status }}{% endif %}
                   · {{ w.speaker or "—" }}
                 </div>

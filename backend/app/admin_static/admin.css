@@ -33,7 +33,7 @@ a:hover {
   flex-shrink: 0;
   background: var(--ds-bg-secondary);
   border-right: 1px solid var(--ds-border-primary);
-  padding: var(--ds-spacing-lg);
+  padding: var(--ds-spacing-xl);
   position: sticky;
   top: 0;
   height: 100vh;
@@ -45,7 +45,7 @@ a:hover {
   font-size: 15px;
   letter-spacing: 0.02em;
   margin-bottom: var(--ds-spacing-xl);
-  padding-bottom: var(--ds-spacing-md);
+  padding-bottom: var(--ds-spacing-lg);
   border-bottom: 1px solid var(--ds-border-primary);
 }
 
@@ -56,7 +56,7 @@ a:hover {
 }
 
 .admin-sidebar__group {
-  margin-top: var(--ds-spacing-lg);
+  margin-top: var(--ds-spacing-xl);
 }
 
 .admin-sidebar__group-title {
@@ -94,7 +94,7 @@ a:hover {
 .admin-main {
   flex: 1;
   min-width: 0;
-  padding: var(--ds-spacing-xl);
+  padding: var(--ds-spacing-2xl);
 }
 
 .admin-topbar {
@@ -191,19 +191,19 @@ a:hover {
 .grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: var(--ds-spacing-lg);
-  margin-top: var(--ds-spacing-lg);
+  gap: var(--ds-spacing-xl);
+  margin-top: var(--ds-spacing-xl);
 }
 
 .stats {
   display: grid;
   grid-template-columns: repeat(6, 1fr);
-  gap: var(--ds-spacing-md);
-  margin-top: var(--ds-spacing-lg);
+  gap: var(--ds-spacing-lg);
+  margin-top: var(--ds-spacing-xl);
 }
 
 .stat {
-  padding: var(--ds-spacing-lg);
+  padding: var(--ds-spacing-xl);
   background: var(--ds-bg-secondary);
   border: 1px solid var(--ds-border-primary);
   border-radius: var(--ds-radius-lg);
@@ -223,13 +223,13 @@ a:hover {
 }
 
 .stat__value {
-  margin-top: var(--ds-spacing-sm);
+  margin-top: var(--ds-spacing-md);
   font-size: 20px;
   font-weight: 700;
 }
 
 .details {
-  margin-top: var(--ds-spacing-lg);
+  margin-top: var(--ds-spacing-xl);
 }
 
 details.card {
@@ -239,7 +239,7 @@ details.card {
 details.card > summary {
   list-style: none;
   cursor: pointer;
-  padding: var(--ds-spacing-lg);
+  padding: var(--ds-spacing-xl);
   font-weight: 600;
 }
 
@@ -252,7 +252,7 @@ details.card[open] > summary {
 }
 
 details.card .details__body {
-  padding: 0 var(--ds-spacing-lg) var(--ds-spacing-lg);
+  padding: var(--ds-spacing-xl);
 }
 
 /* ========== Row, Field ========== */
@@ -269,7 +269,7 @@ details.card .details__body {
   gap: var(--ds-spacing-md);
   flex-wrap: wrap;
   align-items: center;
-  margin-top: var(--ds-spacing-md);
+  margin-top: var(--ds-spacing-lg);
 }
 
 .user-reset {

@@ -14,14 +14,14 @@
       <h2>Полная очистка</h2>
       <div class="muted">Удаляет все таблицы (SQLite: DELETE, Postgres: TRUNCATE CASCADE).</div>
       <form method="post" action="/admin/data/clear-db" data-confirm="ТОЧНО удалить ВСЕ данные?">
-        <button class="btn danger" type="submit" style="margin-top:12px">Удалить ВСЕ данные</button>
+        <button class="btn danger" type="submit" style="margin-top:var(--ds-spacing-lg)">Удалить ВСЕ данные</button>
       </form>
     </div>
 
     <div class="card">
       <h2>Выборочное удаление</h2>
       <div class="muted">Выбери таблицы и нажми “Удалить выбранное”.</div>
-      <form method="post" action="/admin/data/clear-selected" style="margin-top:12px" data-confirm="Удалить выбранные данные?">
+      <form method="post" action="/admin/data/clear-selected" style="margin-top:var(--ds-spacing-lg)" data-confirm="Удалить выбранные данные?">
         <div class="field">
           <label>Таблицы</label>
           <select name="targets" multiple size="10" class="ds-select">
@@ -33,96 +33,6 @@
         <button class="btn danger" type="submit">Удалить выбранное</button>
       </form>
     </div>
-  </div>
-
-  <div class="details">
-    <details class="card" open>
-      <summary>Пользователи (последние 20)</summary>
-      <div class="details__body">
-        <table class="table">
-          <thead><tr><th>ID</th><th>Telegram ID</th><th>Username</th><th>Имя</th><th>Блок</th></tr></thead>
-          <tbody>
-            {% for u in recent_users %}
-              <tr>
-                <td>{{ u.id }}</td>
-                <td class="muted">{{ u.telegram_id }}</td>
-                <td class="muted">{% if u.username %}@{{ u.username }}{% else %}—{% endif %}</td>
-                <td>{{ u.first_name or '' }} {{ u.last_name or '' }}</td>
-                <td><span class="pill {{ 'status-danger' if u.is_blocked else 'status-success' }}">{{ 'да' if u.is_blocked else 'нет' }}</span></td>
-              </tr>
-            {% endfor %}
-          </tbody>
-        </table>
-      </div>
-    </details>
-
-    <details class="card">
-      <summary>Посты (последние 20)</summary>
-      <div class="details__body">
-        <table class="table">
-          <thead><tr><th>ID</th><th>Заголовок</th><th>Создано</th></tr></thead>
-          <tbody>
-            {% for p in recent_posts %}
-              <tr><td>{{ p.id }}</td><td><strong>{{ p.title }}</strong></td><td class="muted">{{ p.created_at }}</td></tr>
-            {% endfor %}
-          </tbody>
-        </table>
-      </div>
-    </details>
-
-    <details class="card">
-      <summary>Вебинары (последние 20)</summary>
-      <div class="details__body">
-        <table class="table">
-          <thead><tr><th>ID</th><th>Тема</th><th>Дата</th><th>Статус</th></tr></thead>
-          <tbody>
-            {% for w in recent_webinars %}
-              <tr><td>{{ w.id }}</td><td><strong>{{ w.title }}</strong></td><td class="muted">{{ w.date }} {{ w.time }}</td><td><span class="pill status-warning">{{ w.status }}</span></td></tr>
-            {% endfor %}
-          </tbody>
-        </table>
-      </div>
-    </details>
-
-    <details class="card">
-      <summary>Записи / Тикеты (последние 20)</summary>
-      <div class="details__body">
-        <table class="table">
-          <thead><tr><th>ID</th><th>ID пользователя</th><th>Тип</th><th>Статус</th><th>Тема</th></tr></thead>
-          <tbody>
-            {% for b in recent_bookings %}
-              <tr>
-                <td>{{ b.id }}</td>
-                <td class="muted">{{ b.user_id }}</td>
-                <td><span class="pill">{{ b.type }}</span></td>
-                <td class="muted">{{ b.status }}</td>
-                <td class="muted">{{ b.topic or '—' }}</td>
-              </tr>
-            {% endfor %}
-          </tbody>
-        </table>
-      </div>
-    </details>
-
-    <details class="card">
-      <summary>Рефералы (последние 20)</summary>
-      <div class="details__body">
-        <table class="table">
-          <thead><tr><th>ID</th><th>Пригласивший</th><th>Приглашённый</th><th>Username</th><th>Создано</th></tr></thead>
-          <tbody>
-            {% for r in recent_referrals %}
-              <tr>
-                <td>{{ r.id }}</td>
-                <td class="muted">{{ r.referrer_telegram_id }}</td>
-                <td class="muted">{{ r.referred_telegram_id }}</td>
-                <td class="muted">{% if r.referred_username %}@{{ r.referred_username }}{% else %}—{% endif %}</td>
-                <td class="muted">{{ r.created_at }}</td>
-              </tr>
-            {% endfor %}
-          </tbody>
-        </table>
-      </div>
-    </details>
   </div>
 {% endblock %}
 

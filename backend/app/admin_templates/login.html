@@ -24,7 +24,7 @@
           {% if flash %}
             <div class="flash {{ 'ok' if flash_kind=='ok' else 'bad' }}">
               <strong>{{ flash }}</strong>
-              {% if flash_details %}<div class="muted" style="margin-top:6px">{{ flash_details }}</div>{% endif %}
+              {% if flash_details %}<div class="muted" style="margin-top:var(--ds-spacing-sm)">{{ flash_details }}</div>{% endif %}
             </div>
           {% endif %}
 

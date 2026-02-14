@@ -56,7 +56,7 @@
         {% if flash %}
           <div class="flash {{ 'ok' if flash_kind=='ok' else 'bad' }}">
             <strong>{{ flash }}</strong>
-            {% if flash_details %}<div class="muted" style="margin-top:6px">{{ flash_details }}</div>{% endif %}
+            {% if flash_details %}<div class="muted" style="margin-top:var(--ds-spacing-sm)">{{ flash_details }}</div>{% endif %}
           </div>
         {% endif %}
 
@@ -84,7 +84,7 @@
         <a href="/admin/users" class="{{ 'active' if section=='users' else '' }}">Пользователи панели</a>
         <a href="/admin/admins" class="{{ 'active' if section=='admins' else '' }}">Админы</a>
       </nav>
-      <form method="post" action="/admin/logout" style="margin-top:12px">
+      <form method="post" action="/admin/logout" style="margin-top:var(--ds-spacing-lg)">
         <button class="btn danger" type="submit" style="width:100%">Выйти</button>
       </form>
     </aside>

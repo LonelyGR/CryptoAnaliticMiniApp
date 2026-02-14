@@ -33,6 +33,7 @@
   --ds-spacing-md: 12px;
   --ds-spacing-lg: 16px;
   --ds-spacing-xl: 24px;
+  --ds-spacing-2xl: 32px;
 }
 
 /* ========== 2. Buttons ========== */
@@ -326,7 +327,7 @@ input[type="radio"] {
 
 .table th,
 .table td {
-  padding: 12px 14px;
+  padding: 14px 16px;
   text-align: left;
   vertical-align: middle;
   border-bottom: 1px solid var(--ds-border-primary);
@@ -355,21 +356,26 @@ input[type="radio"] {
   background: var(--ds-bg-secondary);
   border: 1px solid var(--ds-border-primary);
   border-radius: var(--ds-radius-lg);
-  padding: var(--ds-spacing-xl);
+  padding: var(--ds-spacing-2xl);
   animation: dsFadeIn 0.3s ease;
 }
 
 .card h2,
 .card h3,
 .ds-card__title {
-  margin: 0 0 var(--ds-spacing-md);
+  margin: 0 0 var(--ds-spacing-lg);
   font-size: 16px;
   font-weight: 600;
   color: var(--ds-text-primary);
 }
 
+.card h3 {
+  margin: 0 0 var(--ds-spacing-md);
+  font-size: 14px;
+}
+
 .ds-card__section {
-  margin-top: var(--ds-spacing-lg);
+  margin-top: var(--ds-spacing-xl);
 }
 
 .ds-card__header {
@@ -436,8 +442,8 @@ input[type="radio"] {
 .ds-pagination {
   display: flex;
   align-items: center;
-  gap: var(--ds-spacing-md);
-  margin-top: var(--ds-spacing-lg);
+  gap: var(--ds-spacing-lg);
+  margin-top: var(--ds-spacing-xl);
   flex-wrap: wrap;
 }
 
@@ -480,7 +486,11 @@ input[type="radio"] {
   display: flex;
   flex-direction: column;
   gap: var(--ds-spacing-sm);
-  margin: var(--ds-spacing-md) 0;
+  margin: 0 0 var(--ds-spacing-md);
+}
+
+.field:last-child {
+  margin-bottom: 0;
 }
 
 .field label {
