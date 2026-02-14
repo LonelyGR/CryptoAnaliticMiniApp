@@ -26,6 +26,7 @@ export default function Home({ user, apiConnected }) {
     const [posts, setPosts] = useState([]);
     const [balance, setBalance] = useState(null);
     const [depositModalOpen, setDepositModalOpen] = useState(false);
+    const [withdrawModalOpen, setWithdrawModalOpen] = useState(false);
     const [txRefModalOpen, setTxRefModalOpen] = useState(false);
     const [depositAddress, setDepositAddress] = useState(null);
     const [txRefValue, setTxRefValue] = useState('');
@@ -240,11 +241,7 @@ export default function Home({ user, apiConnected }) {
     };
 
     const handleWithdrawClick = () => {
-        if (window.Telegram?.WebApp?.showPopup) {
-            window.Telegram.WebApp.showPopup({ title: 'Вывод временно недоступен' });
-        } else {
-            alert('Вывод временно недоступен');
-        }
+        setWithdrawModalOpen(true);
     };
 
     // Creating/updating/deleting posts is handled in backend admin panel.
@@ -351,36 +348,29 @@ export default function Home({ user, apiConnected }) {
                             </p>
                         </div>
 
-                        <div className="balance-block" style={{
-                            display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                            padding: '14px 18px', margin: '14px 0',
-                            background: 'rgba(46, 46, 46, 0.55)', borderRadius: 16,
-                            border: '1px solid rgba(68, 68, 68, 0.65)'
-                        }}>
-                            <span style={{ fontWeight: 600, fontSize: 15 }}>Баланс</span>
-                            <span style={{ fontWeight: 700, fontSize: 18, color: 'var(--accent)' }}>
-                                {balance?.balance_formatted ?? (apiConnected ? '—' : '0.00 KZT')}
-                            </span>
-                        </div>
-                        <div style={{ display: 'flex', gap: 10, marginBottom: 14 }}>
-                            <button
-                                type="button"
-                                className="neo-platform-btn neo-platform-btn--primary"
-                                onClick={handleDepositClick}
-                                style={{ flex: 1 }}
-                            >
-                                Пополнить
-                            </button>
-                            <button
-                                type="button"
-                                className="neo-platform-btn neo-platform-btn--secondary"
-                                onClick={handleWithdrawClick}
-                                style={{ flex: 1, opacity: 0.7 }}
-                                title="Временно недоступно"
-                            >
-                                Вывести
-                                <span style={{ display: 'block', fontSize: 10, opacity: 0.9 }}>Временно недоступно</span>
-                            </button>
+                        <div className="balance-block balance-block--card">
+                            <div className="balance-block__row">
+                                <span className="balance-block__label">Баланс</span>
+                                <span className="balance-block__amount">
+                                    {balance?.balance_formatted ?? (apiConnected ? '—' : '0.00 KZT')}
+                                </span>
+                            </div>
+                            <div className="balance-block__actions">
+                                <button
+                                    type="button"
+                                    className="neo-platform-btn neo-platform-btn--primary"
+                                    onClick={handleDepositClick}
+                                >
+                                    Пополнить
+                                </button>
+                                <button
+                                    type="button"
+                                    className="neo-platform-btn neo-platform-btn--secondary"
+                                    onClick={handleWithdrawClick}
+                                >
+                                    Вывести
+                                </button>
+                            </div>
                         </div>
 
                         <div className="neo-grid">
@@ -523,19 +513,36 @@ export default function Home({ user, apiConnected }) {
                             <div className="neo-modal-overlay" role="dialog" aria-modal="true" onClick={() => setDepositModalOpen(false)}>
                                 <div className="neo-modal-card" onClick={(e) => e.stopPropagation()}>
                                     <button type="button" className="neo-modal-back" onClick={() => setDepositModalOpen(false)} aria-label="Закрыть">←</button>
-                                    <div className="neo-modal-body">
+                                    <div className="neo-modal-body deposit-modal">
                                         <h2 className="neo-modal-title">Пополнение баланса</h2>
                                         {depositAddress ? (
                                             <>
-                                                <img src="/qr.jpg" alt="QR для оплаты" style={{ maxWidth: 180, margin: '0 auto 16px', display: 'block' }} />
-                                                <p style={{ fontSize: 13, color: 'var(--text-3)', marginBottom: 10 }}>{depositAddress.network_label}</p>
-                                                <div style={{ wordBreak: 'break-all', fontFamily: 'monospace', fontSize: 12, marginBottom: 12 }}>{depositAddress.address}</div>
-                                                <button type="button" className="btn-primary" onClick={handleCopyAddress} style={{ marginBottom: 16 }}>Скопировать</button>
-                                                <button type="button" className="btn-primary" onClick={handlePaidClick}>Я оплатил</button>
+                                                <img src="/qr.jpg" alt="QR для оплаты" className="deposit-modal__qr" />
+                                                <p className="deposit-modal__network">{depositAddress.network_label}</p>
+                                                <div className="deposit-modal__address">{depositAddress.address}</div>
+                                                <div className="deposit-modal__buttons">
+                                                    <button type="button" className="neo-platform-btn neo-platform-btn--primary" onClick={handleCopyAddress}>Скопировать</button>
+                                                    <button type="button" className="neo-platform-btn neo-platform-btn--primary" onClick={handlePaidClick}>Я оплатил</button>
+                                                </div>
                                             </>
                                         ) : (
-                                            <p>Загрузка адреса…</p>
+                                            <p className="deposit-modal__loading">Загрузка адреса…</p>
                                         )}
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {withdrawModalOpen && (
+                            <div className="neo-modal-overlay" role="dialog" aria-modal="true" onClick={() => setWithdrawModalOpen(false)}>
+                                <div className="neo-modal-card" onClick={(e) => e.stopPropagation()}>
+                                    <button type="button" className="neo-modal-back" onClick={() => setWithdrawModalOpen(false)} aria-label="Закрыть">←</button>
+                                    <div className="neo-modal-body withdraw-modal">
+                                        <h2 className="neo-modal-title">Вывод средств</h2>
+                                        <div className="withdraw-modal__icon">⏳</div>
+                                        <p className="withdraw-modal__text">Вывод временно недоступен.</p>
+                                        <p className="withdraw-modal__subtext">Скоро эта функция будет активирована. Обратитесь к менеджеру при необходимости.</p>
+                                        <button type="button" className="neo-platform-btn neo-platform-btn--primary" onClick={() => setWithdrawModalOpen(false)}>Понятно</button>
                                     </div>
                                 </div>
                             </div>
