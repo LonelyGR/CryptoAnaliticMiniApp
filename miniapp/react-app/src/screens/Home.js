@@ -553,6 +553,7 @@ export default function Home({ user, apiConnected }) {
                             <div className="neo-modal-overlay" role="dialog" aria-modal="true" onClick={() => !txRefSubmitting && setTxRefModalOpen(false)}>
                                 <div className="neo-modal-card" onClick={(e) => e.stopPropagation()}>
                                     <button type="button" className="neo-modal-back" onClick={() => !txRefSubmitting && setTxRefModalOpen(false)} aria-label="Закрыть">←</button>
+                                    <br />
                                     <div className="neo-modal-body">
                                         <h2 className="neo-modal-title">{txRefSuccess ? 'Заявка отправлена' : 'Ссылка на транзакцию'}</h2>
                                         {txRefSuccess ? (
