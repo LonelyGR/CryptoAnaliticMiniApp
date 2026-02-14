@@ -4,73 +4,89 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>{{ title or "Панель администратора" }}</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="/admin/static/admin.v2.css?v={{ static_v or 'dev' }}" />
     <script defer src="/admin/static/admin.v2.js?v={{ static_v or 'dev' }}"></script>
   </head>
   <body>
-    <div class="wrap">
-      <div class="topbar">
-        <div class="brand">CryptoSensei · Панель</div>
-        <div class="topbar__right">
-          <button class="nav-toggle" type="button" aria-label="Меню" aria-controls="navDrawer" aria-expanded="false">
-            <span class="nav-toggle__bar"></span>
-            <span class="nav-toggle__bar"></span>
-            <span class="nav-toggle__bar"></span>
-          </button>
-
-          <div class="nav">
-            <a href="/admin/posts" class="{{ 'active' if section=='posts' else '' }}">Посты</a>
-            <a href="/admin/webinars" class="{{ 'active' if section=='webinars' else '' }}">Вебинары</a>
-            <a href="/admin/tickets" class="{{ 'active' if section=='tickets' else '' }}">Тикеты</a>
-            <a href="/admin/admins" class="{{ 'active' if section=='admins' else '' }}">Админы</a>
-            <a href="/admin/data" class="{{ 'active' if section=='data' else '' }}">Данные</a>
-            <a href="/admin/balance-requests" class="{{ 'active' if section=='balance_requests' else '' }}">Заявки на пополнение</a>
-            <a href="/admin/app-users" class="{{ 'active' if section=='app_users' else '' }}">Пользователи приложения</a>
-            <a href="/admin/users" class="{{ 'active' if section=='users' else '' }}">Пользователи панели</a>
+    <div class="admin-layout">
+      <aside class="admin-sidebar">
+        <div class="admin-sidebar__brand">CryptoSensei</div>
+        <nav class="admin-sidebar__nav">
+          <div class="admin-sidebar__group">
+            <div class="admin-sidebar__group-title">Контент</div>
+            <a href="/admin/posts" class="admin-sidebar__link {{ 'active' if section=='posts' else '' }}">Посты</a>
+            <a href="/admin/webinars" class="admin-sidebar__link {{ 'active' if section=='webinars' else '' }}">Вебинары</a>
+            <a href="/admin/tickets" class="admin-sidebar__link {{ 'active' if section=='tickets' else '' }}">Тикеты</a>
           </div>
-          <div class="topbar__meta">
-            {{ admin_user or "" }}
+          <div class="admin-sidebar__group">
+            <div class="admin-sidebar__group-title">Баланс</div>
+            <a href="/admin/balance-requests" class="admin-sidebar__link {{ 'active' if section=='balance_requests' else '' }}">Заявки на пополнение</a>
+            <a href="/admin/app-users" class="admin-sidebar__link {{ 'active' if section=='app_users' else '' }}">Пользователи приложения</a>
           </div>
-          <form method="post" action="/admin/logout">
-            <button class="link-btn" type="submit">Выйти</button>
-          </form>
-        </div>
-      </div>
-
-      <!-- Mobile drawer navigation -->
-      <div class="nav-overlay" data-nav-close></div>
-      <aside class="nav-drawer" id="navDrawer" aria-hidden="true">
-        <div class="nav-drawer__head">
-          <div>
-            <div class="nav-drawer__brand">CryptoSensei</div>
-            <div class="muted" style="margin-top:4px">{{ admin_user or "" }}</div>
+          <div class="admin-sidebar__group">
+            <div class="admin-sidebar__group-title">Настройки</div>
+            <a href="/admin/data" class="admin-sidebar__link {{ 'active' if section=='data' else '' }}">Данные</a>
+            <a href="/admin/users" class="admin-sidebar__link {{ 'active' if section=='users' else '' }}">Пользователи панели</a>
+            <a href="/admin/admins" class="admin-sidebar__link {{ 'active' if section=='admins' else '' }}">Админы</a>
           </div>
-          <button class="link-btn" type="button" data-nav-close>Закрыть</button>
-        </div>
-        <nav class="nav nav--drawer">
-          <a href="/admin/posts" class="{{ 'active' if section=='posts' else '' }}">Посты</a>
-          <a href="/admin/webinars" class="{{ 'active' if section=='webinars' else '' }}">Вебинары</a>
-          <a href="/admin/tickets" class="{{ 'active' if section=='tickets' else '' }}">Тикеты</a>
-          <a href="/admin/admins" class="{{ 'active' if section=='admins' else '' }}">Админы</a>
-          <a href="/admin/data" class="{{ 'active' if section=='data' else '' }}">Данные</a>
-          <a href="/admin/balance-requests" class="{{ 'active' if section=='balance_requests' else '' }}">Заявки на пополнение</a>
-          <a href="/admin/app-users" class="{{ 'active' if section=='app_users' else '' }}">Пользователи приложения</a>
-          <a href="/admin/users" class="{{ 'active' if section=='users' else '' }}">Пользователи панели</a>
         </nav>
-        <form method="post" action="/admin/logout" style="margin-top:12px">
-          <button class="btn danger" type="submit" style="width:100%">Выйти</button>
-        </form>
       </aside>
 
-      {% if flash %}
-        <div class="flash {{ 'ok' if flash_kind=='ok' else 'bad' }}">
-          <strong>{{ flash }}</strong>
-          {% if flash_details %}<div class="muted" style="margin-top:6px">{{ flash_details }}</div>{% endif %}
+      <main class="admin-main">
+        <div class="admin-topbar">
+          <div class="admin-topbar__left">
+            <button class="nav-toggle" type="button" aria-label="Меню" aria-controls="navDrawer" aria-expanded="false">
+              <span class="nav-toggle__bar"></span>
+              <span class="nav-toggle__bar"></span>
+              <span class="nav-toggle__bar"></span>
+            </button>
+            <span class="admin-topbar__breadcrumb">{{ title or "Панель" }}</span>
+          </div>
+          <div class="admin-topbar__user">
+            <span class="admin-topbar__name">{{ admin_user or "" }}</span>
+            <form method="post" action="/admin/logout" style="margin:0">
+              <button class="link-btn" type="submit">Выйти</button>
+            </form>
+          </div>
         </div>
-      {% endif %}
 
-      {% block content %}{% endblock %}
+        {% if flash %}
+          <div class="flash {{ 'ok' if flash_kind=='ok' else 'bad' }}">
+            <strong>{{ flash }}</strong>
+            {% if flash_details %}<div class="muted" style="margin-top:6px">{{ flash_details }}</div>{% endif %}
+          </div>
+        {% endif %}
+
+        {% block content %}{% endblock %}
+      </main>
     </div>
+
+    <!-- Mobile drawer -->
+    <div class="nav-overlay" data-nav-close></div>
+    <aside class="nav-drawer" id="navDrawer" aria-hidden="true">
+      <div class="nav-drawer__head">
+        <div>
+          <div class="nav-drawer__brand">CryptoSensei</div>
+          <div class="muted">{{ admin_user or "" }}</div>
+        </div>
+        <button class="link-btn" type="button" data-nav-close>Закрыть</button>
+      </div>
+      <nav class="nav nav--drawer">
+        <a href="/admin/posts" class="{{ 'active' if section=='posts' else '' }}">Посты</a>
+        <a href="/admin/webinars" class="{{ 'active' if section=='webinars' else '' }}">Вебинары</a>
+        <a href="/admin/tickets" class="{{ 'active' if section=='tickets' else '' }}">Тикеты</a>
+        <a href="/admin/balance-requests" class="{{ 'active' if section=='balance_requests' else '' }}">Заявки на пополнение</a>
+        <a href="/admin/app-users" class="{{ 'active' if section=='app_users' else '' }}">Пользователи приложения</a>
+        <a href="/admin/data" class="{{ 'active' if section=='data' else '' }}">Данные</a>
+        <a href="/admin/users" class="{{ 'active' if section=='users' else '' }}">Пользователи панели</a>
+        <a href="/admin/admins" class="{{ 'active' if section=='admins' else '' }}">Админы</a>
+      </nav>
+      <form method="post" action="/admin/logout" style="margin-top:12px">
+        <button class="btn danger" type="submit" style="width:100%">Выйти</button>
+      </form>
+    </aside>
   </body>
 </html>
-

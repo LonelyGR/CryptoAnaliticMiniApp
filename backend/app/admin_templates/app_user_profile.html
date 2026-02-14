@@ -6,26 +6,29 @@
       <tr><th>Telegram ID</th><td>{{ target_user.telegram_id }}</td></tr>
       <tr><th>Username</th><td>{% if target_user.username %}@{{ target_user.username }}{% else %}—{% endif %}</td></tr>
       <tr><th>Имя</th><td>{{ target_user.first_name or '' }} {{ target_user.last_name or '' }}</td></tr>
-      <tr><th>Заблокирован</th><td><span class="pill">{{ 'да' if target_user.is_blocked else 'нет' }}</span></td></tr>
+      <tr><th>Заблокирован</th><td><span class="pill {{ 'status-danger' if target_user.is_blocked else 'status-success' }}">{{ 'да' if target_user.is_blocked else 'нет' }}</span></td></tr>
       <tr><th>Баланс</th><td><strong>{{ balance_formatted }}</strong></td></tr>
     </table>
 
     {% if can_manage %}
-      <hr />
-      <div style="margin-top:14px">
-        <form method="post" action="/admin/app-users/{{ target_user.id }}/block" style="display:inline-block; margin-right:14px">
+      <hr style="border:none; border-top:1px solid var(--ds-border-primary); margin: var(--ds-spacing-xl) 0" />
+      <div class="ds-card__section">
+        <form method="post" action="/admin/app-users/{{ target_user.id }}/block" class="row">
           <input type="hidden" name="blocked" value="0" />
           <label class="toggle">
-            <input type="checkbox" name="blocked" value="1" {% if target_user.is_blocked %}checked{% endif %} />
-            Заблокирован
+            <span class="switch-track">
+              <input type="checkbox" name="blocked" value="1" {% if target_user.is_blocked %}checked{% endif %} />
+              <span class="switch-thumb"></span>
+            </span>
+            <strong>Заблокирован</strong>
           </label>
-          <button class="btn" type="submit">Сохранить</button>
+          <button class="btn primary" type="submit">Сохранить</button>
         </form>
       </div>
 
-      <div style="margin-top:14px">
-        <h3>Изменить баланс</h3>
-        <form method="post" action="/admin/app-users/{{ target_user.id }}/balance-adjust" style="display:flex; gap:10px; align-items:flex-end; flex-wrap:wrap">
+      <div class="ds-card__section" style="margin-top: var(--ds-spacing-xl)">
+        <h3 style="margin: 0 0 var(--ds-spacing-md); font-size: 14px;">Изменить баланс</h3>
+        <form method="post" action="/admin/app-users/{{ target_user.id }}/balance-adjust" class="row">
           <div class="field">
             <label>Дельта (+ или -, например -5.50 или +10)</label>
             <input name="delta" type="text" placeholder="+10.50 или -5" required />
@@ -70,7 +73,7 @@
     </table>
 
     {% if ledger_pages > 1 %}
-      <div class="pagination" style="margin-top:14px">
+      <div class="pagination">
         {% if ledger_page > 1 %}
           <a href="?ledger_page={{ ledger_page - 1 }}&ledger_limit={{ ledger_limit }}">← Пред</a>
         {% endif %}
@@ -82,7 +85,7 @@
     {% endif %}
   </div>
 
-  <div style="margin-top:14px">
-    <a href="/admin/app-users">← К списку пользователей</a>
+  <div style="margin-top: var(--ds-spacing-xl)">
+    <a href="/admin/app-users" style="color: var(--ds-accent-primary); font-weight: 500;">← К списку пользователей</a>
   </div>
 {% endblock %}

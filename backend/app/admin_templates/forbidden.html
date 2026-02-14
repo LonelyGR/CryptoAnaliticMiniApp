@@ -1,11 +1,11 @@
 {% extends "base.html" %}
 {% block content %}
-  <div class="card" style="margin-top:14px">
-    <h2 style="margin-bottom:6px">Доступ запрещён</h2>
+  <div class="card">
+    <h2>Доступ запрещён</h2>
     <div class="muted">У вас нет прав для этого раздела{% if need %} (нужно: <span class="pill">{{ need }}</span>){% endif %}.</div>
   </div>
 
-  <div class="card" style="margin-top:14px">
+  <div class="card" style="margin-top: var(--ds-spacing-lg)">
     <pre class="ascii">
 ⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
 ⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀

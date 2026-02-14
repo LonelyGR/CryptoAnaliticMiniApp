@@ -24,7 +24,7 @@
       <form method="post" action="/admin/data/clear-selected" style="margin-top:12px" data-confirm="Удалить выбранные данные?">
         <div class="field">
           <label>Таблицы</label>
-          <select name="targets" multiple size="10">
+          <select name="targets" multiple size="10" class="ds-select">
             {% for t in tables %}
               <option value="{{ t }}">{{ t }}</option>
             {% endfor %}
@@ -48,7 +48,7 @@
                 <td class="muted">{{ u.telegram_id }}</td>
                 <td class="muted">{% if u.username %}@{{ u.username }}{% else %}—{% endif %}</td>
                 <td>{{ u.first_name or '' }} {{ u.last_name or '' }}</td>
-                <td><span class="pill">{{ 'да' if u.is_blocked else 'нет' }}</span></td>
+                <td><span class="pill {{ 'status-danger' if u.is_blocked else 'status-success' }}">{{ 'да' if u.is_blocked else 'нет' }}</span></td>
               </tr>
             {% endfor %}
           </tbody>
@@ -77,7 +77,7 @@
           <thead><tr><th>ID</th><th>Тема</th><th>Дата</th><th>Статус</th></tr></thead>
           <tbody>
             {% for w in recent_webinars %}
-              <tr><td>{{ w.id }}</td><td><strong>{{ w.title }}</strong></td><td class="muted">{{ w.date }} {{ w.time }}</td><td><span class="pill">{{ w.status }}</span></td></tr>
+              <tr><td>{{ w.id }}</td><td><strong>{{ w.title }}</strong></td><td class="muted">{{ w.date }} {{ w.time }}</td><td><span class="pill status-warning">{{ w.status }}</span></td></tr>
             {% endfor %}
           </tbody>
         </table>

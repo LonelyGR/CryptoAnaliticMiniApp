@@ -60,7 +60,13 @@
             <input name="role" value="admin" list="roleOptions" />
           </div>
           <div class="perm-actions">
-            <label class="btn"><input type="checkbox" name="perms" value="*" /> полный доступ (*)</label>
+            <label class="toggle">
+              <span class="switch-track">
+                <input type="checkbox" name="perms" value="*" />
+                <span class="switch-thumb"></span>
+              </span>
+              <strong>полный доступ (*)</strong>
+            </label>
             <button class="btn primary" type="submit">Создать</button>
           </div>
         </form>
@@ -90,9 +96,21 @@
           </div>
 
           <div class="perm-actions">
-            <label class="btn"><input type="checkbox" name="perms" value="*" {% if '*' in user_scopes[selected_user.id] %}checked{% endif %} /> полный доступ (*)</label>
-            <label class="toggle"><input type="checkbox" name="is_active" value="1" {% if selected_user.is_active %}checked{% endif %} /> <strong>active</strong></label>
-            <button class="btn" type="submit">Сохранить</button>
+            <label class="toggle">
+              <span class="switch-track">
+                <input type="checkbox" name="perms" value="*" {% if '*' in user_scopes[selected_user.id] %}checked{% endif %} />
+                <span class="switch-thumb"></span>
+              </span>
+              <strong>полный доступ (*)</strong>
+            </label>
+            <label class="toggle">
+              <span class="switch-track">
+                <input type="checkbox" name="is_active" value="1" {% if selected_user.is_active %}checked{% endif %} />
+                <span class="switch-thumb"></span>
+              </span>
+              <strong>active</strong>
+            </label>
+            <button class="btn primary" type="submit">Сохранить</button>
           </div>
 
           <div class="perm-grid-v2">
@@ -104,12 +122,15 @@
                     <div class="perm-tile__desc">{{ group }} · {{ desc }}</div>
                   </div>
                   <label class="switch">
-                    <input
-                      type="checkbox"
-                      name="perms"
-                      value="{{ scope }}"
-                      {% if (scope in user_scopes[selected_user.id]) or (scope.split(':')[0] in user_scopes[selected_user.id]) or ('*' in user_scopes[selected_user.id]) %}checked{% endif %}
-                    />
+                    <span class="switch-track">
+                      <input
+                        type="checkbox"
+                        name="perms"
+                        value="{{ scope }}"
+                        {% if (scope in user_scopes[selected_user.id]) or (scope.split(':')[0] in user_scopes[selected_user.id]) or ('*' in user_scopes[selected_user.id]) %}checked{% endif %}
+                      />
+                      <span class="switch-thumb"></span>
+                    </span>
                   </label>
                 </div>
               </div>

@@ -24,7 +24,7 @@
           {% endif %}
         </td>
       </tr>
-      <tr><th>Статус</th><td><span class="pill">{{ req.status }}</span></td></tr>
+      <tr><th>Статус</th><td><span class="pill {{ 'status-success' if req.status=='approved' else ('status-danger' if req.status=='rejected' else 'status-warning') }}">{{ req.status }}</span></td></tr>
       <tr><th>Создано</th><td>{{ req.created_at.strftime('%Y-%m-%d %H:%M') if req.created_at else '—' }}</td></tr>
       {% if req.reviewed_at %}
         <tr><th>Проверено</th><td>{{ req.reviewed_at.strftime('%Y-%m-%d %H:%M') if req.reviewed_at else '—' }}</td></tr>
@@ -37,7 +37,7 @@
     {% if req.status == 'pending' and can_manage %}
       <hr />
       <div style="display:flex; gap:20px; flex-wrap:wrap; margin-top:14px">
-        <form method="post" action="/admin/balance-requests/{{ req.id }}/approve" style="display:flex; gap:10px; align-items:flex-end">
+        <form method="post" action="/admin/balance-requests/{{ req.id }}/approve" class="row">
           <div class="field">
             <label>Сумма (12.50 = 1250)</label>
             <input name="amount" type="text" placeholder="12.50" required />
@@ -48,7 +48,7 @@
           </div>
           <button class="btn ok" type="submit">Одобрить</button>
         </form>
-        <form method="post" action="/admin/balance-requests/{{ req.id }}/reject" style="display:flex; gap:10px; align-items:flex-end">
+        <form method="post" action="/admin/balance-requests/{{ req.id }}/reject" class="row">
           <div class="field">
             <label>Комментарий</label>
             <input name="comment" type="text" placeholder="причина отклонения" />

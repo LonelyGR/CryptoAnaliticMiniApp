@@ -513,6 +513,7 @@ export default function Home({ user, apiConnected }) {
                             <div className="neo-modal-overlay" role="dialog" aria-modal="true" onClick={() => setDepositModalOpen(false)}>
                                 <div className="neo-modal-card" onClick={(e) => e.stopPropagation()}>
                                     <button type="button" className="neo-modal-back" onClick={() => setDepositModalOpen(false)} aria-label="Закрыть">←</button>
+                                    <br />
                                     <div className="neo-modal-body deposit-modal">
                                         <h2 className="neo-modal-title">Пополнение баланса</h2>
                                         {depositAddress ? (

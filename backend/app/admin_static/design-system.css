@@ -1,0 +1,518 @@
+/**
+ * CryptoSensei Admin - Design System
+ * SaaS-level dashboard (Linear / Vercel / Stripe style)
+ */
+
+/* ========== 1. Color System ========== */
+:root {
+  --ds-bg-primary: #0f1117;
+  --ds-bg-secondary: #151823;
+  --ds-bg-tertiary: #1c2030;
+
+  --ds-border-primary: rgba(255, 255, 255, 0.08);
+  --ds-border-hover: rgba(255, 255, 255, 0.15);
+
+  --ds-text-primary: #ffffff;
+  --ds-text-secondary: #a0a8c0;
+  --ds-text-muted: #6c738f;
+
+  --ds-accent-primary: #6c63ff;
+  --ds-accent-hover: #7c73ff;
+
+  --ds-danger: #ff4d4f;
+  --ds-success: #2ecc71;
+  --ds-warning: #f39c12;
+
+  --ds-radius-sm: 8px;
+  --ds-radius-md: 12px;
+  --ds-radius-lg: 16px;
+
+  --ds-transition: 0.2s ease;
+  --ds-spacing-xs: 4px;
+  --ds-spacing-sm: 8px;
+  --ds-spacing-md: 12px;
+  --ds-spacing-lg: 16px;
+  --ds-spacing-xl: 24px;
+}
+
+/* ========== 2. Buttons ========== */
+.btn,
+.ds-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--ds-spacing-sm);
+  padding: 10px 16px;
+  border-radius: var(--ds-radius-md);
+  font-weight: 600;
+  font-size: 13px;
+  cursor: pointer;
+  border: 1px solid transparent;
+  transition: all var(--ds-transition);
+  appearance: none;
+  font-family: inherit;
+}
+
+.btn:hover:not(:disabled),
+.ds-btn:hover:not(:disabled) {
+  transform: translateY(-1px);
+}
+
+.btn:active:not(:disabled),
+.ds-btn:active:not(:disabled) {
+  transform: scale(0.98);
+}
+
+.btn:disabled,
+.ds-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Primary */
+.btn.primary,
+.btn--primary {
+  background: var(--ds-accent-primary);
+  border-color: var(--ds-accent-primary);
+  color: #fff;
+}
+
+.btn.primary:hover:not(:disabled),
+.btn--primary:hover:not(:disabled) {
+  background: var(--ds-accent-hover);
+  border-color: var(--ds-accent-hover);
+  box-shadow: 0 4px 12px rgba(108, 99, 255, 0.25);
+}
+
+/* Secondary */
+.btn:not(.primary):not(.danger):not(.ok),
+.btn--secondary {
+  background: var(--ds-bg-tertiary);
+  border-color: var(--ds-border-primary);
+  color: var(--ds-text-primary);
+}
+
+.btn:not(.primary):not(.danger):not(.ok):hover:not(:disabled),
+.btn--secondary:hover:not(:disabled) {
+  background: var(--ds-bg-secondary);
+  border-color: var(--ds-border-hover);
+}
+
+/* Danger */
+.btn.danger,
+.btn--danger {
+  background: var(--ds-danger);
+  border-color: var(--ds-danger);
+  color: #fff;
+}
+
+.btn.danger:hover:not(:disabled),
+.btn--danger:hover:not(:disabled) {
+  background: #ff6b6b;
+  box-shadow: 0 4px 12px rgba(255, 77, 79, 0.25);
+}
+
+/* Success */
+.btn.ok,
+.btn--success {
+  background: var(--ds-success);
+  border-color: var(--ds-success);
+  color: #fff;
+}
+
+.btn.ok:hover:not(:disabled),
+.btn--success:hover:not(:disabled) {
+  background: #34d399;
+  box-shadow: 0 4px 12px rgba(46, 204, 113, 0.25);
+}
+
+/* Ghost / link style */
+.link-btn {
+  appearance: none;
+  background: transparent;
+  border: 1px solid var(--ds-border-primary);
+  color: var(--ds-text-primary);
+  padding: 8px 14px;
+  border-radius: var(--ds-radius-md);
+  font-weight: 600;
+  font-size: 13px;
+  cursor: pointer;
+  font-family: inherit;
+  transition: all var(--ds-transition);
+}
+
+.link-btn:hover {
+  background: var(--ds-bg-tertiary);
+  border-color: var(--ds-border-hover);
+}
+
+.btn.small {
+  padding: 6px 12px;
+  font-size: 12px;
+}
+
+/* ========== 2.2 Switch (custom checkbox with .switch-track + .switch-thumb) ========== */
+/* Structure: <label class="toggle"><span class="switch-track"><input/><span class="switch-thumb"></span></span> Label</label> */
+.switch,
+.toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--ds-spacing-md);
+  cursor: pointer;
+  user-select: none;
+}
+
+.switch-track {
+  position: relative;
+  display: inline-block;
+  width: 44px;
+  height: 24px;
+  flex-shrink: 0;
+}
+
+.switch-track input[type="checkbox"] {
+  position: absolute;
+  inset: 0;
+  margin: 0;
+  opacity: 0;
+  cursor: pointer;
+  z-index: 1;
+}
+
+.switch-track::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: var(--ds-bg-tertiary);
+  border: 1px solid var(--ds-border-primary);
+  border-radius: 999px;
+  transition: all var(--ds-transition);
+}
+
+.switch-thumb {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 18px;
+  height: 18px;
+  background: #fff;
+  border-radius: 50%;
+  transition: transform var(--ds-transition);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+  pointer-events: none;
+}
+
+.switch-track:has(input:checked)::before {
+  background: var(--ds-accent-primary);
+  border-color: var(--ds-accent-primary);
+}
+
+.switch-track:has(input:checked) .switch-thumb {
+  transform: translateX(20px);
+}
+
+.switch-track:hover::before {
+  border-color: var(--ds-border-hover);
+}
+
+/* Toggle: label with switch + text */
+.toggle {
+  padding: 8px 12px;
+  border-radius: var(--ds-radius-md);
+  border: 1px solid var(--ds-border-primary);
+  background: var(--ds-bg-tertiary);
+  font-weight: 600;
+  color: var(--ds-text-secondary);
+}
+
+.toggle strong {
+  color: var(--ds-text-primary);
+}
+
+
+/* ========== 2.3 Select ========== */
+select,
+.field select,
+.ds-select {
+  appearance: none;
+  background: var(--ds-bg-secondary) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23a0a8c0' d='M6 8L1 3h10z'/%3E%3C/svg%3E") no-repeat right 14px center;
+  border: 1px solid var(--ds-border-primary);
+  border-radius: var(--ds-radius-md);
+  padding: 10px 36px 10px 14px;
+  color: var(--ds-text-primary);
+  font-family: inherit;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all var(--ds-transition);
+}
+
+select:focus,
+.field select:focus,
+.ds-select:focus {
+  outline: none;
+  border-color: var(--ds-accent-primary);
+  box-shadow: 0 0 0 2px rgba(108, 99, 255, 0.2);
+}
+
+select:hover,
+.field select:hover {
+  border-color: var(--ds-border-hover);
+}
+
+select option {
+  background: var(--ds-bg-secondary);
+  color: var(--ds-text-primary);
+}
+
+select[multiple] {
+  background-image: none;
+  padding: 10px 14px;
+  min-height: 120px;
+}
+
+/* ========== 2.4 Input ========== */
+input[type="text"],
+input[type="password"],
+input[type="email"],
+input[type="number"],
+input[type="search"],
+textarea,
+.field input,
+.field textarea,
+.ds-input {
+  background: var(--ds-bg-secondary);
+  border: 1px solid var(--ds-border-primary);
+  border-radius: var(--ds-radius-md);
+  padding: 10px 14px;
+  color: var(--ds-text-primary);
+  font-family: inherit;
+  font-size: 14px;
+  transition: all var(--ds-transition);
+}
+
+input::placeholder,
+textarea::placeholder {
+  color: var(--ds-text-muted);
+}
+
+input:focus,
+textarea:focus,
+.field input:focus,
+.field textarea:focus {
+  outline: none;
+  border-color: var(--ds-accent-primary);
+  box-shadow: 0 0 0 2px rgba(108, 99, 255, 0.2);
+}
+
+input:hover,
+textarea:hover,
+.field input:hover,
+.field textarea:hover {
+  border-color: var(--ds-border-hover);
+}
+
+/* Checkbox/radio - hide native, use switch or custom */
+input[type="checkbox"]:not(.switch input):not(.toggle input),
+input[type="radio"] {
+  accent-color: var(--ds-accent-primary);
+}
+
+/* ========== 3. Tables ========== */
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.table th,
+.table td {
+  padding: 12px 14px;
+  text-align: left;
+  vertical-align: middle;
+  border-bottom: 1px solid var(--ds-border-primary);
+  transition: background var(--ds-transition);
+}
+
+.table th {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--ds-text-muted);
+}
+
+.table tbody tr:hover {
+  background: var(--ds-bg-tertiary);
+}
+
+.table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+/* ========== 4. Cards ========== */
+.card,
+.ds-card {
+  background: var(--ds-bg-secondary);
+  border: 1px solid var(--ds-border-primary);
+  border-radius: var(--ds-radius-lg);
+  padding: var(--ds-spacing-xl);
+  animation: dsFadeIn 0.3s ease;
+}
+
+.card h2,
+.card h3,
+.ds-card__title {
+  margin: 0 0 var(--ds-spacing-md);
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--ds-text-primary);
+}
+
+.ds-card__section {
+  margin-top: var(--ds-spacing-lg);
+}
+
+.ds-card__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--ds-spacing-lg);
+}
+
+@keyframes dsFadeIn {
+  from { opacity: 0.7; }
+  to { opacity: 1; }
+}
+
+/* ========== 5. Badges / Status ========== */
+.pill,
+.badge,
+.ds-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 5px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  border: 1px solid transparent;
+}
+
+.pill {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: var(--ds-border-primary);
+  color: var(--ds-text-secondary);
+}
+
+.status-success,
+.badge--success {
+  background: rgba(46, 204, 113, 0.15);
+  border-color: rgba(46, 204, 113, 0.3);
+  color: var(--ds-success);
+}
+
+.status-danger,
+.badge--danger {
+  background: rgba(255, 77, 79, 0.15);
+  border-color: rgba(255, 77, 79, 0.3);
+  color: var(--ds-danger);
+}
+
+.status-warning,
+.badge--warning {
+  background: rgba(243, 156, 18, 0.15);
+  border-color: rgba(243, 156, 18, 0.3);
+  color: var(--ds-warning);
+}
+
+/* Map statuses */
+.pill.approved,
+.pill.active { background: rgba(46, 204, 113, 0.15); border-color: rgba(46, 204, 113, 0.3); color: var(--ds-success); }
+.pill.rejected,
+.pill.inactive { background: rgba(255, 77, 79, 0.15); border-color: rgba(255, 77, 79, 0.3); color: var(--ds-danger); }
+.pill.pending { background: rgba(243, 156, 18, 0.15); border-color: rgba(243, 156, 18, 0.3); color: var(--ds-warning); }
+
+/* ========== 6. Pagination ========== */
+.pagination,
+.ds-pagination {
+  display: flex;
+  align-items: center;
+  gap: var(--ds-spacing-md);
+  margin-top: var(--ds-spacing-lg);
+  flex-wrap: wrap;
+}
+
+.pagination a,
+.ds-pagination a {
+  display: inline-flex;
+  align-items: center;
+  padding: 8px 14px;
+  border-radius: var(--ds-radius-md);
+  background: var(--ds-bg-tertiary);
+  border: 1px solid var(--ds-border-primary);
+  color: var(--ds-text-primary);
+  font-weight: 500;
+  font-size: 13px;
+  text-decoration: none;
+  transition: all var(--ds-transition);
+}
+
+.pagination a:hover {
+  background: var(--ds-bg-secondary);
+  border-color: var(--ds-border-hover);
+}
+
+.pagination .pagination__active,
+.pagination .active,
+.ds-pagination__active {
+  background: var(--ds-accent-primary);
+  border-color: var(--ds-accent-primary);
+  color: #fff;
+}
+
+.pagination .muted,
+.ds-pagination__info {
+  color: var(--ds-text-muted);
+  font-size: 13px;
+}
+
+/* ========== 7. Field ========== */
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ds-spacing-sm);
+  margin: var(--ds-spacing-md) 0;
+}
+
+.field label {
+  font-weight: 600;
+  font-size: 12px;
+  color: var(--ds-text-muted);
+}
+
+.field textarea {
+  min-height: 100px;
+  resize: vertical;
+}
+
+/* ========== 8. Flash ========== */
+.flash {
+  padding: var(--ds-spacing-md) var(--ds-spacing-lg);
+  border-radius: var(--ds-radius-md);
+  border: 1px solid;
+  margin-top: var(--ds-spacing-md);
+}
+
+.flash.ok {
+  background: rgba(46, 204, 113, 0.1);
+  border-color: rgba(46, 204, 113, 0.3);
+}
+
+.flash.bad {
+  background: rgba(255, 77, 79, 0.1);
+  border-color: rgba(255, 77, 79, 0.3);
+}
+
+.muted {
+  color: var(--ds-text-muted);
+  font-size: 13px;
+}
